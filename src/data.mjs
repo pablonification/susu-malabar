@@ -92,7 +92,7 @@ export const shops = [
     located: false,
     name: tbc("Susu Malabar (toko ketiga)", "Nama dan letak toko ketiga belum pasti"),
     area: tbc("Ujung selatan Jl. Kolonel Achmad Syam", "Letak toko ketiga belum pasti"),
-    address: tbc("Belum diketahui", "Alamat toko ketiga belum ada"),
+    address: tbc("Alamat nyusul", "Alamat toko ketiga belum ada"),
     hours: tbc({ default: ["12:00", "22:00"], byDay: {} }, "Jam toko ini belum dicek"),
     mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
     gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),

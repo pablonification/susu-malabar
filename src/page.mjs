@@ -728,7 +728,8 @@ export default function page() {
   <div class="bar" id="bar" hidden>
     <p role="status"><strong id="bar-price"></strong> <span class="bar-what"><span id="bar-cups"></span> · <span id="bar-sizes"></span></span><span class="sr" id="bar-last"></span></p>
     <a class="btn btn-fill" href="#pesan">Lanjut<span class="sr"> pre-order</span></a>
-  </div>`;
+  </div>
+  <p class="sr" role="status" id="tap-said"></p>`;
 
   // The footer says how many marks are on the page, and wears the mark itself.
   const marks = (body.match(/class="tbc[ "]/g) || []).length;

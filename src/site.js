@@ -247,6 +247,8 @@ function refresh() {
   $("#bar-sizes").textContent = bySize.length === 1 ? whole(sizeName(bySize[0].size)) : bySize.map((s) => whole(`${s.cups} × ${sizeName(s.size)}`)).join(" · ");
   $("#bar-last").textContent = lastTap ? `, ${lastTap}` : "";
   bar.hidden = cups === 0 || formOnScreen;
+  // With the bar gone (the last cup was taken off), what the tap did is still read out.
+  $("#tap-said").textContent = bar.hidden && lastTap ? lastTap : "";
   // Room for the bar at the end of the page, and when the browser scrolls to whatever
   // has focus, so nothing lands underneath it.
   const room = bar.hidden ? "" : `${bar.offsetHeight}px`;

@@ -433,6 +433,7 @@ test("the form's parts share one corner, one picked colour, and the page's margi
 test("the order bar says the total and the way on, and reads out what went in", () => {
   const bar = /<div class="bar"[\s\S]*?<\/div>/.exec(body)[0];
   assert.match(bar, /<p role="status">[\s\S]*<span class="sr" id="bar-last"><\/span><\/p>/, "what went in is read out, not shown");
+  assert.ok(body.includes('<p class="sr" role="status" id="tap-said"></p>'), "taking off the last cup hides the bar, so its words need a status of their own");
   assert.match(bar, /<a class="btn btn-fill" href="#pesan">Lanjut<span class="sr"> pre-order<\/span><\/a>/);
   // The sum, then what it is the sum of: the cups, and the sizes they are in.
   assert.match(bar, /<strong id="bar-price"><\/strong> <span class="bar-what"><span id="bar-cups"><\/span> · <span id="bar-sizes"><\/span><\/span>/);

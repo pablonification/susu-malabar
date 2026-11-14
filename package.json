@@ -1,0 +1,20 @@
+{
+  "name": "susu-malabar",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Website Susu Malabar Jatinangor: menu, toko, dan pre-order lewat WhatsApp.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node serve.mjs",
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node build.mjs && node --test test/*.test.mjs",
+    "shots": "node scripts/shots.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

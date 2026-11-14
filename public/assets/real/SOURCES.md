@@ -46,7 +46,7 @@ with the address written on it, so they get the strongest lift.
 | `pickup` | `counter-griya-wide`, whole (the "PICK UP HERE" sign, both people serving, the customer's head not cut) | "Mau pesan lewat mana?" |
 | `toko-griya` | `shop-front-griya`, whole, lifted | The shop "depan Griya" |
 | `toko-ikopin` | `shop-front-ikopin`, whole, lifted | The shop "depan Ikopin" |
-| `bungkus` | `staff-griya`, the left two thirds: one person and the cups. The second person, cut in half by the frame's right edge in the original, is left out. His hair touches the top edge in the original too, so that stays. | Over the pre-order form |
+| `bungkus` | `staff-griya`, the middle, from 100 px in to 220 px short of the right edge: one person and the cups. The second person, cut in half by the frame's right edge in the original, is left out. His hair touches the top edge in the original too, so that stays. | Over the pre-order form |
 | `kedai` | `counter-griya`, whole | The story |
 
 Not on the page: `strawberry-milk-1` (too soft, even small), `strawberry-milk-topdown` (the lid

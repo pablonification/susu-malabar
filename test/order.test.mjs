@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { WHATSAPP_NUMBER, isTbc, val } from "../src/data.mjs";
+import { WHATSAPP_NUMBER, shops, val } from "../src/data.mjs";
 import { buildMessage, checkOrder, longDate, rupiah, todayWib, totals, whatsappLink } from "../src/order.mjs";
 
 // 14 Nov 2026, 13:00 WIB
@@ -47,7 +47,7 @@ test("the message lists drinks, totals, shop, date, time, name and notes", () =>
       "Total: 5 gelas",
       "Perkiraan harga: Rp77.000",
       "",
-      "Ambil di: Susu Malabar Cikeruh (Jl. Kolonel Achmad Syam, Cikeruh)",
+      "Ambil di: Susu Malabar depan MST (Jl. Kolonel Achmad Syam No. 18A)",
       "Tanggal: Sabtu, 21 November 2026",
       "Jam: 17.00",
       "Atas nama: Raka",
@@ -86,22 +86,24 @@ test("missing or wrong fields are caught", () => {
   const half = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 1.5 }] }, NOW);
   assert.deepEqual(half.errors.map((e) => e.message), ["Jumlahnya harus angka bulat"]);
 
-  const unlocated = checkOrder({ ...good, shopId: "toko-3" }, NOW);
+  // Every shop is located now, so one is switched off for this check only.
+  shops[2].located = false;
+  const unlocated = checkOrder({ ...good, shopId: shops[2].id }, NOW);
+  delete shops[2].located;
   assert.deepEqual(unlocated.errors.map((e) => e.message), ["Toko ini belum bisa dipilih"]);
 
   const huge = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 500 }] }, NOW);
   assert.ok(huge.errors.some((e) => e.message.startsWith("Maksimal")));
 });
 
-test("outside shop hours only warns, since hours are not confirmed", () => {
-  const friday = checkOrder({ ...good, date: "2026-11-20", time: "13:00" }, NOW); // Cikeruh opens 14:00 on Friday
-  assert.ok(friday.ok);
-  assert.deepEqual(friday.warnings.map((w) => w.message), ["Toko ini biasanya buka 14.00–22.00"]);
-  assert.equal(friday.warnings[0].tbc, true, "unconfirmed hours must be marked on the page");
+test("outside shop hours only warns", () => {
+  const early = checkOrder({ ...good, date: "2026-11-20", time: "11:00" }, NOW); // shops open 12:00
+  assert.ok(early.ok);
+  assert.deepEqual(early.warnings.map((w) => w.message), ["Toko ini biasanya buka 12.00–22.00"]);
+  assert.equal(early.warnings[0].tbc, undefined, "confirmed hours carry no mark");
   assert.deepEqual(checkOrder(good, NOW).warnings, []);
 });
 
-test("the WhatsApp number is still marked as a placeholder until confirmed", () => {
-  // Remove this test once the owner gives the real number.
-  assert.ok(isTbc(WHATSAPP_NUMBER));
+test("the WhatsApp number is digits only, starting with 62", () => {
+  assert.match(WHATSAPP_NUMBER, /^62\d{8,13}$/);
 });

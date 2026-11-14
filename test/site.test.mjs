@@ -99,7 +99,7 @@ test("every unconfirmed value on the page carries the mark", () => {
   const all = findTbc(data);
   assert.ok(all.length > 0, "nothing is marked tbc() any more: delete this test and the .tbc rule");
   const marks = [...body.matchAll(MARK)];
-  assert.ok(marks.length >= 20, `only ${marks.length} marks on the page`);
+  assert.ok(marks.length > 0, "no marks on the page although data has tbc() values");
   for (const [, title, inner] of marks) {
     assert.ok(title.trim() && inner.trim(), "a mark needs a note and something inside");
   }
@@ -128,13 +128,8 @@ test("every unconfirmed value on the page carries the mark", () => {
     }
   }
   // What is shown says why it is marked.
-  for (const t of [data.WHATSAPP_NUMBER, data.brand.siteUrl, data.drinks[0].prices[14], data.shops[0].hours, data.shops[0].mapUrl, data.shops[0].gofoodUrl, data.shops[2].name]) {
+  for (const t of [data.brand.siteUrl, data.drinks[0].prices[14], data.shops[0].gofoodUrl, data.shops[2].mapUrl]) {
     assert.ok(notes.has(t.note), `no mark for: ${t.note}`);
-  }
-  // The send button and the chat link go to a placeholder number too.
-  assert.match(/<a\b[^>]*id="send"[^>]*>([\s\S]*?)<\/a>/.exec(body)[1], /class="tbc"/);
-  for (const [, inner] of body.matchAll(/<a\b[^>]*href="https:\/\/wa\.me\/[^"]*"[^>]*>([\s\S]*?)<\/a>/g)) {
-    assert.match(inner, /class="tbc"/, "a WhatsApp link without its dot");
   }
 });
 
@@ -234,33 +229,15 @@ test("a shop is named by its street, and its area is not said again under it", (
   for (const shop of data.shops.filter(isLocated)) {
     const address = data.val(shop.address);
     assert.ok(!address.includes(","), `"${address}" is more than the street: the heading already names the area`);
-    assert.ok(!address.includes("Jatinangor"), "Jatinangor is in the title above the list");
+    // A road that is itself called Jatinangor is fine.
+    assert.ok(!address.replace("Jl. Raya Jatinangor", "").includes("Jatinangor"), "Jatinangor is in the title above the list");
   }
-  assert.equal(text(section("toko")).split("Jatinangor").length - 1, 1);
-});
-
-test("a shop with no known place is listed, but has no buttons and can't be picked", () => {
-  const lost = data.shops.find((s) => !isLocated(s));
-  assert.ok(lost, "every shop is located now: this test can go, the code path stays");
-  const rows = [...section("toko").matchAll(/<li class="shop">[\s\S]*?<\/li>/g)].map((m) => m[0]);
-  assert.equal(rows.length, data.shops.length, "every shop is still in the list");
-  const row = rows[data.shops.indexOf(lost)];
-  assert.doesNotMatch(row, /<a\b|Buka peta|GoFood/, "a map or GoFood button on a shop with no known place");
-  // Its name and its address line still show, both marked. One unknown, so one dot:
-  // the name wears it, and the line under it has its dot switched off.
-  assert.equal((row.match(MARK) || []).length, 2);
-  assert.ok(row.includes(`<p class="shop-soon"><span class="tbc" title="${lost.address.note}">${lost.address.value}</span></p>`));
-  assert.match(css, /\.shop-soon \{\s*--tbc-mark: 0;\s*\}/);
-  assert.equal((html.match(/class="shop-soon"/g) || []).length, 1, "only the shop with no known place hides a dot");
-  // The form offers only the shops with a place, and the order's check agrees.
-  const offered = [...body.matchAll(/<input type="radio" name="shop" value="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(offered, data.shops.filter(isLocated).map((s) => s.id));
-  const order = { lines: [{ drinkId: "strawberry", size: "14", qty: 1 }], shopId: lost.id, date: "2099-01-01", time: "15:00", name: "Raka" };
-  assert.deepEqual(checkOrder(order).errors, [{ field: "shop", message: "Toko ini belum bisa dipilih" }]);
+  assert.equal(text(section("toko")).replaceAll("Jl. Raya Jatinangor", "").split("Jatinangor").length - 1, 1);
 });
 
 test("the same shop gets its buttons and its place in the form once it is located", () => {
-  const lost = data.shops.find((s) => !isLocated(s));
+  // Every shop is located now; the code path stays, so check it on a copy.
+  const lost = { ...data.shops.at(-1), located: false };
   const found = { ...lost, located: true };
   assert.doesNotMatch(shopRow(lost, null), /Buka peta|GoFood/);
   const row = shopRow(found, null);
@@ -353,7 +330,7 @@ test("a mark never sits between a value and its punctuation, and hours don't con
   const toko = text(section("toko"));
   const odd = data.shops.some((s) => Object.keys(data.val(s.hours).byDay || {}).length);
   if (odd) assert.doesNotMatch(toko, /tiap hari/i, '"every day" above a shop with a different day');
-  assert.match(toko, /Jumat baru buka/);
+  if (odd) assert.match(toko, /Jumat baru buka/);
 });
 
 test("the form's parts share one corner, one picked colour, and the page's margins", () => {

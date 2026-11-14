@@ -6,7 +6,9 @@
 //
 //   grep -n "tbc(" src/data.mjs     lists everything still to confirm.
 //
-// Facts here come from Arqila's research. Do not add facts that are not in it
+// Facts here come from Arqila's research, plus a few read on the shop's own pages
+// (Instagram, TikTok, Linktree) and Google Maps on 2026-11-14: each of those has its source
+// in a comment beside it. Do not add facts that are not in them
 // (no revenue, no "source of money" story, no farm or Mount Malabar link).
 
 /** Marks a value the owner still has to confirm. */
@@ -27,7 +29,7 @@ export function isTbc(x) {
 // --- Ordering -----------------------------------------------------------------
 
 /** WhatsApp number for pre-orders: digits only, starting with 62. */
-export const WHATSAPP_NUMBER = tbc("6280000000000", "Nomor WhatsApp toko untuk pre-order belum ada");
+export const WHATSAPP_NUMBER = "6285161778995"; // "Hubungi kami" on the shop's Linktree (linktr.ee/malabar.milkbar), read 2026-11-14
 
 // --- Brand --------------------------------------------------------------------
 
@@ -52,6 +54,8 @@ export const brand = {
 export const story = {
   started: "Dimulai dari stan di acara kampus oleh mahasiswa Unpad",
   firstShopYear: 2020,
+  // The shop's own post (IG 2026-04, "2019 itu 7 tahun lalu") counts the brand from 2019, the stall years.
+  since: 2019,
   shops: 3,
   staff: 13,
   ownerAtCounter: true,
@@ -63,39 +67,50 @@ export const story = {
 // GrabFood and ShopeeFood are not confirmed for any shop, so they are left out.
 // Days use JavaScript's numbering: 0 Minggu, 1 Senin, ... 5 Jumat, 6 Sabtu.
 
+// The shop's Linktree has one GoFood store ("Malabar Jatinangor", read 2026-11-14). Which shop it
+// sends from is not known yet, and the page itself was behind a captcha.
+const GOFOOD = "https://gofood.co.id/english/bandung/restaurant/malabar-jatinangor-a4b4df26-3ed6-4a37-809f-f8526640287d";
+const GOFOOD_NOTE = "Link GoFood dari Linktree toko, belum jelas untuk toko yang mana";
+
 export const shops = [
   {
     id: "cikeruh",
-    name: "Susu Malabar Cikeruh",
-    area: "Jl. Kolonel Achmad Syam, Cikeruh",
-    address: tbc("Jl. Kolonel Achmad Syam", "Alamat lengkap belum dicek"),
-    hours: tbc(
-      { default: ["12:00", "22:00"], byDay: { 5: ["14:00", "22:00"] } },
-      "Jam dari daftar GoFood lama",
-    ),
-    mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
-    gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
+    // The shop names its outlets by landmark ("depan MST", "depan Griya", "depan Ikopin"): IG post 2026-05-01.
+    name: "Susu Malabar depan MST",
+    area: "Cikeruh",
+    // "Depan MST". Google Maps lists this shop as No.27; the shop's own post says 18A.
+    address: "Jl. Kolonel Achmad Syam No. 18A", // IG post 2026-05-01 (outlet list), read 2026-11-14
+    hours: { default: ["12:00", "22:00"], byDay: {} }, // "12.00-22.00 (Open Every Day)": IG bio + IG post 2026-05-01 + TikTok bio, read 2026-11-14
+    // Google Maps "Toko Susu Malabar, Jatinangor" (pin in front of MST Seblak), read 2026-11-14
+    mapUrl: "https://www.google.com/maps/place/?q=place_id:ChIJaVC8vazFaC4RZG_BtFow734",
+    gofoodUrl: tbc(GOFOOD, GOFOOD_NOTE),
   },
   {
     id: "sayang",
-    name: "Susu Malabar Sayang",
-    area: "Jl. Sayang, Desa Sayang",
-    address: tbc("Jl. Sayang", "Alamat lengkap belum dicek"),
-    hours: tbc({ default: ["12:00", "22:00"], byDay: {} }, "Jam toko ini belum dicek"),
-    mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
-    gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
+    name: "Susu Malabar depan Griya",
+    // The shop is on the main road in front of Griya, not on Jl. Sayang. IG bio: "Caringin (depan Griya)";
+    // Google Maps puts it in Sayang. Read 2026-11-14.
+    area: "Sayang",
+    address: "Jl. Raya Jatinangor No. 71", // IG post 2026-05-01 (outlet list), read 2026-11-14
+    hours: { default: ["12:00", "22:00"], byDay: {} }, // "12.00-22.00 (Open Every Day)": IG bio + IG post 2026-05-01 + TikTok bio, read 2026-11-14
+    mapUrl: "https://maps.app.goo.gl/My2KHVXut6Hfn3196", // Google Maps button on the shop's Linktree, read 2026-11-14
+    gofoodUrl: tbc(GOFOOD, GOFOOD_NOTE),
   },
   {
     id: "toko-3",
-    // false until its location is confirmed: the page then hides its map and
-    // GoFood buttons and it can't be picked for pickup. Set to true once known.
-    located: false,
-    name: tbc("Susu Malabar (toko ketiga)", "Nama dan letak toko ketiga belum pasti"),
-    area: tbc("Ujung selatan Jl. Kolonel Achmad Syam", "Letak toko ketiga belum pasti"),
-    address: tbc("Alamat nyusul", "Alamat toko ketiga belum ada"),
-    hours: tbc({ default: ["12:00", "22:00"], byDay: {} }, "Jam toko ini belum dicek"),
-    mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
-    gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
+    // Its place is known now (IG post 2026-05-01, "Depan Ikopin"). Set `located: false`
+    // again to hide its buttons and keep it out of pickup.
+    // The shop calls it by its landmark only; the short name is ours.
+    name: "Susu Malabar depan Ikopin",
+    area: "Sayang", // IG post 2026-05-01 + IG bio "Sayang (P. Ikopin)", read 2026-11-14
+    address: "Jl. Kolonel Achmad Syam No. 246", // IG post 2026-05-01 (outlet list), read 2026-11-14
+    hours: { default: ["12:00", "22:00"], byDay: {} }, // "12.00-22.00 (Open Every Day)": IG bio + IG post 2026-05-01 + TikTok bio, read 2026-11-14
+    // A Google Maps listing "Susu Malabar" sits on this spot, but has no reviews or owner details yet.
+    mapUrl: tbc(
+      "https://www.google.com/maps/place/?q=place_id:ChIJE0yjDQDFaC4RGnryD3Fmh-w",
+      "Pin Google Maps toko ini belum dicek",
+    ),
+    gofoodUrl: tbc(GOFOOD, GOFOOD_NOTE),
   },
 ];
 
@@ -140,6 +155,9 @@ export const drinks = [
     prices: { 14: p(13000), 22: p(15000) },
   },
   { id: "matcha", name: "Matcha Malabar", group: "spesial", prices: { 14: p(13000), 22: p(18000) } },
+  // New in Feb 2026: "Rasa Baru!" poster on TikTok (2026-02-24), "Cuma 15K aja!". The poster names no size.
+  // Almond Malabar and Biscof Malabar (Rp15.000, "rasa baru" poster 2026-02) are left out until
+  // the owner says which sizes they come in. See public/assets/real/SOURCES.md.
   // The listing showed two-flavour "Istimewa" mixes; this is the one named in the research.
   { id: "strawberry-et-choco", name: "Strawberry et Choco", group: "istimewa", prices: { 22: p(19000) } },
 ];

@@ -184,7 +184,7 @@ export function buildMessage(order) {
     `Total: ${cups} gelas`,
     `Perkiraan harga: ${rupiah(price)}`,
     "",
-    `Ambil di: ${val(shop.name)} (${val(shop.area)})`,
+    `Ambil di: ${val(shop.name)} (${val(shop.address)})`,
     `Tanggal: ${longDate(order.date)}`,
     `Jam: ${clock(order.time)}`,
     `Atas nama: ${String(order.name).trim()}`,

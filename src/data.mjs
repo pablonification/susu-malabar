@@ -59,6 +59,7 @@ export const story = {
 };
 
 // --- Shops ----------------------------------------------------------------------
+// GrabFood and ShopeeFood are not confirmed for any shop, so they are left out.
 // Days use JavaScript's numbering: 0 Minggu, 1 Senin, ... 5 Jumat, 6 Sabtu.
 
 export const shops = [
@@ -73,8 +74,6 @@ export const shops = [
     ),
     mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
     gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
-    grabfoodUrl: null, // unconfirmed
-    shopeefoodUrl: null, // unconfirmed
   },
   {
     id: "sayang",
@@ -84,8 +83,6 @@ export const shops = [
     hours: tbc({ default: ["12:00", "22:00"], byDay: {} }, "Jam toko ini belum dicek"),
     mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
     gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
-    grabfoodUrl: null,
-    shopeefoodUrl: null,
   },
   {
     id: "toko-3",
@@ -95,13 +92,10 @@ export const shops = [
     hours: tbc({ default: ["12:00", "22:00"], byDay: {} }, "Jam toko ini belum dicek"),
     mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
     gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
-    grabfoodUrl: null,
-    shopeefoodUrl: null,
   },
 ];
 
 export const visit = {
-  opensAt: "12:00",
   busiest: "sekitar jam 5 sore",
   payment: ["Tunai", "QRIS"],
 };

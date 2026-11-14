@@ -83,6 +83,9 @@ test("missing or wrong fields are caught", () => {
   const zero = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 0 }] }, NOW);
   assert.ok(zero.errors.some((e) => e.message === "Jumlah minimal 1"));
 
+  const half = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 1.5 }] }, NOW);
+  assert.deepEqual(half.errors.map((e) => e.message), ["Jumlahnya harus angka bulat"]);
+
   const huge = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 500 }] }, NOW);
   assert.ok(huge.errors.some((e) => e.message.startsWith("Maksimal")));
 });
@@ -91,6 +94,7 @@ test("outside shop hours only warns, since hours are not confirmed", () => {
   const friday = checkOrder({ ...good, date: "2026-11-20", time: "13:00" }, NOW); // Cikeruh opens 14:00 on Friday
   assert.ok(friday.ok);
   assert.deepEqual(friday.warnings.map((w) => w.message), ["Toko ini biasanya buka 14.00–22.00"]);
+  assert.equal(friday.warnings[0].tbc, true, "unconfirmed hours must be marked on the page");
   assert.deepEqual(checkOrder(good, NOW).warnings, []);
 });
 

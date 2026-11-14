@@ -11,7 +11,7 @@
 //   notes: "buat acara himpunan",
 // }
 
-import { WHATSAPP_NUMBER, drinks, order as orderRules, shops, sizes, val } from "./data.mjs";
+import { WHATSAPP_NUMBER, drinks, isTbc, order as orderRules, shops, sizes, val } from "./data.mjs";
 
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const MONTH_NAMES = [
@@ -122,7 +122,9 @@ export function checkOrder(order, now = new Date()) {
       errors.push({ field: `line-${i}`, message: `${findDrink(l.drinkId)?.name || "Minuman ini"} tidak ada ukuran ${l.size} oz` });
     }
     const qty = Number(l.qty);
-    if (l.drinkId && (!Number.isInteger(qty) || qty < 1)) {
+    if (l.drinkId && !Number.isInteger(qty)) {
+      errors.push({ field: `line-${i}`, message: "Jumlahnya harus angka bulat" });
+    } else if (l.drinkId && qty < 1) {
       errors.push({ field: `line-${i}`, message: "Jumlah minimal 1" });
     } else if (qty > orderRules.maxQtyPerLine) {
       errors.push({ field: `line-${i}`, message: `Maksimal ${orderRules.maxQtyPerLine} gelas per baris` });
@@ -148,7 +150,12 @@ export function checkOrder(order, now = new Date()) {
   if (shop && date && t != null) {
     const h = hoursOn(shop, order.date);
     if (h && (t < minutes(h[0]) || t > minutes(h[1]))) {
-      warnings.push({ field: "time", message: `Toko ini biasanya buka ${clock(h[0])}–${clock(h[1])}` });
+      // `tbc`/`note` tell the page to mark this, since the hours come from unconfirmed data.
+      warnings.push({
+        field: "time",
+        message: `Toko ini biasanya buka ${clock(h[0])}–${clock(h[1])}`,
+        ...(isTbc(shop.hours) ? { tbc: true, note: shop.hours.note } : {}),
+      });
     }
   }
 

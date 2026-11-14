@@ -8,8 +8,7 @@
 //
 // Facts here come from Arqila's research, plus a few read on the shop's own pages
 // (Instagram, TikTok, Linktree) and Google Maps on 2026-11-14: each of those has its source
-// in a comment beside it. Do not add facts that are not in them
-// (no revenue, no "source of money" story, no farm or Mount Malabar link).
+// in a comment beside it. Do not add facts that are not in them; see the Rules in AGENTS.md.
 
 /** Marks a value the owner still has to confirm. */
 export function tbc(value, note) {
@@ -83,7 +82,7 @@ export const shops = [
     id: "cikeruh",
     // The shop names its outlets by landmark ("depan MST", "depan Griya", "depan Ikopin"): IG post 2026-05-01.
     name: "Susu Malabar depan MST",
-    area: "Cikeruh",
+    area: "Cikeruh", // Google Maps listing (the IG bio calls it "Sayang (Depan MST juice)"); not shown on the page
     // "Depan MST". Google Maps lists this shop as No.27; the shop's own post says 18A.
     address: "Jl. Kolonel Achmad Syam No. 18A", // IG post 2026-05-01 (outlet list), read 2026-11-14
     hours: { default: ["12:00", "22:00"], byDay: {} }, // "12.00-22.00 (Open Every Day)": IG bio + IG post 2026-05-01 + TikTok bio, read 2026-11-14
@@ -96,7 +95,7 @@ export const shops = [
     name: "Susu Malabar depan Griya",
     // The shop is on the main road in front of Griya, not on Jl. Sayang. IG bio: "Caringin (depan Griya)";
     // Google Maps puts it in Sayang. Read 2026-11-14.
-    area: "Sayang",
+    area: "Sayang", // Google Maps (the IG bio calls it "Caringin (depan Griya)"); not shown on the page
     address: "Jl. Raya Jatinangor No. 71", // IG post 2026-05-01 (outlet list), read 2026-11-14
     hours: { default: ["12:00", "22:00"], byDay: {} }, // "12.00-22.00 (Open Every Day)": IG bio + IG post 2026-05-01 + TikTok bio, read 2026-11-14
     mapUrl: "https://maps.app.goo.gl/My2KHVXut6Hfn3196", // Google Maps button on the shop's Linktree, read 2026-11-14

@@ -83,3 +83,9 @@ MST" (the only photo has faces covered with squares, so that shop shows none).
 - Instagram highlights (DELIVERY, MENU, Locations): need a login, not opened.
 - Customer photos on Google Maps: not downloaded.
 - GoFood store page: a captcha both in the headless browser and the preview browser, not passed.
+
+## Linktree (reference)
+
+| File | What it shows | Source | Read |
+|---|---|---|---|
+| `docs/reference/linktree-2026-11-14.png` | The shop's Linktree: "Hubungi kami" goes to `wa.me/+6285161778995` (the pre-order number in `src/data.mjs`), "Gofood" goes to the one GoFood store in `src/data.mjs` | https://linktr.ee/malabar.milkbar (linked from the Instagram bio) | 2026-11-14 |

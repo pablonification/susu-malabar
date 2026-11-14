@@ -581,9 +581,9 @@ test("pink is an accent: no band, no way in, and one colour for the buttons that
 });
 
 test("the form: one red frame, and the page's two columns", () => {
-  // One weight for every field with a problem, with focus or without.
+  // One weight for every field with a problem; with keyboard focus it keeps a visible ring in the same red.
   assert.match(css, /input\[aria-invalid="true"\],\s*select\[aria-invalid="true"\],\s*\.seg\[aria-invalid="true"\] \{[^}]*outline: 1\.5px solid var\(--danger\)/);
-  assert.doesNotMatch(css, /aria-invalid="true"\]:focus-visible/, "a field with a problem gets a thicker frame with focus");
+  assert.match(css, /input\[aria-invalid="true"\]:focus-visible,\s*select\[aria-invalid="true"\]:focus-visible \{[^}]*outline-width: var\(--line-strong\)/, "keyboard users lose the focus ring on a field with a problem");
   // The form's columns are the page's columns, so its right half starts under the photo.
   assert.match(css, /\.form,\s*\.send \{\s*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
 });

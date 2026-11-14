@@ -1,5 +1,5 @@
 // Takes the pictures of the site: whole page at desktop and phone width, the
-// link-preview image (public/og.png) from dist/og-card.html, and the home-screen
+// link-preview image (public/og.jpg) from dist/og-card.html, and the home-screen
 // icon (public/apple-touch-icon.png) from dist/favicon.svg.
 //   npm run shots                 -> docs/screenshots/
 //   npm run shots -- --out <dir>  -> another folder (e.g. for a review round)
@@ -11,7 +11,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { build } from "../build.mjs";
-import { token } from "../src/page.mjs";
+import { OG_IMAGE, token } from "../src/page.mjs";
 
 const root = join(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -142,8 +142,10 @@ try {
   const res = await page.goto(`${base}/og-card.html`).catch(() => null);
   if (res?.ok()) {
     await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({ path: join(root, "public/og.png") });
-    console.log(join(root, "public/og.png"));
+    // A JPEG, not a PNG: the photo in it made the PNG over 500 KB, and WhatsApp shows no
+    // picture for a preview image much over 300 KB.
+    await page.screenshot({ path: join(root, "public", OG_IMAGE), type: "jpeg", quality: 82 });
+    console.log(join(root, "public", OG_IMAGE));
   }
   await ctx.close();
 } finally {

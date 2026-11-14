@@ -102,7 +102,9 @@ The dark green field. Teal walls and stools. Chalk doodles on the menu.
 ## Use on the site:
 
 - Dark poster green `#184A44` as the main dark, banner teal `#0D6867` and wall teal
-  `#2D9072` as the shop colours, badge pink `#F784C5` for strawberry and the order.
+  `#2D9072` as the shop colours. One pink, as an accent: the petal coral `#F39E8D` of the
+  Instagram feed, for strawberry and for what is in the order. The hot TikTok badge pink
+  `#F784C5` stays on the tab icon only: in big blocks it is not how the feed looks.
 - The real badge in one colour (`logo-badge.svg`, PNG when it is small), black on white like
   the cups.
 - Real photos: strawberry milk first, each shop's front on its card, the Griya counter with

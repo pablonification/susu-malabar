@@ -41,15 +41,16 @@ with the address written on it, so they get the strongest lift.
 | Cut | From | Where on the page |
 | --- | --- | --- |
 | `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card |
-| `lid` | `strawberry-milk-topdown`, the lid as a square | The best seller's strip on the menu |
-| `corndog` | `corndog-fryer`, a wide strip | Over "Teman minum" on the menu |
-| `pickup` | `counter-griya-wide`, left two thirds (the "PICK UP HERE" sign) | "Mau pesan lewat mana?" |
+| `cup` | `strawberry-milk-2`, a square close on the cup and the hand | The best seller's strip on the menu |
+| `corndog` | `corndog-fryer`, a square close on the corndog | A small square under "Teman minum" on the menu |
+| `pickup` | `counter-griya-wide`, whole (the "PICK UP HERE" sign, both people serving, the customer's head not cut) | "Mau pesan lewat mana?" |
 | `toko-griya` | `shop-front-griya`, whole, lifted | The shop "depan Griya" |
 | `toko-ikopin` | `shop-front-ikopin`, whole, lifted | The shop "depan Ikopin" |
-| `bungkus` | `staff-griya`, whole | Over the pre-order form |
+| `bungkus` | `staff-griya`, the left two thirds: one person and the cups. The second person, cut in half by the frame's right edge in the original, is left out. His hair touches the top edge in the original too, so that stays. | Over the pre-order form |
 | `kedai` | `counter-griya`, whole | The story |
 
-Not on the page: `strawberry-milk-1` (too soft to show large), the two promo posters (old
+Not on the page: `strawberry-milk-1` (too soft, even small), `strawberry-milk-topdown` (the lid
+alone: no cup, and soft), the two promo posters (old
 promos, and one names prices the owner has not confirmed), and a front of the shop "depan
 MST" (the only photo has faces covered with squares, so that shop shows none).
 

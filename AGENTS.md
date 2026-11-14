@@ -9,7 +9,7 @@ Plain HTML, CSS and a little JavaScript, built by `build.mjs` with no packages.
 - `src/order.mjs`: the pre-order form's logic with no DOM (check, message, wa.me link). Tested in
   `test/order.test.mjs`. `src/pick.mjs`: what a tap on the menu adds (which size, which row).
 - `src/page.mjs`: the page template. `src/card.mjs`: the link-preview card (photographed to
-  `public/og.png`). `src/favicon.mjs`: the tab icon, drawn from the logo file at build time.
+  `public/og.jpg`). `src/favicon.mjs`: the tab icon, drawn from the logo file at build time.
 - `src/photos.mjs`: every photo on the page (which original, the crop, the sizes, the alt text) and
   which shop or drink it belongs to. `scripts/photos.mjs` (`npm run photos`) cuts them from
   `public/assets/real/` into `public/assets/photos/`. Originals are never edited and not shipped.
@@ -18,7 +18,7 @@ Plain HTML, CSS and a little JavaScript, built by `build.mjs` with no packages.
 - `docs/brand-notes.md`: how the shop's own posts look and sound. Read it before changing the design.
 
 Commands: `npm run dev` (http://localhost:4321), `npm run build` (into `dist/`), `npm test`,
-`npm run shots` (pictures into `docs/screenshots/`, `public/og.png` and `public/apple-touch-icon.png`),
+`npm run shots` (pictures into `docs/screenshots/`, `public/og.jpg` and `public/apple-touch-icon.png`),
 `npm run photos` (only after changing a photo or its crop).
 
 ## Rules
@@ -29,7 +29,8 @@ Commands: `npm run dev` (http://localhost:4321), `npm run build` (into `dist/`),
   bigger than the original, never retouched or generated, no words over a photo, one treatment
   for all (square corners, edge to edge on a phone). No photo grid of equal squares, no slideshow.
 - Two voices, one per band of the page: the heavy sans (menu, order) and the serif italic (shops,
-  story, quotes). Pink means strawberry and the visitor's order, nothing else.
+  story, quotes). Pink means strawberry and the visitor's order, nothing else: it is an accent,
+  never a whole band, and never a way in (those buttons are black).
 - No AI-made look: no gradient hero, glassy pills, purple or indigo, emoji as icons, stock marketing
   lines, three identical cards in a row, tiny all-caps labels with wide spacing, a badge on
   everything, decoration with no job, a grey box around everything, a sentence explaining the

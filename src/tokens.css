@@ -40,7 +40,7 @@
   --text-h3: 1.75rem;
   --text-h2: 2.5rem;
   --text-h1: clamp(3rem, 15.4vw, 4.5rem); /* wider screens set their own below */
-  --text-figure: 4.5rem; /* the one big number: the Google rating */
+  --h1-leading: 1.04; /* tight, but the g of "segar," clears the l of "asli" under it */
   --text-price: 1.375rem;
   --text-total: 1.625rem; /* the order's total above the send button */
   --text-promo: 3.25rem; /* a running promo's price */
@@ -70,22 +70,30 @@
   --danger: #a8261c;
   --notice: #7a4b00;
 
-  /* The badge as the shop wears it on TikTok: green drawing, strawberry pink ground. */
+  /* The badge on the page: black on white, as printed on the cups and worn on Instagram. */
+  --badge-ground: var(--field);
+  --badge-ink: var(--ink);
+  /* The badge as the shop wears it on TikTok: green drawing, hot pink ground. Only the
+     tab icon and the home-screen icon use these. On the page that pink is too loud. */
   --badge-pink: #f784c5;
   --badge-green: #1b612f;
 
-  /* The best seller's strip on the menu. */
-  --flavor-strawberry: var(--badge-pink);
+  /* The soft pink of the petals on the shop's "Kami ada di mana?" post: the pink its
+     Instagram feed really uses, on this same dark green. On the page it is an accent
+     with two meanings and no others. */
+  --petal: #f39e8d;
+
+  /* Strawberry: the best seller's strip on the menu. */
+  --flavor-strawberry: var(--petal);
   --flavor-strawberry-ink: var(--ink);
 
-  /* What is in your order: the cups you added, the size and shop you picked, the total,
-     and every way into the pre-order form. It borrows the strawberry pink. */
+  /* What is in your order: the cups you added, the size and shop you picked, the total. */
   --order: var(--flavor-strawberry);
   --order-ink: var(--flavor-strawberry-ink);
 
   /* --- Placeholder mark (values the owner has not confirmed, tbc() in data.mjs).
-     One amber dot after the value, the same size and colour everywhere. On a light
-     ground it gets a dark edge so it stays visible.
+     One amber dot with a dark edge after the value: the same size, colour and edge
+     everywhere. It takes no room, so nothing moves when a value is confirmed.
      Set --tbc-mark to 0 to hide every mark at once. */
   --tbc-mark: 1;
   --tbc-dot: #f2b84b;
@@ -130,7 +138,6 @@
 @media (min-width: 56rem) {
   :root {
     --text-h1: clamp(4rem, 6.1vw, 5.5rem);
-    --text-figure: 6rem;
   }
 }
 

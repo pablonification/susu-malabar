@@ -54,7 +54,6 @@ h2,
 h3,
 .logo-name,
 .way-name,
-.rating strong,
 .foot-name {
   font-family: var(--font-display);
   font-weight: var(--display-weight);
@@ -135,23 +134,24 @@ small {
 
 /* --- Placeholder mark ---------------------------------------------------------
    Every value still wrapped in tbc() in data.mjs gets one small amber dot after it,
-   level with the top of its letters: the same dot on a price, an address, a heading
-   or a button. No line under anything, so nothing marked reads as a link. The dot is
-   drawn, not typed, so a screen reader says nothing for it. Hide all of them by
-   setting --tbc-mark to 0 in tokens.css. */
+   level with the top of its letters: the same dot, with the same dark edge, on a price,
+   an address, a heading or a button, on every ground. It hangs after the value and
+   takes no room, so a button is as wide with it as without, and nothing moves on the
+   day a value is confirmed. No line under anything, so nothing marked reads as a link.
+   The dot is drawn, not typed, so a screen reader says nothing for it. Hide all of them
+   by setting --tbc-mark to 0 in tokens.css. */
 .tbc {
   position: relative;
-  padding-right: calc(var(--tbc-size) * 1.4 * var(--tbc-mark)); /* room for the dot, which never wraps alone */
 }
 
 .tbc::after {
   content: "";
   position: absolute;
-  right: 0;
+  right: calc(var(--tbc-size) * -1.3);
   bottom: calc(0.9em - var(--tbc-size));
   width: calc(var(--tbc-size) * var(--tbc-mark));
   height: calc(var(--tbc-size) * var(--tbc-mark));
-  border: calc(1.5px * var(--tbc-mark)) solid var(--tbc-edge, var(--ink));
+  border: calc(1.5px * var(--tbc-mark)) solid var(--ink);
   border-radius: 50%;
   background: var(--tbc-dot);
 }
@@ -169,7 +169,6 @@ small {
   --fg: var(--poster-ink);
   --muted: var(--poster-muted);
   --rule: var(--poster-line);
-  --tbc-edge: var(--tbc-dot); /* on a dark ground the dot needs no edge */
 }
 
 .band-banner {
@@ -177,7 +176,6 @@ small {
   --fg: var(--banner-ink);
   --muted: var(--banner-muted);
   --rule: var(--banner-line);
-  --tbc-edge: var(--tbc-dot);
 }
 
 .band-paper {
@@ -185,7 +183,6 @@ small {
   --fg: var(--ink);
   --muted: var(--paper-muted);
   --rule: var(--paper-line);
-  --tbc-edge: var(--ink);
 }
 
 .band-ink {
@@ -193,7 +190,6 @@ small {
   --fg: var(--paper);
   --muted: var(--paper-line);
   --rule: var(--ink-line);
-  --tbc-edge: var(--tbc-dot);
 }
 
 .wrap {
@@ -267,12 +263,14 @@ small {
   transform: scale(0.97);
 }
 
+/* The button that takes the order one step on: black with the cup's white, the same
+   wherever it sits (the jump links, the order bar, the end of the form). */
 .btn-fill,
-.btn-send {
-  background: var(--fg);
-  border-color: var(--fg);
-  color: var(--bg);
-  --tbc-edge: var(--tbc-dot);
+.btn-send,
+.jump-go span {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 
 .link {
@@ -318,8 +316,8 @@ small {
   width: var(--badge-size);
   height: var(--badge-size);
   border-radius: 50%;
-  background: var(--badge-pink);
-  color: var(--badge-green);
+  background: var(--badge-ground);
+  color: var(--badge-ink);
 }
 
 .logo-mark {
@@ -346,7 +344,7 @@ small {
 h1 {
   margin-top: var(--space-5);
   font-size: var(--text-h1);
-  line-height: 0.92;
+  line-height: var(--h1-leading);
   text-wrap: balance;
 }
 
@@ -355,7 +353,7 @@ h1 {
    on a short phone and up to its full 4:3 on a tall one. */
 .hero-photo {
   height: 60vw; /* for a browser that doesn't know the line below */
-  height: clamp(9rem, calc(100svh - 14.5rem - var(--text-h1) * 1.84), 75vw);
+  height: clamp(9rem, calc(100svh - 14.5rem - var(--text-h1) * var(--h1-leading) * 2), 75vw);
   margin-top: var(--space-5);
 }
 
@@ -406,16 +404,30 @@ h1 {
   outline-offset: -4px;
 }
 
-/* The way into the order wears the order's pink, here as everywhere. */
+/* The way into the order is a button, black like the one that sends it. Not the order's
+   pink: right above the size switch, pink would read as "this tab is picked". */
 .jump a.jump-go {
+  padding: 0 var(--gutter) 0 var(--space-2);
   border-left: 0;
-  background: var(--order);
-  color: var(--order-ink);
 }
 
 .jump-go span {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  border-radius: var(--radius-control);
+}
+
+/* The button wears its own ring. */
+.jump a.jump-go:focus-visible {
+  outline: 0;
+}
+
+.jump-go:focus-visible span {
+  outline: var(--line-strong) solid var(--fg);
+  outline-offset: 2px;
 }
 
 /* --- A running promo: the shop's black promo poster, as a strip -------------------- */
@@ -475,8 +487,9 @@ h1 {
 }
 
 .menu {
-  --col-price: 5.4rem;
+  --col-price: 5.2rem;
   --col-add: 2rem;
+  --row: 3.5rem; /* one height for every row of the menu */
   --bleed: var(--gutter);
 }
 
@@ -496,8 +509,21 @@ h1 {
 /* A drink with its own prices: name, a price per size, the plus. */
 .cols {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--col-price) var(--col-price) var(--col-add);
+  grid-template-columns: minmax(0, 1fr) auto var(--col-add);
   align-items: center;
+}
+
+/* The prices of one row, a column per size, and the room after them where the row's
+   one dot hangs. A column's name sits over the middle of its prices. */
+.prices {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--col-price);
+  margin-right: var(--space-3);
+}
+
+.prices > * {
+  text-align: center;
 }
 
 /* A group's name. Over rows with their own prices, the header also names the price columns. */
@@ -512,16 +538,6 @@ h1 {
   font-weight: 600;
 }
 
-/* A column's name ends where its prices end: before the room their dots take. */
-.grp-head .size {
-  padding-right: calc(var(--tbc-size) * 1.4 * var(--tbc-mark));
-  text-align: right;
-}
-
-.grp-head .size:not(.price-off) {
-  font-weight: 800;
-}
-
 .price {
   text-align: right;
   font-size: 0.9375rem;
@@ -529,17 +545,22 @@ h1 {
   white-space: nowrap;
 }
 
+/* Both sizes are for sale, so both prices are at full strength. Only the weight says
+   which one a tap adds. */
+.price-off,
+.grp-head .size.price-off {
+  font-weight: 400;
+}
+
+.grp-head .size {
+  font-weight: 800;
+}
+
 .price-all {
   font-size: var(--text-price);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
-}
-
-/* The price of the size a tap would not add steps back. */
-.price-off {
-  font-weight: 400;
-  color: var(--muted);
 }
 
 .picks {
@@ -562,7 +583,7 @@ h1 {
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  min-height: var(--tap-big);
+  min-height: var(--row);
   padding: var(--space-2) 0;
   border: 0;
   background: none;
@@ -602,9 +623,11 @@ h1 {
   font-size: var(--text-small);
 }
 
-/* The best seller: a strip of strawberry pink across the poster, its photo flush to
-   the strip's edge like a tile. */
+/* The best seller: a strip of strawberry pink across the poster, and the menu's one big
+   picture, flush to the strip's edge like a tile. The photo fills the strip's height
+   however many lines the words take. */
 .pick-best {
+  align-items: stretch;
   width: calc(100% + var(--bleed) * 2);
   margin-inline: calc(var(--bleed) * -1);
   padding: 0 var(--bleed) 0 0;
@@ -617,14 +640,28 @@ h1 {
 
 .pick-photo {
   flex: none;
-  width: 7rem;
+  position: relative;
+  width: 9rem;
+  min-height: 9rem;
+}
+
+.pick-photo img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  object-fit: cover;
 }
 
 .pick-words {
+  align-self: center;
   display: grid;
   gap: var(--space-1);
   min-width: 0;
   padding-block: var(--space-3);
+}
+
+.pick-best .pick-n {
+  align-self: center;
 }
 
 .pick-best .pick-name {
@@ -662,20 +699,35 @@ h1 {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-4);
-  min-height: var(--tap-big);
+  min-height: var(--row);
   padding-block: var(--space-2);
   font-weight: 600;
   line-height: 1.25;
 }
 
-/* The snack, straight out of the fryer, over the list it belongs to. */
-.snack {
-  padding-bottom: var(--space-3);
+/* The snack, straight out of the fryer: a small square on its own row, so the menu's
+   big picture stays a drink. */
+/* The room after a price where its dot hangs, the same as after a drink's prices. */
+.extra .price {
+  margin-right: var(--space-3);
 }
 
-.snack img {
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+/* The snack, straight out of the fryer: a small square beside the shop's line about it,
+   so the menu's big picture stays a drink. */
+.snack {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+}
+
+.snack .photo {
+  flex: none;
+  width: 5rem;
+}
+
+.snack .cap {
+  margin-top: 0;
 }
 
 /* --- Ways to order: by the white cup ---------------------------------------------- */
@@ -743,26 +795,26 @@ h1 {
   --tbc-mark: 0;
 }
 
-.shops {
+.shops-in {
   display: grid;
-  gap: var(--space-7);
+  gap: var(--space-6);
+}
+
+/* Every shop is the same row: its name, its street, its map. */
+.shops {
   margin-top: var(--space-5);
+  border-top: var(--line-strong) solid var(--fg);
 }
 
 .shop {
   display: grid;
-  gap: var(--space-4);
-  align-content: start;
-  padding-top: var(--space-4);
-  border-top: var(--line) solid var(--rule);
-}
-
-.shop:first-child {
-  border-top: var(--line-strong) solid var(--fg);
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  border-bottom: var(--line) solid var(--rule);
 }
 
 .shop h3 {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   font-size: var(--text-quiet-h3);
   line-height: 1;
 }
@@ -777,19 +829,30 @@ h1 {
   gap: var(--space-2);
 }
 
-/* On a phone the shop's front comes first, with its name right under it. */
-.shop-photo {
-  order: -1;
+/* The mark on a button hangs in the gap before its arrow. */
+.shop-go .btn {
+  gap: 0.875rem;
 }
 
-.shop:has(.shop-photo) {
-  padding-top: 0;
-  border-top: 0;
+/* The shops' fronts, each under its shop's name: a set beside the list, so a shop with
+   no photo yet leaves no gap in it. */
+.fronts {
+  display: grid;
+  gap: var(--space-5);
 }
 
-/* --- Pre-order: the order's pink on top, the form on the white of the cup ----------- */
+@media (min-width: 30rem) {
+  .shop {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--space-4);
+  }
+}
 
-/* A jump to the form lands on its pink title, with the photo above it already scrolled
+/* --- Pre-order: the black of the shop's promo posters on top, the form on the white of
+   the cup. Pink here is only what is in the order: the size and shop picked, the total. */
+
+/* A jump to the form lands on its title, with the photo above it already scrolled
    past: whoever taps "Pre-order" wants the fields. --head-photo is the photo's height
    over its width, set on the section by page.mjs. */
 #pesan {
@@ -797,9 +860,10 @@ h1 {
 }
 
 .order-head {
-  --bg: var(--order);
-  --fg: var(--order-ink);
-  --rule: var(--order-ink);
+  --bg: var(--ink);
+  --fg: var(--paper);
+  --muted: var(--paper-line);
+  --rule: var(--ink-line);
   background: var(--bg);
   color: var(--fg);
 }
@@ -893,21 +957,26 @@ textarea {
   text-overflow: ellipsis;
 }
 
-.select::after {
+.select::after,
+.preview summary::after {
   content: "";
-  position: absolute;
-  top: 50%;
-  right: var(--space-3);
   width: 0.5rem;
   height: 0.5rem;
   border: solid currentColor;
   border-width: 0 2px 2px 0;
   transform: translateY(-70%) rotate(45deg);
+}
+
+.select::after {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
   pointer-events: none;
 }
 
-/* A field with a problem: one red frame. With focus the same frame gets thicker,
-   so there is never a black ring around a red one. */
+/* A field with a problem: one red frame of one weight, on a field and on a switch
+   alike, with focus or without. So there is never a black ring around a red one, and
+   no field looks more wrong than another. */
 input[aria-invalid="true"],
 select[aria-invalid="true"],
 .seg[aria-invalid="true"] label > span {
@@ -915,16 +984,25 @@ select[aria-invalid="true"],
 }
 
 input[aria-invalid="true"],
-select[aria-invalid="true"] {
+select[aria-invalid="true"],
+.seg[aria-invalid="true"] {
   outline: 1.5px solid var(--danger);
   outline-offset: 0;
 }
 
-input[aria-invalid="true"]:focus-visible,
-select[aria-invalid="true"]:focus-visible,
+.seg[aria-invalid="true"] {
+  border-radius: var(--radius-control);
+}
+
 .seg[aria-invalid="true"] input:focus-visible + span {
-  outline: var(--line-strong) solid var(--danger);
-  outline-offset: 0;
+  outline-color: var(--danger);
+}
+
+/* Focus still shows on a field with a problem: the same red, drawn as the focus ring. */
+input[aria-invalid="true"]:focus-visible,
+select[aria-invalid="true"]:focus-visible {
+  outline-width: var(--line-strong);
+  outline-offset: 2px;
 }
 
 .err,
@@ -978,7 +1056,7 @@ select[aria-invalid="true"]:focus-visible,
 .line-end {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-5); /* the sum's dot hangs in this gap */
   min-height: var(--tap);
   margin-left: auto;
   font-size: 1rem;
@@ -1058,7 +1136,6 @@ select[aria-invalid="true"]:focus-visible,
   position: relative;
   background: var(--order);
   color: var(--order-ink);
-  --tbc-edge: var(--ink);
 }
 
 .seg input:focus-visible + span {
@@ -1187,11 +1264,24 @@ select[aria-invalid="true"]:focus-visible,
   color: var(--muted);
 }
 
+/* "Lihat pesan" opens like the drink list does: the same small arrow, turned up once open. */
 .preview summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   width: fit-content;
-  padding-block: var(--space-3);
+  min-height: var(--tap);
   font-weight: 600;
+  list-style: none;
   cursor: pointer;
+}
+
+.preview summary::-webkit-details-marker {
+  display: none;
+}
+
+.preview[open] summary::after {
+  transform: translateY(20%) rotate(225deg);
 }
 
 .bubble {
@@ -1221,27 +1311,17 @@ select[aria-invalid="true"]:focus-visible,
   margin-top: var(--space-4);
 }
 
-/* The one big number on the page, then what reviewers wrote, as they wrote it. */
+/* What Google says, as one plain line, then what reviewers wrote, as they wrote it. */
 .reviews {
   padding-top: var(--space-5);
   border-top: var(--line-strong) solid var(--fg);
 }
 
 .rating {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  line-height: 1.25;
-}
-
-.rating strong {
-  font-size: var(--text-figure);
-  line-height: 0.85;
-}
-
-.rating span {
-  max-width: 9rem;
-  font-weight: 600;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
 .reviews blockquote {
@@ -1251,7 +1331,7 @@ select[aria-invalid="true"]:focus-visible,
 }
 
 .rating + blockquote {
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .reviews blockquote + blockquote {
@@ -1308,7 +1388,6 @@ select[aria-invalid="true"]:focus-visible,
 .bar {
   --bg: var(--order);
   --fg: var(--order-ink);
-  --tbc-edge: var(--ink);
   position: fixed;
   inset: auto 0 0 0;
   z-index: 3;
@@ -1345,7 +1424,7 @@ select[aria-invalid="true"]:focus-visible,
 
 @media (max-width: 23.5rem) {
   .menu {
-    --col-price: 5.15rem;
+    --col-price: 4.7rem;
     --col-add: 1.75rem;
   }
 
@@ -1364,7 +1443,8 @@ select[aria-invalid="true"]:focus-visible,
   }
 
   .pick-photo {
-    width: 6rem;
+    width: 7.5rem;
+    min-height: 7.5rem;
   }
 
   /* A drink in the order keeps to two lines: the amount's parts sit a little closer. */
@@ -1375,6 +1455,10 @@ select[aria-invalid="true"]:focus-visible,
   .qty button[data-step="10"] {
     margin-left: var(--space-1);
   }
+
+  .line-end {
+    gap: var(--space-4);
+  }
 }
 
 /* --- Narrowest phones: one flavour per row, so long names keep their plus on screen -- */
@@ -1384,9 +1468,15 @@ select[aria-invalid="true"]:focus-visible,
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .pick-best {
+    gap: var(--space-3);
+  }
+
+  /* The size names step down a little, so they keep clear of their frames. */
   .line .seg label > span {
     min-width: 3.25rem;
     padding-inline: var(--space-1);
+    font-size: 0.9375rem;
   }
 
   /* The arrow moves in a little, so the longest drink name still fits its field. */
@@ -1398,10 +1488,10 @@ select[aria-invalid="true"]:focus-visible,
     right: var(--space-2);
   }
 
-  /* The amount's buttons and the row's sum give up a little width each, so the sum
-     and "Hapus" stay on the amount's line. */
+  /* A drink stays on two lines: the amount's buttons give up a little width each, so
+     the row's sum and "Hapus" sit on the amount's line. */
   .qty button {
-    width: 2.5rem;
+    width: 2.25rem;
   }
 
   .qty input {
@@ -1409,7 +1499,7 @@ select[aria-invalid="true"]:focus-visible,
   }
 
   .line-end {
-    gap: var(--space-2);
+    gap: 0.875rem;
     font-size: var(--text-small);
   }
 }
@@ -1431,6 +1521,11 @@ select[aria-invalid="true"]:focus-visible,
     aspect-ratio: 4 / 3;
   }
 
+  /* The shops' fronts sit side by side while the page is one column wide. */
+  .fronts {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
   /* The pink band keeps its photo inside it, and a jump lands on the band's top. */
   .band-photo#pesan {
     padding-top: 0;
@@ -1441,14 +1536,6 @@ select[aria-invalid="true"]:focus-visible,
     padding-top: var(--space-6);
   }
 
-  .shop:has(.shop-photo) {
-    padding-top: var(--space-4);
-    border-top: var(--line) solid var(--rule);
-  }
-
-  .shop-photo {
-    order: 0;
-  }
 }
 
 /* --- Wider screens ---------------------------------------------------------------- */
@@ -1511,25 +1598,10 @@ select[aria-invalid="true"]:focus-visible,
   .jump a.jump-go {
     margin-left: auto;
     padding-inline: 0;
-    background: none;
-  }
-
-  /* The pill wears its own ring. */
-  .jump a.jump-go:focus-visible {
-    outline: 0;
-  }
-
-  .jump-go:focus-visible span {
-    outline: var(--line-strong) solid var(--fg);
-    outline-offset: 2px;
   }
 
   .jump-go span {
-    min-height: 2.25rem;
     padding-inline: var(--space-4);
-    border-radius: var(--radius-control);
-    background: var(--order);
-    color: var(--order-ink);
   }
 
   #menu {
@@ -1540,53 +1612,24 @@ select[aria-invalid="true"]:focus-visible,
      with a price of its own. */
   .menu {
     --bleed: var(--space-3);
-    --col-price: 6.25rem;
+    --col-price: 5.75rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
+    align-items: start;
   }
 
   .pick-photo {
-    width: 8rem;
+    width: 11rem;
+    min-height: 11rem;
   }
 
   .price {
     font-size: 1rem;
   }
 
-  .menu-col,
-  .menu-col > .grp {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .menu-col > .grp {
-    flex: 1 0 auto;
-  }
-
   .menu-col > .grp:last-child {
     padding-bottom: 0;
-  }
-
-  /* The shorter poster gives its rows the few spare pixels, so both end on the same line. */
-  .grp > .rows,
-  .grp > .picks {
-    flex: 1;
-  }
-
-  .grp > .rows {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .grp > .rows > li {
-    flex: 1 0 auto;
-  }
-
-  .grp > .rows > li,
-  .grp > .picks > li {
-    display: grid;
-    align-items: center;
   }
 
   /* The counter left, the three ways right. */
@@ -1596,45 +1639,25 @@ select[aria-invalid="true"]:focus-visible,
     align-items: center;
   }
 
-  /* A list of shops, one per row: name and street, the map, then the shop's front where
-     there is a photo of it. */
-  .shops {
-    gap: 0;
+  /* The list of shops left, their fronts right. */
+  .shops-in {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
+    align-items: start;
   }
 
-  .shop,
-  .shop:has(.shop-photo) {
-    grid-template-columns: minmax(0, 1fr) 11rem 24rem;
-    column-gap: var(--space-6);
-    align-items: center;
-    padding-block: var(--space-5);
-    border-top: var(--line) solid var(--rule);
-  }
-
-  .shop:first-child {
-    border-top: var(--line-strong) solid var(--fg);
-  }
-
-  .shop h3 {
-    margin-bottom: var(--space-1);
-  }
-
-  .shop-go {
-    grid-column: 2;
-  }
-
-  .shop-photo {
-    order: 0;
-    grid-column: 3;
+  .fronts {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .shops-when {
     display: flex;
-    gap: var(--space-5);
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-5);
     align-items: baseline;
   }
 
-  /* The pink band: the words left, the photo right, both inside the band. */
+  /* The black band: the words left, the photo right, both inside the band. */
   .order-head .wrap {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1651,7 +1674,7 @@ select[aria-invalid="true"]:focus-visible,
      the message under the drinks, the total and the send button under the rest. */
   .form,
   .send {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* the page's two columns, like every band */
     column-gap: var(--space-8);
   }
 

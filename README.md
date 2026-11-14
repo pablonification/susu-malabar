@@ -29,6 +29,8 @@ grep -n "tbc(" src/data.mjs
 To see the page without the marks (for a demo), set `--tbc-mark: 0` in `src/tokens.css`.
 The mark is one small amber dot after the value: the same dot on a price, an address, a heading
 or a button, and never a line under it (a line reads as a link). The reason is in the tooltip.
+The dot hangs after the value and takes no room, so nothing moves when a value is confirmed.
+A menu row with two prices wears one dot for both (`markAll()`).
 It comes from one helper, `mark()` in `src/mark.mjs`, and the `.tbc` rules in `src/site.css`.
 The footer counts them. When the owner confirms a value, unwrap it in `src/data.mjs` and its
 mark goes away.
@@ -41,8 +43,9 @@ Two things wait for the real site address (`brand.siteUrl`):
 
 - The page leaves out its canonical link and `og:url` while the address is a placeholder. They
   come back by themselves once it is confirmed.
-- `og:image` already points at `<siteUrl>/og.png`, so link previews show no picture until the
-  real address is in. Check a preview in WhatsApp after that.
+- `og:image` already points at `<siteUrl>/og.jpg`, so link previews show no picture until the
+  real address is in. Check a preview in WhatsApp after that. The picture is a JPEG of about
+  100 KB: WhatsApp shows none for a preview image much over 300 KB, and a test keeps it under.
 
 ## Change the look
 
@@ -51,14 +54,17 @@ where each colour was sampled. Logo, colours, fonts and photos each have one pla
 
 - **Logo:** replace `public/brand/logo.svg`. Today it is the shop's real badge (the drawn shop
   front), traced in one colour. It is put into the page as it is, so `fill="currentColor"`
-  makes it take the colour of where it sits: green on a pink disc at the top (the way the shop
-  wears it on TikTok), black on white in the footer (the way it is on the cups). The tab icon
-  (`dist/favicon.svg`) is drawn from the same file at build time by `src/favicon.mjs`.
+  makes it take the colour of where it sits. On the page it is black on a white disc, the
+  way it is printed on the cups and worn on Instagram. The tab icon (`dist/favicon.svg`) is
+  drawn from the same file at build time by `src/favicon.mjs`, green on pink the way the shop
+  wears it on TikTok.
   `npm run shots` remakes `public/apple-touch-icon.png` and the link-preview image from it.
 - **Colours:** `src/tokens.css`. The names say where a colour comes from in the shop (poster,
-  banner, badge). `--flavor-strawberry` is the best seller's strip on the menu. `--order` (the
-  same pink) marks what is in the visitor's order and every way into the form. The browser bar
-  colour follows `--poster`.
+  banner, badge). `--petal` is the one pink on the page, the soft pink of the petals in the shop's
+  feed. It means two things and nothing else: strawberry (`--flavor-strawberry`, the best
+  seller's strip) and what is in the visitor's order (`--order`: the cups added, the size and
+  shop picked, the total). Buttons that move the order on are black. The browser bar colour
+  follows `--poster`.
 - **Fonts:** two voices, like the shop's feed. `--font-display` and `--font-body` are the loud
   one (Plus Jakarta Sans: headlines, menu, form). `--font-quiet` is the serif italic of the
   location posts (Cormorant Garamond Italic: shop names, the story, review quotes, captions).
@@ -78,7 +84,7 @@ where each colour was sampled. Logo, colours, fonts and photos each have one pla
   drink is at the bottom of the same file (`shopPhotos`, `drinkPhotos`).
 
 Then run `npm run shots` to remake the pictures in `docs/screenshots/`, the link-preview image
-(`public/og.png`, drawn by `src/card.mjs`) and the home-screen icon, and `npm run check`.
+(`public/og.jpg`, drawn by `src/card.mjs`) and the home-screen icon, and `npm run check`.
 `test/site.test.mjs` fails on gradients, blur, shadows, purple, emoji, a font named outside
 `tokens.css`, a photo without its size or files, and any unconfirmed value shown without its mark.
 
@@ -97,7 +103,7 @@ posters. Set it back to `null` when the promo ends.
 
 The menu has one size switch at its top (14 oz or 22 oz). It carries the price of the groups
 that share one (Buah and Rasa), so that price is on the page once. Drinks with their own
-prices show both, and the picked size's column is the bright one. A tap on a drink adds one
+prices show both at full strength, and the picked size's column is the bold one. A tap on a drink adds one
 cup in the picked size. The rules are in `src/pick.mjs` (which size, which row of the form)
 and tested in `test/site.test.mjs`.
 

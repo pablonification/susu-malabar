@@ -24,7 +24,7 @@ import {
   visit,
 } from "./data.mjs";
 import { clock, rupiah } from "./order.mjs";
-import { esc, mark } from "./mark.mjs";
+import { esc, mark, markAll } from "./mark.mjs";
 import { PHOTO_DIR, drinkPhotos, photoSize, photos, shopPhotos } from "./photos.mjs";
 
 const root = join(import.meta.dirname, "..");
@@ -166,7 +166,8 @@ function pick(drink, inner, extraClass = "") {
 
 /**
  * A drink with its own prices. A size it isn't sold in leaves no dash: the name takes
- * that room. The price of the size a tap adds is the bold one.
+ * that room. The price of the size a tap adds is the bold one. The row's prices share
+ * one mark, so no dot sits between two prices like a separator.
  */
 function drinkRow(drink) {
   const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
@@ -174,18 +175,19 @@ function drinkRow(drink) {
   const cell = (s) =>
     drink.prices[s.id] == null
       ? '<span class="price"></span>'
-      : `<span class="price${s === firstSize(drink) ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="sr">${esc(s.label)} </span>${mark(drink.prices[s.id], rupiah)}</span>`;
-  const name = `<span class="row-name"${lead > 0 ? ` style="grid-column: span ${lead + 1}"` : ""}><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}</span> `;
-  return `<li>${pick(drink, name + sizes.slice(lead).map(cell).join(" "), " pick-row cols")}</li>`;
+      : `<span class="price${s === firstSize(drink) ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="sr">${esc(s.label)} </span>${esc(rupiah(val(drink.prices[s.id])))}</span>`;
+  const name = `<span class="row-name"><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}</span> `;
+  const prices = markAll(Object.values(drink.prices), sizes.slice(lead).map(cell).join(" "), "prices");
+  return `<li>${pick(drink, name + prices, " pick-row cols")}</li>`;
 }
 
-/** The best seller's strip: its photo from above, its name, and the shop's own line about it. */
+/** The best seller's strip: the cup in a hand, its name, and the shop's own line about it. The menu's one big picture. */
 function bestPick(drink) {
   const photo = drinkPhotos[drink.id];
   const line = ["Paling laris", photo?.line].filter(Boolean).join(". ");
   return pick(
     drink,
-    `${photo ? picture(photo.photo, { sizes: "7rem", cls: "pick-photo", alt: "" }) : ""}<span class="pick-words"><span class="pick-name">${esc(drink.name)}</span> <span class="pick-tag">${esc(line)}</span></span>`,
+    `${photo ? picture(photo.photo, { sizes: "(min-width: 56rem) 11rem, 9rem", cls: "pick-photo", alt: "" }) : ""}<span class="pick-words"><span class="pick-name">${esc(drink.name)}</span> <span class="pick-tag">${esc(line)}</span></span>`,
     " pick-best",
   );
 }
@@ -217,7 +219,7 @@ function ownSection({ name, list }) {
           <section class="grp">
             <div class="grp-head cols">
               <h3>${esc(name)}</h3>
-              ${sizes.map(head).join("")}
+              <span class="prices">${sizes.map(head).join("")}</span>
             </div>
             <ul class="rows">
               ${list.map(drinkRow).join("")}
@@ -240,6 +242,7 @@ function menu() {
           </div>
           <div class="menu-col">
             ${right.map(ownSection).join("")}
+            ${packs()}
             ${extras()}
           </div>
         </div>`;
@@ -247,28 +250,48 @@ function menu() {
 
 /** How wide a photo shows: the whole phone screen, or one column of the page on a wide screen. */
 const WIDE = "(min-width: 56rem) 32rem, 100vw";
-const SHOP = "(min-width: 56rem) 24rem, 100vw";
+const SHOP = "(min-width: 56rem) 30rem, 100vw";
 
-/** Toppings, snacks and bundles: things with a price that the form doesn't take. */
+/** A row with a price that the form doesn't take: a bundle, a topping, the snacks. `what` is the small line under the name. */
+const extraRow = ([name, what, price]) =>
+  `<li class="extra"><span class="row-name">${name}${what}</span><span class="price">${price}</span></li>`;
+const under = (what) => (what ? ` <small>${what}</small>` : "");
+
+/** Bundles of drinks: with the drinks, above the snacks. */
+function packs() {
+  if (!bundles.length) return "";
+  const rows = bundles.map((b) => [esc(b.name), under(esc(b.what)), b.priceRange ? mark(b.priceRange, range) : mark(b.price, rupiah)]);
+  return `
+          <section class="grp">
+            <div class="grp-head"><h3>Paket</h3></div>
+            <ul class="rows">
+              ${rows.map(extraRow).join("")}
+            </ul>
+          </section>`;
+}
+
+/** Snacks and toppings. The snack's photo is a small square beside the shop's line about it: the menu's big picture is a drink. */
 function extras() {
   const rows = [];
   // A two-word name stays whole when the list wraps ("Whipped cream").
   const names = (list) => list.map((x) => esc(x.name).replace(/ /g, "&nbsp;")).join(", ");
   const plus = (n) => `+${rupiah(n)}`;
+  if (snacks.length) {
+    rows.push([names(snacks).replace(/, ([^,]+)$/, " dan $1"), "", mark(snackPriceRange, range)]);
+  }
   const sameTopping = toppings.every((t) => val(t.price) === val(toppings[0].price));
   if (toppings.length && sameTopping) {
-    rows.push(["Topping", names(toppings), mark(toppings[0].price, plus)]);
+    rows.push(["Topping", under(names(toppings)), mark(toppings[0].price, plus)]);
   } else {
     for (const t of toppings) rows.push([`Topping ${esc(t.name)}`, "", mark(t.price, plus)]);
   }
-  if (snacks.length) rows.push([names(snacks).replace(/, ([^,]+)$/, " dan $1"), "", mark(snackPriceRange, range)]);
-  for (const b of bundles) rows.push([esc(b.name), esc(b.what), b.priceRange ? mark(b.priceRange, range) : mark(b.price, rupiah)]);
+  if (!rows.length) return "";
   return `
           <section class="grp grp-extras">
             <div class="grp-head"><h3>Teman minum</h3></div>
-            ${snacks.length ? `<figure class="snack">${picture("corndog", { sizes: WIDE, cls: "bleed" })}<figcaption class="cap">Corndog dong, baru diangkat.</figcaption></figure>` : ""}
+            ${snacks.length ? `<figure class="snack">${picture("corndog", { sizes: "5rem" })}<figcaption class="cap">Corndog dong, baru diangkat.</figcaption></figure>` : ""}
             <ul class="rows">
-              ${rows.map(([name, what, price]) => `<li class="extra"><span class="row-name">${name}${what ? ` <small>${what}</small>` : ""}</span><span class="price">${price}</span></li>`).join("")}
+              ${rows.map(extraRow).join("")}
             </ul>
           </section>`;
 }
@@ -312,12 +335,15 @@ function sharedGofood() {
   return links[0];
 }
 
-/** One shop. `gofoodHere: false` leaves its GoFood button out (the link is shown once, elsewhere). */
+/**
+ * One shop: its name, its street, its map. `gofoodHere: false` leaves its GoFood button
+ * out (the link is shown once, elsewhere). The shops' fronts are shown as a set beside
+ * the list (shopFronts), so every row is the same whether or not its shop has a photo.
+ */
 export function shopRow(shop, shared, gofoodHere = true) {
   const h = val(shop.hours);
   // With shared hours a shop only says where it differs. Without, it says its own.
   const own = shared ? oddDays(h) : [`Tiap hari ${span(h.default)}`, oddDays(h)].filter(Boolean).join(", ");
-  const photo = shopPhotos[shop.id];
   return `
         <li class="shop">
           <div class="shop-what">
@@ -333,18 +359,33 @@ export function shopRow(shop, shared, gofoodHere = true) {
           </div>`
               : ""
           }
-          ${photo ? picture(photo, { sizes: SHOP, cls: "bleed shop-photo" }) : ""}
         </li>`;
+}
+
+/** The fronts of the shops that have a photo, each under its shop's name. */
+function shopFronts() {
+  const fronts = shops.filter((s) => shopPhotos[s.id]);
+  if (!fronts.length) return "";
+  return `
+          <ul class="fronts">${fronts
+            .map((s) => `
+            <li><figure>${picture(shopPhotos[s.id], { sizes: SHOP, cls: "bleed" })}<figcaption class="cap">${mark(s.name, shopLabel)}</figcaption></figure></li>`)
+            .join("")}
+          </ul>`;
 }
 
 function shopList() {
   const shared = sharedHours();
   const gofoodHere = !sharedGofood();
   return `
-        <h2 class="quiet">${story.shops} toko di Jatinangor</h2>
-        <p class="shops-when">${shared ? `<span>${openLine(shared)}</span> ` : ""}<span>Paling ramai ${esc(visit.busiest)}</span></p>
-        <ul class="shops">${shops.map((s) => shopRow(s, shared, gofoodHere)).join("")}
-        </ul>`;
+        <div class="shops-in">
+          <div class="shops-words">
+            <h2 class="quiet">${story.shops} toko di Jatinangor</h2>
+            <p class="shops-when">${shared ? `<span>${openLine(shared)}</span> ` : ""}<span>Paling ramai ${esc(visit.busiest)}</span></p>
+            <ul class="shops">${shops.map((s) => shopRow(s, shared, gofoodHere)).join("")}
+            </ul>
+          </div>${shopFronts()}
+        </div>`;
 }
 
 // --- Ways to order ---------------------------------------------------------------
@@ -353,7 +394,6 @@ function shopList() {
 function ways() {
   const gofood = sharedGofood();
   const anyGofood = shops.some((s) => isLocated(s) && s.gofoodUrl);
-  const treat = bundles.some((b) => b.id === "traktir-drivermu");
   const row = (attrs, name, what, kind) =>
     `<li><a class="way" ${attrs}><span class="way-name">${name}</span><span class="way-what">${what}</span>${arrow(kind)}</a></li>`;
   return `
@@ -365,7 +405,7 @@ function ways() {
               ${row('href="#toko"', "Mampir ke toko", `Bayar ${esc(payWith())}`, "down")}
               ${
                 gofood
-                  ? row(`href="${esc(val(gofood))}" target="_blank" rel="noopener"`, mark(gofood, () => "GoFood"), treat ? "Sekalian traktir drivermu, yuk" : "Diantar ojol", "out")
+                  ? row(`href="${esc(val(gofood))}" target="_blank" rel="noopener"`, mark(gofood, () => "GoFood"), "Diantar ojol", "out")
                   : anyGofood
                     ? row('href="#toko"', "GoFood", "Pilih tokonya dulu", "down")
                     : ""
@@ -523,6 +563,12 @@ function stampCard(card) {
 const DESCRIPTION =
   "Susu segar diblender bareng buah asli di Jatinangor. Cek menu dan harga, cari toko terdekat, atau pre-order lewat WhatsApp.";
 
+/**
+ * The link-preview picture, made by `npm run shots` from card.mjs. A JPEG, so it stays
+ * well under the size WhatsApp will still show (about 300 KB).
+ */
+export const OG_IMAGE = "og.jpg";
+
 /** How wide the first photo shows: the phone's width, or its column on a wide screen. */
 const HERO_SIZES = "(min-width: 56rem) 30rem, 100vw";
 
@@ -566,14 +612,14 @@ function head() {
   <meta property="og:site_name" content="${esc(brand.name)}">
   <meta property="og:title" content="${esc(brand.title)}">
   <meta property="og:description" content="${esc(DESCRIPTION)}">
-  <meta property="og:image" content="${esc(site)}/og.png">
+  <meta property="og:image" content="${esc(site)}/${OG_IMAGE}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="${esc(brand.name)}, ${esc(brand.tagline)}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${esc(brand.title)}">
   <meta name="twitter:description" content="${esc(DESCRIPTION)}">
-  <meta name="twitter:image" content="${esc(site)}/og.png">
+  <meta name="twitter:image" content="${esc(site)}/${OG_IMAGE}">
   <script type="application/ld+json">${JSON.stringify(ld)}</script>
   <script type="module" src="site.js"></script>`;
 }
@@ -647,7 +693,7 @@ export default function page() {
           <p>${esc(story.started)}${story.since ? `, tahun ${story.since}` : ""}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
         </div>
         <figure class="reviews">
-          <figcaption class="rating"><strong>${esc(brand.google.rating)}</strong> <span>di Google, dari ${esc(brand.google.reviews)} ulasan</span></figcaption>
+          <figcaption class="rating">${esc(brand.google.rating)} di Google, dari ${esc(brand.google.reviews)} ulasan</figcaption>
           ${brand.reviewQuotes.map((q) => `<blockquote class="quiet" lang="en">“${esc(q)}”</blockquote>`).join("")}
         </figure>
       </div>
@@ -673,7 +719,7 @@ export default function page() {
   </div>`;
 
   // The footer says how many marks are on the page, and wears the mark itself.
-  const marks = (body.match(/class="tbc"/g) || []).length;
+  const marks = (body.match(/class="tbc[ "]/g) || []).length;
   const count = marks
     ? `<p class="foot-draft"><span class="tbc" title="Yang bertitik kuning belum dicek pemilik">${marks} hal di halaman ini belum dicek pemilik</span></p>`
     : "";

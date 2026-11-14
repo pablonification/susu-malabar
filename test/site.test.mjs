@@ -9,7 +9,7 @@ import { build } from "../build.mjs";
 import * as data from "../src/data.mjs";
 import { checkOrder, clock, rupiah } from "../src/order.mjs";
 import { findTbc } from "../src/mark.mjs";
-import { isLocated, pickupChoices, promoBand, shopRow } from "../src/page.mjs";
+import { OG_IMAGE, isLocated, pickupChoices, promoBand, shopRow } from "../src/page.mjs";
 import { PHOTO_DIR, drinkPhotos, photos, shopPhotos } from "../src/photos.mjs";
 import { rowFor, sizeToAdd, soldSizes } from "../src/pick.mjs";
 
@@ -26,6 +26,28 @@ const head = html.slice(0, html.indexOf("</head>"));
 const body = html.slice(html.indexOf("<body"));
 // A mark is one small dot after a value, the same on a price, an address, a heading or a button.
 const MARK = /<span class="tbc" title="([^"]*)">([^<]*)<\/span>/g;
+// A menu row's prices share one mark: a span with the row's prices inside it.
+const ROW_MARK = '<span class="tbc prices" title="';
+/** Every row mark in a piece of HTML, as { title, inner }: read to the span that closes it. */
+function rowMarks(h) {
+  const found = [];
+  for (let at = h.indexOf(ROW_MARK); at >= 0; at = h.indexOf(ROW_MARK, at + 1)) {
+    const open = h.indexOf(">", at) + 1;
+    let depth = 1;
+    let i = open;
+    while (depth > 0) {
+      const next = /<span\b|<\/span>/g;
+      next.lastIndex = i;
+      const m = next.exec(h);
+      depth += m[0] === "</span>" ? -1 : 1;
+      i = m.index + m[0].length;
+    }
+    found.push({ title: h.slice(at + ROW_MARK.length, open - 2), inner: h.slice(open, i - "</span>".length), whole: h.slice(at, i) });
+  }
+  return found;
+}
+/** A piece of HTML with everything marked taken out. */
+const withoutMarks = (h) => rowMarks(h).reduce((rest, m) => rest.replace(m.whole, " "), h).replace(MARK, " ");
 /** The words a visitor reads: no tags, no marked values. */
 const text = (h) =>
   h
@@ -33,7 +55,7 @@ const text = (h) =>
     .replace(/<[^>]+>/g, " ")
     .replace(/&#?\w+;/g, " ")
     .replace(/\s+/g, " ");
-const unmarked = text(body.replace(MARK, " "));
+const unmarked = text(withoutMarks(body));
 const bare = (n) => rupiah(n).replace("Rp", "");
 
 test("the title names Jatinangor and the page is Indonesian", () => {
@@ -52,14 +74,20 @@ test("link previews, icon and bar colour are set", async () => {
   for (const tag of ["twitter:card", "twitter:title", "twitter:description", "twitter:image"]) {
     assert.match(head, new RegExp(`<meta name="${tag}" content="[^"]+">`), tag);
   }
-  assert.ok(head.includes(`<meta property="og:image" content="${site}/og.png">`));
+  assert.ok(head.includes(`<meta property="og:image" content="${site}/${OG_IMAGE}">`));
+  assert.ok(head.includes(`<meta name="twitter:image" content="${site}/${OG_IMAGE}">`));
   assert.match(head, /<link rel="icon" href="favicon\.svg"/);
   assert.match(head, /<meta name="theme-color" content="#[0-9a-f]{6}">/);
 
-  // The picture itself: a PNG of 1200 x 630 (made by `npm run shots`).
-  const png = await readFile(join(root, "dist/og.png"));
-  assert.equal(png.readUInt32BE(16), 1200);
-  assert.equal(png.readUInt32BE(20), 630);
+  // The picture itself: a JPEG of 1200 x 630 (made by `npm run shots`), light enough for
+  // WhatsApp, which shows no picture for a preview image much over 300 KB.
+  const jpg = await readFile(join(root, "dist", OG_IMAGE));
+  assert.equal(jpg.readUInt16BE(0), 0xffd8, "the preview image is not a JPEG");
+  assert.ok(jpg.length < 300 * 1024, `the preview image is ${Math.round(jpg.length / 1024)} KB: over 300 KB WhatsApp shows none`);
+  let at = 2;
+  while (jpg[at] === 0xff && ![0xc0, 0xc1, 0xc2].includes(jpg[at + 1])) at += 2 + jpg.readUInt16BE(at + 2); // walk to the frame header
+  assert.deepEqual([jpg.readUInt16BE(at + 7), jpg.readUInt16BE(at + 5)], [1200, 630]);
+  await assert.rejects(readFile(join(root, "dist/og.png")), "the old PNG preview is still shipped");
   // The card page is only there to be photographed.
   assert.match(card, /<meta name="robots" content="noindex">/);
 });
@@ -99,11 +127,14 @@ test("structured data holds confirmed facts only", () => {
 test("every unconfirmed value on the page carries the mark", () => {
   const all = findTbc(data);
   assert.ok(all.length > 0, "nothing is marked tbc() any more: delete this test and the .tbc rule");
-  const marks = [...body.matchAll(MARK)];
+  const rows = rowMarks(body);
+  const marks = [...body.matchAll(MARK), ...rows.map((m) => [m.whole, m.title, text(m.inner)])];
   assert.ok(marks.length > 0, "no marks on the page although data has tbc() values");
   for (const [, title, inner] of marks) {
     assert.ok(title.trim() && inner.trim(), "a mark needs a note and something inside");
   }
+  // Nothing is marked in a way these tests can't see.
+  assert.equal((body.match(/class="tbc[ "]/g) || []).length, marks.length);
   // The footer counts the marks, itself included.
   assert.ok(body.includes(`${marks.length - 1} hal di halaman ini belum dicek pemilik`));
 
@@ -135,12 +166,18 @@ test("every unconfirmed value on the page carries the mark", () => {
 });
 
 test("the mark is one dot, with one helper and one switch", () => {
-  // Two rules draw it: room after the value, and the dot in that room.
+  // Two rules draw it: the value it hangs on, and the dot after it.
   const rules = (css.match(/\.tbc\b[^{]*\{/g) || []).map((r) => r.replace(/\s*\{$/, ""));
   assert.deepEqual(rules, [".tbc", ".tbc::after"]);
   const [room, dot] = [/\.tbc \{([^}]*)\}/.exec(css)[1], /\.tbc::after \{([^}]*)\}/.exec(css)[1]];
-  // The dot and its room go away when --tbc-mark is 0.
-  assert.match(room, /padding-right:[^;]*var\(--tbc-mark\)/);
+  // The dot takes no room: a button is as wide with it as without, and nothing moves
+  // when a value is confirmed.
+  assert.doesNotMatch(room, /padding|margin|width/, "the mark makes its value wider");
+  assert.match(dot, /position: absolute/);
+  // One style on every ground: the same fill and the same edge, with nothing a band can change.
+  assert.match(dot, /border:[^;]*solid var\(--ink\)/);
+  assert.doesNotMatch(css + tokens, /--tbc-edge/, "a band changes how the dot looks");
+  // The dot goes away when --tbc-mark is 0.
   assert.match(dot, /width:[^;]*var\(--tbc-mark\)/);
   assert.match(dot, /height:[^;]*var\(--tbc-mark\)/);
   assert.match(dot, /border:[^;]*var\(--tbc-mark\)/);
@@ -457,6 +494,111 @@ test("two voices, set in tokens: the poster's heavy face and the quiet serif", (
   assert.doesNotMatch(css + card, /font-family:\s*(?!\s|var\(--font-)/, "a font named outside tokens.css");
   // The serif is for headings and short lines, never small print.
   assert.doesNotMatch(css, /\.cap \{[^}]*font-size: var\(--text-small\)/);
+});
+
+// --- What the first review of the second design found, kept fixed -------------------
+
+test("a menu row has one dot, and every unconfirmed price sits inside a mark", () => {
+  const menu = section("menu");
+  // A drink with a price per size wears one mark around both, not a dot between them.
+  const rows = [...menu.matchAll(/<button type="button" class="pick pick-row cols"[\s\S]*?<\/button>/g)].map((m) => m[0]);
+  assert.ok(rows.length > 0);
+  for (const row of rows) {
+    assert.equal((row.match(/class="tbc[ "]/g) || []).length, 1, "more than one dot on a menu row");
+    assert.equal(rowMarks(row).length, 1);
+    assert.equal(rowMarks(row)[0].title, data.drinks[0].prices[14].note, "the row's mark lost its note");
+  }
+  for (const [li] of menu.matchAll(/<li class="extra">[\s\S]*?<\/li>/g)) assert.equal((li.match(/class="tbc[ "]/g) || []).length, 1);
+  // Every price in data.mjs that is still tbc() shows only inside a marked element.
+  const left = text(withoutMarks(body));
+  const prices = [
+    ...data.drinks.flatMap((d) => Object.values(d.prices)),
+    ...data.toppings.map((t) => t.price),
+    data.snackPriceRange,
+    ...data.bundles.map((b) => b.price ?? b.priceRange),
+  ].filter(data.isTbc);
+  assert.ok(prices.length > 0);
+  for (const price of prices) {
+    for (const n of [data.val(price)].flat()) assert.ok(!left.includes(bare(n)), `Rp${bare(n)} shows outside a mark`);
+  }
+  assert.doesNotMatch(left, /Rp\s?\d/, "a price outside a mark");
+});
+
+test("both sizes read as for sale, and every menu row is one height", () => {
+  // The size a tap doesn't add is lighter in weight only: grey would read as sold out.
+  const off = /\.price-off,\s*\.grp-head \.size\.price-off \{([^}]*)\}/.exec(css)[1];
+  assert.match(off, /font-weight: 400/);
+  assert.doesNotMatch(off, /color|opacity/);
+  // A column's name sits over the middle of its prices.
+  assert.match(css, /\.prices > \* \{[^}]*text-align: center/);
+  // Rows take their height from one number, and no column stretches its rows to fill.
+  assert.match(css, /\.pick \{[^}]*min-height: var\(--row\)/);
+  assert.match(css, /\.extra \{[^}]*min-height: var\(--row\)/);
+  assert.doesNotMatch(css, /\.grp > \.(rows|picks)[^{]*\{[^}]*flex: 1/, "a menu column stretches its rows");
+});
+
+test("the menu's big picture is a drink, and it fills its strip", () => {
+  const menu = section("menu");
+  const cup = photos[drinkPhotos.strawberry.photo];
+  assert.match(menu, new RegExp(`class="photo pick-photo"[\\s\\S]*?${PHOTO_DIR}/${drinkPhotos.strawberry.photo}-`));
+  // The snack's photo is smaller than the best seller's, in its own file and on the page.
+  assert.ok(photos.corndog.widths[0] < cup.widths[0]);
+  const size = (sel) => parseFloat(new RegExp(`${sel} \\{[^}]*width: ([\\d.]+)rem`).exec(css)[1]);
+  assert.ok(size("\\.snack \\.photo") < size("\\.pick-photo"));
+  // The photo is as tall as its strip, however the words wrap.
+  assert.match(css, /\.pick-best \{[^}]*align-items: stretch/);
+  assert.match(css, /\.pick-photo img \{[^}]*position: absolute;[^}]*height: 100%;[^}]*object-fit: cover/);
+  // Bundles of drinks sit with the drinks, not under the snacks.
+  const snacks = /<section class="grp grp-extras">[\s\S]*?<\/section>/.exec(menu)[0];
+  for (const b of data.bundles) assert.ok(!snacks.includes(b.name) && menu.indexOf(b.name) < menu.indexOf("grp-extras"), `${b.name} is listed with the snacks`);
+});
+
+test("every shop is the same row, and the fronts are a set beside the list", () => {
+  const toko = section("toko");
+  const rows = [...toko.matchAll(/<li class="shop">[\s\S]*?<\/li>/g)].map((m) => m[0]);
+  assert.equal(rows.length, data.shops.length);
+  for (const row of rows) assert.doesNotMatch(row, /<picture/, "a photo inside a shop's row: a shop without one would leave a hole");
+  const fronts = /<ul class="fronts">[\s\S]*?<\/ul>/.exec(toko)[0];
+  assert.equal((fronts.match(/<picture/g) || []).length, Object.keys(shopPhotos).length);
+  assert.equal((fronts.match(/<figcaption class="cap">[^<]+<\/figcaption>/g) || []).length, Object.keys(shopPhotos).length, "a front without its shop's name");
+  assert.doesNotMatch(css, /:has\(\.shop-photo\)/);
+});
+
+test("pink is an accent: no band, no way in, and one colour for the buttons that move the order on", () => {
+  // The only pink is the petal pink, and only strawberry and the order use it.
+  assert.match(tokens, /--flavor-strawberry: var\(--petal\);/);
+  assert.match(tokens, /--order: var\(--flavor-strawberry\);/);
+  assert.doesNotMatch(css, /var\(--(petal|badge-pink)\)/, "pink used for something that is neither strawberry nor the order");
+  for (const [rule] of css.matchAll(/[^{}]*\{[^}]*var\(--(?:order|flavor-strawberry)\)[^}]*\}/g)) {
+    assert.doesNotMatch(rule.split("{")[0], /\.jump|\.order-head|\.band|\.logo|\.btn/, `pink on ${rule.split("{")[0].trim()}`);
+  }
+  // The jump link, the order bar's button and the send button are one black button with one text colour.
+  assert.match(css, /\.btn-fill,\s*\.btn-send,\s*\.jump-go span \{[^}]*background: var\(--ink\);[^}]*color: var\(--paper\);/);
+  // "Lihat pesan" opens with the page's own arrow, not the browser's triangle.
+  assert.match(css, /\.preview summary \{[^}]*list-style: none/);
+  assert.match(css, /\.preview summary::-webkit-details-marker \{[^}]*display: none/);
+  assert.match(css, /\.select::after,\s*\.preview summary::after \{/);
+});
+
+test("the form: one red frame, and the page's two columns", () => {
+  // One weight for every field with a problem, with focus or without.
+  assert.match(css, /input\[aria-invalid="true"\],\s*select\[aria-invalid="true"\],\s*\.seg\[aria-invalid="true"\] \{[^}]*outline: 1\.5px solid var\(--danger\)/);
+  assert.doesNotMatch(css, /aria-invalid="true"\]:focus-visible/, "a field with a problem gets a thicker frame with focus");
+  // The form's columns are the page's columns, so its right half starts under the photo.
+  assert.match(css, /\.form,\s*\.send \{\s*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
+});
+
+test("words: GoFood has its own line, the rating is a plain line, the card names the shop", () => {
+  assert.doesNotMatch(text(section("cara")), /traktir/i, "the GoFood row repeats the Traktir Drivermu bundle");
+  // The Google rating is one plain line over the quotes, not a giant number.
+  assert.ok(body.includes(`<figcaption class="rating">${data.brand.google.rating} di Google, dari ${data.brand.google.reviews} ulasan</figcaption>`));
+  assert.doesNotMatch(css + tokens, /--text-figure|\.rating strong/);
+  // The headline's lines keep clear of each other.
+  assert.ok(parseFloat(/--h1-leading: ([\d.]+);/.exec(tokens)[1]) >= 1);
+  // On the link-preview card the shop's name is the big bold line.
+  assert.ok(card.includes(`<h1>${data.brand.name}</h1>`));
+  const px = (sel) => parseFloat(new RegExp(`${sel} \\{[^}]*font-size: (\\d+)px`).exec(card)[1]);
+  assert.ok(px("h1") >= 60 && px("h1") > px("\\.line"));
 });
 
 // --- Banned looks and words ----------------------------------------------------

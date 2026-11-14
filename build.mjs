@@ -12,7 +12,7 @@ const out = join(root, "dist");
 // [output file, template module]. A template's default export returns the page's HTML.
 const pages = [
   ["index.html", "src/page.mjs"],
-  ["og-card.html", "src/card.mjs"], // only photographed for public/og.png, never linked
+  ["og-card.html", "src/card.mjs"], // only photographed for public/og.jpg, never linked
   ["favicon.svg", "src/favicon.mjs"], // the tab icon, drawn from the logo file
 ];
 // Read while building, not by the browser.

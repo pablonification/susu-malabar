@@ -86,6 +86,9 @@ test("missing or wrong fields are caught", () => {
   const half = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 1.5 }] }, NOW);
   assert.deepEqual(half.errors.map((e) => e.message), ["Jumlahnya harus angka bulat"]);
 
+  const unlocated = checkOrder({ ...good, shopId: "toko-3" }, NOW);
+  assert.deepEqual(unlocated.errors.map((e) => e.message), ["Toko ini belum bisa dipilih"]);
+
   const huge = checkOrder({ ...good, lines: [{ drinkId: "kopi", size: "22", qty: 500 }] }, NOW);
   assert.ok(huge.errors.some((e) => e.message.startsWith("Maksimal")));
 });

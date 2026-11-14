@@ -59,6 +59,7 @@ export const story = {
 };
 
 // --- Shops ----------------------------------------------------------------------
+// `address` is the street only; `area` already names the village.
 // GrabFood and ShopeeFood are not confirmed for any shop, so they are left out.
 // Days use JavaScript's numbering: 0 Minggu, 1 Senin, ... 5 Jumat, 6 Sabtu.
 
@@ -67,7 +68,7 @@ export const shops = [
     id: "cikeruh",
     name: "Susu Malabar Cikeruh",
     area: "Jl. Kolonel Achmad Syam, Cikeruh",
-    address: tbc("Jl. Kolonel Achmad Syam, Cikeruh, Jatinangor", "Alamat lengkap belum dicek"),
+    address: tbc("Jl. Kolonel Achmad Syam", "Alamat lengkap belum dicek"),
     hours: tbc(
       { default: ["12:00", "22:00"], byDay: { 5: ["14:00", "22:00"] } },
       "Jam dari daftar GoFood lama",
@@ -79,13 +80,16 @@ export const shops = [
     id: "sayang",
     name: "Susu Malabar Sayang",
     area: "Jl. Sayang, Desa Sayang",
-    address: tbc("Jl. Sayang, Desa Sayang, Jatinangor", "Alamat lengkap belum dicek"),
+    address: tbc("Jl. Sayang", "Alamat lengkap belum dicek"),
     hours: tbc({ default: ["12:00", "22:00"], byDay: {} }, "Jam toko ini belum dicek"),
     mapUrl: tbc("https://maps.google.com/?q=Susu+Malabar+Jatinangor", "Link Google Maps belum dicek"),
     gofoodUrl: tbc("https://gofood.co.id/", "Link GoFood toko ini belum dicek"),
   },
   {
     id: "toko-3",
+    // false until its location is confirmed: the page then hides its map and
+    // GoFood buttons and it can't be picked for pickup. Set to true once known.
+    located: false,
     name: tbc("Susu Malabar (toko ketiga)", "Nama dan letak toko ketiga belum pasti"),
     area: tbc("Ujung selatan Jl. Kolonel Achmad Syam", "Letak toko ketiga belum pasti"),
     address: tbc("Belum diketahui", "Alamat toko ketiga belum ada"),

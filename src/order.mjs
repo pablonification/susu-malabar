@@ -134,6 +134,7 @@ export function checkOrder(order, now = new Date()) {
 
   const shop = findShop(order?.shopId);
   if (!shop) errors.push({ field: "shop", message: "Pilih toko tempat ambil" });
+  else if (shop.located === false) errors.push({ field: "shop", message: "Toko ini belum bisa dipilih" });
 
   const date = parseDate(order?.date);
   if (!date) errors.push({ field: "date", message: "Isi tanggal ambil" });

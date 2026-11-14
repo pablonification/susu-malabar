@@ -11,7 +11,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { build } from "../build.mjs";
-import { OG_IMAGE, token } from "../src/page.mjs";
+import { OG_IMAGE, OG_SIZE, token } from "../src/page.mjs";
 
 const root = join(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -137,7 +137,7 @@ try {
   }
 
   // Link-preview image, only if the card page exists.
-  const ctx = await browser.newContext({ viewport: { width: 1200, height: 630 } });
+  const ctx = await browser.newContext({ viewport: OG_SIZE });
   const page = await ctx.newPage();
   const res = await page.goto(`${base}/og-card.html`).catch(() => null);
   if (res?.ok()) {

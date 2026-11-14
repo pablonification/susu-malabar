@@ -40,19 +40,19 @@ with the address written on it, so they get the strongest lift.
 
 | Cut | From | Where on the page |
 | --- | --- | --- |
-| `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card |
-| `cup` | `strawberry-milk-2`, a square close on the cup and the hand | The best seller's strip on the menu |
+| `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card (full width there, at its real 1080 px) |
 | `corndog` | `corndog-fryer`, a square close on the corndog | A small square under "Teman minum" on the menu |
-| `pickup` | `counter-griya-wide`, whole (the "PICK UP HERE" sign, both people serving, the customer's head not cut) | "Mau pesan lewat mana?" |
-| `toko-griya` | `shop-front-griya`, whole, lifted | The shop "depan Griya" |
-| `toko-ikopin` | `shop-front-ikopin`, whole, lifted | The shop "depan Ikopin" |
-| `bungkus` | `staff-griya`, the middle, from 100 px in to 220 px short of the right edge: one person and the cups. The second person, cut in half by the frame's right edge in the original, is left out. His hair touches the top edge in the original too, so that stays. | Over the pre-order form |
+| `pickup` | `counter-griya-wide`, whole (the "PICK UP HERE" sign, both people serving, the customer's head not cut). A crop further right was tried and dropped: the letter missing from "MALABAR" is behind the head of the person serving, not behind the customer, so no crop shows the whole word. It would lose the "PICK UP HERE" sign and be softer. | "Mau pesan lewat mana?" |
+| `toko-griya` | `shop-front-griya`, whole, lifted | Inside the row of the shop "depan Griya" |
+| `toko-ikopin` | `shop-front-ikopin`, whole, lifted | Inside the row of the shop "depan Ikopin" |
+| `bungkus` | `staff-griya`, a 520 px square from the top, 278 px in from the left: one person, his hands and the tops of the cups. The second person at the frame's right edge is left out. It is a soft video still, so it is only shown as a small square (88 px on a phone, 112 px on a wide screen), where it holds up. | A small square beside the second line of the pre-order title |
 | `kedai` | `counter-griya`, whole | The story |
 
-Not on the page: `strawberry-milk-1` (too soft, even small), `strawberry-milk-topdown` (the lid
-alone: no cup, and soft), the two promo posters (old
+Not on the page: a second cut of `strawberry-milk-2` (the best seller's row had one: it was the
+first screen's cup again), `strawberry-milk-1` (too soft, even small), `strawberry-milk-topdown`
+(the lid alone: no cup, and soft), the two promo posters (old
 promos, and one names prices the owner has not confirmed), and a front of the shop "depan
-MST" (the only photo has faces covered with squares, so that shop shows none).
+MST" (the only photo has faces covered with squares, so that shop's row has no photo).
 
 ## Reference only (in `docs/reference/`, not for the site)
 

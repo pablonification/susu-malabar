@@ -1,9 +1,9 @@
-// What a tap on the menu puts into the order, with no DOM, so it can be tested.
-// The menu has a size switch in each group's header. A tap on a drink adds one
-// cup of it in the picked size.
+// What a tap on the menu puts into the order or takes out of it, with no DOM, so it can
+// be tested. The menu has one size switch. A tap on a drink adds one cup of it in the
+// picked size. The minus beside a drink that is in the order takes one cup off.
 
 import { sizes } from "./data.mjs";
-import { unitPrice } from "./order.mjs";
+import { filledLines, unitPrice } from "./order.mjs";
 
 /** The size ids a drink is sold in. With no drink, all of them. */
 export function soldSizes(drinkId) {
@@ -27,4 +27,25 @@ export function rowFor(lines, drinkId, size) {
   if (same >= 0) return { row: same, how: "more" };
   const empty = lines.findIndex((l) => !l.drinkId);
   return empty >= 0 ? { row: empty, how: "fill" } : { row: -1, how: "new" };
+}
+
+/**
+ * Which row of the form the menu's minus takes a cup from: the drink's row in the picked
+ * size, else its last row in another size. -1 when the drink has no cup in the order.
+ */
+export function rowToTake(lines, drinkId, size) {
+  const has = (l) => l.drinkId === drinkId && Math.floor(Number(l.qty)) >= 1;
+  const same = lines.findIndex((l) => has(l) && l.size === size);
+  return same >= 0 ? same : lines.findLastIndex(has);
+}
+
+/**
+ * The cups in the order by size, in the menu's order of sizes, for the order bar:
+ *   [{ size: "14", cups: 3 }, { size: "22", cups: 1 }]
+ * Counts what the total counts (order.mjs: a known drink, a size it is sold in, 1 or more).
+ */
+export function cupsBySize(lines) {
+  const filled = filledLines(lines);
+  const cupsIn = (id) => filled.filter((l) => l.size === id).reduce((sum, l) => sum + Math.floor(Number(l.qty)), 0);
+  return sizes.map((s) => ({ size: s.id, cups: cupsIn(s.id) })).filter((s) => s.cups > 0);
 }

@@ -5,7 +5,7 @@
 import { order as rules, isTbc, sizes, tbc } from "./data.mjs";
 import { buildMessage, checkOrder, findDrink, rupiah, todayWib, totals, unitPrice, whatsappLink } from "./order.mjs";
 import { esc, mark } from "./mark.mjs";
-import { rowFor, sizeToAdd, soldSizes } from "./pick.mjs";
+import { cupsBySize, rowFor, rowToTake, sizeToAdd, soldSizes } from "./pick.mjs";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -21,7 +21,7 @@ let lineCount = 0; // only for unique ids
 let tried = false; // true once the person pressed send, so every problem shows
 const touched = new Set(); // fields the person has already left
 let formOnScreen = false;
-let lastAdded = ""; // what the last tap on the menu put in, e.g. "Strawberry 14 oz"
+let lastTap = ""; // what the last tap on the menu did, e.g. "Strawberry 14 oz masuk"
 let menuSize = sizes[0].id; // the size picked in the menu's switch: what a tap on a drink adds
 const sizeName = (id) => sizes.find((s) => s.id === id)?.label || "";
 
@@ -122,6 +122,26 @@ function addFromMenu(drinkId, size) {
   return li;
 }
 
+/**
+ * From the menu: one cup less of a drink. It comes off the drink's row in the picked size,
+ * else off its last row in another size. A row left with no cups goes away, or is emptied
+ * if it is the form's only row. Returns the size the cup was in, "" if there was none.
+ */
+function takeFromMenu(drinkId) {
+  const rows = $$(".line", list);
+  const at = rowToTake(rows.map(readLine), drinkId, sizeToAdd(drinkId, menuSize));
+  if (at < 0) return "";
+  const li = rows[at];
+  const { size, qty } = readLine(li);
+  if (Math.floor(qty) > 1) $(".qty input", li).value = Math.floor(qty) - 1;
+  else if (rows.length > 1) li.remove();
+  else {
+    $("select", li).value = "";
+    $(".qty input", li).value = 1;
+  }
+  return size;
+}
+
 /** The menu's size switch: the price columns light up under the picked size, and each drink shows the price it adds at. */
 function showMenuSize() {
   for (const radio of $$(".seg-poster input")) radio.checked = radio.value === menuSize;
@@ -196,20 +216,36 @@ function refresh() {
   }
   $("#copy").textContent = "Salin pesan";
 
-  // On the menu, a flavour's plus becomes how many cups of it are in the order.
+  // On the menu, a drink in the order shows how many cups of it, with a minus before the
+  // count that takes one off. The minus says which size it takes: the picked one if the
+  // drink has a cup in it, else the other.
   for (const button of $$(".pick")) {
-    const n = order.lines.filter((l) => l.drinkId === button.dataset.drink).reduce((sum, l) => sum + (Math.floor(l.qty) || 0), 0);
-    $(".pick-n", button).textContent = n || "+";
-    $(".pick-sr", button).textContent = `, ukuran ${sizeName(sizeToAdd(button.dataset.drink, menuSize))}${n ? `. Sudah ${n} gelas di pesanan` : ""}`;
+    const drinkId = button.dataset.drink;
+    const adds = sizeToAdd(drinkId, menuSize);
+    const n = order.lines.filter((l) => l.drinkId === drinkId).reduce((sum, l) => sum + Math.max(0, Math.floor(l.qty) || 0), 0);
+    $(".pick-n", button).textContent = n || "";
+    $(".pick-sr", button).textContent = `, ukuran ${sizeName(adds)}${n ? `. Sudah ${n} gelas di pesanan` : ""}`;
     if (n) button.dataset.count = n;
     else delete button.dataset.count;
+
+    const less = button.nextElementSibling;
+    const from = order.lines[rowToTake(order.lines, drinkId, adds)];
+    const hadFocus = document.activeElement === less;
+    less.hidden = !from;
+    if (from) $(".sr", less).textContent = `Kurangi satu ${findDrink(drinkId).name} ${sizeName(from.size)}`;
+    else if (hadFocus) button.focus({ preventScroll: true }); // the last cup went: the keyboard stays on this drink
   }
 
-  // The bar answers a tap on the menu: the total so far and the way on. What went in
-  // shows on the menu itself (the drink's count), so here it is only read out.
-  $("#bar-cups").textContent = `${cups} gelas`;
+  // The bar answers a tap on the menu: the sum so far, what it is the sum of (how many
+  // cups, in which sizes), and the way on. What the tap did shows on the menu itself
+  // (the drink's count), so here it is only read out.
+  const bySize = cupsBySize(order.lines);
   $("#bar-price").innerHTML = estimate(order, price);
-  $("#bar-last").textContent = lastAdded ? `, ${lastAdded} masuk` : "";
+  $("#bar-cups").textContent = `${cups} gelas`;
+  // "3 × 14 oz" never breaks inside: on a narrow phone the line wraps between sizes.
+  const whole = (words) => words.replace(/ /g, " ");
+  $("#bar-sizes").textContent = bySize.length === 1 ? whole(sizeName(bySize[0].size)) : bySize.map((s) => whole(`${s.cups} × ${sizeName(s.size)}`)).join(" · ");
+  $("#bar-last").textContent = lastTap ? `, ${lastTap}` : "";
   bar.hidden = cups === 0 || formOnScreen;
   // Room for the bar at the end of the page, and when the browser scrolls to whatever
   // has focus, so nothing lands underneath it.
@@ -222,7 +258,7 @@ function refresh() {
 
 /** A change made in the form itself: the bar no longer speaks of the last menu tap. */
 function edited() {
-  lastAdded = "";
+  lastTap = "";
   return refresh();
 }
 
@@ -296,13 +332,15 @@ $("#copy").addEventListener("click", async (e) => {
 });
 
 // A tap on a flavour in the menu adds one cup of it, in the size picked in the switch.
+// The minus beside a flavour that is in the order takes one cup off.
 document.addEventListener("click", (e) => {
   const pick = e.target.closest(".pick");
-  if (!pick) return;
-  const drinkId = pick.dataset.drink;
-  const size = sizeToAdd(drinkId, menuSize);
-  addFromMenu(drinkId, size);
-  lastAdded = `${findDrink(drinkId).name} ${sizeName(size)}`.trim();
+  const less = e.target.closest(".less");
+  if (!pick && !less) return;
+  const drinkId = pick ? pick.dataset.drink : less.dataset.less;
+  const size = pick ? sizeToAdd(drinkId, menuSize) : takeFromMenu(drinkId);
+  if (pick) addFromMenu(drinkId, size);
+  lastTap = `${findDrink(drinkId).name} ${sizeName(size)} ${pick ? "masuk" : "dikurangi satu"}`.replace(/ +/g, " ");
   refresh();
 });
 

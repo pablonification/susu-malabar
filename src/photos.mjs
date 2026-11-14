@@ -21,14 +21,6 @@ export const photos = {
     levels: [8, 218, 1.06],
     alt: "Segelas susu stroberi di tangan, difoto dari atas di samping roda sepeda",
   },
-  // The best seller's strip on the menu: the same cup, close, so the pink shows.
-  cup: {
-    from: "strawberry-milk-2",
-    crop: [330, 60, 480, 480],
-    widths: [480, 240],
-    levels: [8, 218, 1.06],
-    alt: "Susu stroberi di gelas bening, dipegang satu tangan",
-  },
   // The snack's row on the menu: the corndog alone, as a small square.
   corndog: {
     from: "corndog-fryer",
@@ -68,24 +60,20 @@ export const photos = {
     levels: [6, 224, 1.04],
     alt: "Tiga orang meracik pesanan di dalam toko depan Griya, di depan dinding bertulisan MALABAR dan gambar buah",
   },
-  // Bagging a big order: one person and the cups. The second person, cut in half by the
-  // frame's right edge in the original, is left out.
+  // Bagging a big order: a square close on one person, his hands and the tops of the cups.
+  // It is a soft video still, so it is only ever shown small (a 7rem square at most): the
+  // cut is four times that. The second person at the frame's right edge is left out.
   bungkus: {
     from: "staff-griya",
-    crop: [100, 0, 680, 600],
-    widths: [680, 480],
+    crop: [278, 0, 520, 520],
+    widths: [448, 224],
     alt: "Pegawai tersenyum sambil membungkus tumpukan gelas putih pesanan",
   },
 };
 
-/** A drink with a photo of its own on the menu, and the shop's own line about it (from a caption on its TikTok). */
-export const drinkPhotos = {
-  strawberry: { photo: "cup", line: "Nungguin kamu, iya kamu." },
-};
-
 /**
- * The photo of each shop's front, by the shop's id in data.mjs. The page shows them as a
- * set beside the list of shops, each named, so a shop with no photo leaves no gap.
+ * The photo of each shop's front, by the shop's id in data.mjs. It sits inside its shop's
+ * row. A shop with no photo here is the same row without one.
  */
 export const shopPhotos = {
   sayang: "toko-griya",

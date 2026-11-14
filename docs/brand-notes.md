@@ -12,7 +12,8 @@ little dark.
 | Hex | Where it comes from |
 | --- | --- |
 | `#184A44` | Dark poster green: the menu poster, the "7 tahun" and Idul Adha posts. The main dark of the feed. |
-| `#0D6867` | The teal banner over the Griya shop ("SUSU MALABAR"). |
+| `#0D6867` | The awning over the Griya shop ("SUSU MALABAR") as posted, under the post's dark overlay. |
+| `#07C6C0` | The same awning with that overlay lifted (the `toko-griya` cut on the site): a bright turquoise. |
 | `#2D9072` / `#37A185` | Teal walls inside a shop (TikTok videos), and the teal plastic stools. |
 | `#7BB6AA` | Soft teal: "RASA BARU!" lettering, the Ramadan post, the fill of "PROMO SPESIAL" (`#629186` in shade). |
 | `#1B612F` + `#F784C5` | The badge as the TikTok picture: green drawing frame on strawberry pink. |
@@ -33,8 +34,8 @@ No poster names its fonts. What they look like:
 - **Promo headlines ("PROMO SPESIAL", "RASA BARU!"):** fat rounded letters with a thick
   outline and a slight arc, like a sticker. Prices in a very heavy condensed grotesque ("10K").
   Small text in a plain bold geometric sans.
-- **Calm posts ("Kami ada di mana?", "Outlet 1"):** a light serif, italic for headings,
-  with a plain sans for addresses. The strawberry photo set uses classic serif capitals
+- **Calm posts ("Kami ada di mana?", "Outlet 1"):** a light serif, upright on the cover
+  ("Kami ada di mana?") and italic on the slides ("Outlet 1"), with a plain sans for addresses. The strawberry photo set uses classic serif capitals
   ("SUSU MALABAR / STROBERI") and a widely spaced light sans.
 - **The badge sign:** thin hand-drawn condensed capitals, "MALABAR".
 - **Shop banners:** white monospace-like capitals on teal ("SUSU / MALABAR").
@@ -101,14 +102,19 @@ The dark green field. Teal walls and stools. Chalk doodles on the menu.
 
 ## Use on the site:
 
-- Dark poster green `#184A44` as the main dark, banner teal `#0D6867` and wall teal
-  `#2D9072` as the shop colours. One pink, as an accent: the petal coral `#F39E8D` of the
+- Dark poster green `#184A44` as the main dark. The awning's turquoise for the shops' band,
+  a step deeper than in the photo (`#14B3AB`) so black type reads on it and the awning in the
+  photo still stands out. One pink, as an accent: the petal coral `#F39E8D` of the
   Instagram feed, for strawberry and for what is in the order. The hot TikTok badge pink
   `#F784C5` stays on the tab icon only: in big blocks it is not how the feed looks.
+- Type: the heavy sans for everything the site says. The upright serif of "Kami ada di
+  mana?" only for the shop's own lines and review quotes. No italics.
+- A little of the promo posters, where it has a job: the best seller's block (a small black
+  tag, the name huge) and the order bar (the sum as big as a poster's price).
 - The real badge in one colour (`logo-badge.svg`, PNG when it is small), black on white like
   the cups.
-- Real photos: strawberry milk first, each shop's front on its card, the Griya counter with
-  the painted "MALABAR" wall.
+- Real photos: strawberry milk first, each shop's front inside its own row, the Griya counter
+  with the painted "MALABAR" wall.
 - Their framing: from above, a hand and a cup, the real street around it.
 - Their words: "Kemurnian dari Jatinangor", "<flavour> Malabar" names, "kamu/kalian".
 - Shops by landmark, the way they say it: "depan Griya", "depan MST", "depan Ikopin".

@@ -71,24 +71,16 @@ h3 {
   font-size: var(--text-h3);
 }
 
-/* The quiet voice: the serif italic of the shop's location posts. One band speaks in
-   one voice, the way one post does. */
+/* The quiet voice: the upright serif of the shop's location post. Only for words that
+   are the shop's own or its customers': its line about the best seller, its line about
+   the corndog, what reviewers wrote. Everything the site says itself is in the sans. */
 .quiet,
-.shop h3,
-.logo-tag,
-.pick-tag,
-.cap {
+.pick-tag {
   font-family: var(--font-quiet);
-  font-style: var(--quiet-style);
   font-weight: var(--quiet-weight);
   font-variant-numeric: lining-nums;
   letter-spacing: 0;
   word-spacing: 0;
-}
-
-h2.quiet {
-  font-size: var(--text-quiet-h2);
-  line-height: 0.95;
 }
 
 a {
@@ -134,8 +126,9 @@ small {
 
 /* --- Placeholder mark ---------------------------------------------------------
    Every value still wrapped in tbc() in data.mjs gets one small amber dot after it,
-   level with the top of its letters: the same dot, with the same dark edge, on a price,
-   an address, a heading or a button, on every ground. It hangs after the value and
+   level with the middle of its letters whatever their size: the same dot, at the same
+   height, with the same dark edge, on a price, an address, a heading or a button, on
+   every ground. It hangs after the value and
    takes no room, so a button is as wide with it as without, and nothing moves on the
    day a value is confirmed. No line under anything, so nothing marked reads as a link.
    The dot is drawn, not typed, so a screen reader says nothing for it. Hide all of them
@@ -148,7 +141,7 @@ small {
   content: "";
   position: absolute;
   right: calc(var(--tbc-size) * -1.3);
-  bottom: calc(0.9em - var(--tbc-size));
+  top: calc(50% + 0.06em - var(--tbc-size) / 2);
   width: calc(var(--tbc-size) * var(--tbc-mark));
   height: calc(var(--tbc-size) * var(--tbc-mark));
   border: calc(1.5px * var(--tbc-mark)) solid var(--ink);
@@ -228,11 +221,11 @@ small {
   padding-top: 0;
 }
 
-/* The line under a photo, in the quiet voice. */
+/* The line under a photo: which shop it shows. */
 .cap {
   margin-top: var(--space-2);
-  font-size: var(--text-quiet);
-  line-height: 1.2;
+  font-size: var(--text-small);
+  line-height: 1.3;
   color: var(--muted);
 }
 
@@ -259,7 +252,8 @@ small {
 }
 
 .btn:active,
-.pick:active .pick-n {
+.pick:active .pick-add,
+.less:active {
   transform: scale(0.97);
 }
 
@@ -336,8 +330,8 @@ small {
 }
 
 .logo-tag {
-  font-size: var(--text-quiet);
-  line-height: 1;
+  font-size: 0.9375rem;
+  line-height: 1.1;
   color: var(--muted);
 }
 
@@ -396,10 +390,6 @@ h1 {
   text-decoration: none;
 }
 
-.jump a + a {
-  border-left: var(--line) solid var(--paper-line);
-}
-
 .jump a:focus-visible {
   outline-offset: -4px;
 }
@@ -408,7 +398,6 @@ h1 {
    pink: right above the size switch, pink would read as "this tab is picked". */
 .jump a.jump-go {
   padding: 0 var(--gutter) 0 var(--space-2);
-  border-left: 0;
 }
 
 .jump-go span {
@@ -488,9 +477,11 @@ h1 {
 
 .menu {
   --col-price: 5.2rem;
-  --col-add: 2rem;
-  --row: 3.5rem; /* one height for every row of the menu */
-  --bleed: var(--gutter);
+  --ctl-add: 1.75rem; /* the plus at a row's end */
+  --ctl-n: 2rem; /* how many cups, before the plus */
+  --row: 3.5rem; /* the least height of every row of the menu */
+  --bleed: var(--gutter); /* the best seller's block runs to the screen's edges on a phone */
+  --best-inset: 0px;
 }
 
 .grp {
@@ -506,31 +497,16 @@ h1 {
   margin-bottom: var(--space-5);
 }
 
-/* A drink with its own prices: name, a price per size, the plus. */
-.cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto var(--col-add);
-  align-items: center;
-}
-
-/* The prices of one row, a column per size, and the room after them where the row's
-   one dot hangs. A column's name sits over the middle of its prices. */
-.prices {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: var(--col-price);
-  margin-right: var(--space-3);
-}
-
-.prices > * {
-  text-align: center;
-}
-
-/* A group's name. Over rows with their own prices, the header also names the price columns. */
+/* A group's name. Over rows with their own prices, the header also names the price
+   columns (on a screen wide enough for columns). */
 .grp-head {
   align-items: end;
   padding-bottom: var(--space-2);
   border-bottom: var(--line-strong) solid var(--fg);
+}
+
+.grp-head .prices {
+  display: none;
 }
 
 .size {
@@ -563,19 +539,23 @@ h1 {
   line-height: 1.1;
 }
 
+/* One drink per row on a phone, so every row has room for its "− 2 +". */
 .picks {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   column-gap: var(--space-5);
 }
 
 .picks li,
 .rows li {
+  position: relative; /* the button that takes a cup off sits over the row's end */
   border-bottom: var(--line) solid var(--rule);
 }
 
-.picks-wide {
+/* The best seller's block is its own edge: no rule under it. */
+.picks li.picks-wide {
   grid-column: 1 / -1;
+  border-bottom: 0;
 }
 
 .pick {
@@ -595,91 +575,181 @@ h1 {
   cursor: pointer;
 }
 
-.pick.cols {
-  display: grid;
-  gap: 0;
+/* The end of a drink's row: how many cups of it are in the order, then the plus. The
+   whole row adds a cup. While the drink is in the order, the room kept before the count
+   holds the button that takes one off (.less), so the row's end reads "− 2 +". */
+.pick-ctl {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
-.pick-n {
-  flex: none;
-  justify-self: end;
+.pick[data-count] .pick-ctl {
+  padding-left: var(--tap);
+}
+
+.pick-add {
   display: grid;
   place-items: center;
-  min-width: 1.75rem;
-  height: 1.75rem;
-  margin-left: auto;
-  border-radius: 1rem;
+  width: var(--ctl-add);
+  height: var(--ctl-add);
   font-size: var(--text-lead);
   font-weight: 700;
   line-height: 1;
   transition: transform var(--press);
 }
 
-/* Once a flavour is in the order, its plus becomes how many cups of it, in the order's pink. */
-.pick[data-count] .pick-n {
-  padding-inline: var(--space-1);
+/* The cups of this drink in the order, in the order's pink. */
+.pick-n {
+  display: none;
+  place-items: center;
+  min-width: calc(var(--ctl-n) - 0.25rem);
+  height: calc(var(--ctl-n) - 0.25rem);
+  margin-inline: 0.125rem;
+  padding-inline: 0.125rem;
+  border-radius: 1rem;
   background: var(--order);
   color: var(--order-ink);
   font-size: var(--text-small);
+  font-weight: 700;
+  line-height: 1;
 }
 
-/* The best seller: a strip of strawberry pink across the poster, and the menu's one big
-   picture, flush to the strip's edge like a tile. The photo fills the strip's height
-   however many lines the words take. */
+.pick[data-count] .pick-n {
+  display: grid;
+}
+
+/* One cup less: 44px wide and as tall as its row, right before the count. */
+.less {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(var(--ctl-add) + var(--ctl-n));
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--press);
+}
+
+.less:focus-visible {
+  outline-offset: -4px;
+}
+
+/* A drink with its own prices. On a phone: its name, under it its prices, each with its
+   size, and the count and the plus at the row's end. */
+.pick.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name ctl" "prices ctl";
+  gap: var(--space-1) 0;
+}
+
+.pick.cols .row-name {
+  grid-area: name;
+}
+
+.pick.cols .prices {
+  grid-area: prices;
+  justify-self: start;
+}
+
+.pick.cols .pick-ctl {
+  grid-area: ctl;
+}
+
+/* The prices of one row are one pair, and the row's one dot comes after the pair, with
+   room between, so it marks both. On a phone the pair is two short lines, one per size,
+   with the dot beside the middle of them: that fits the narrowest phone, clear of the
+   row's "− 2 +". */
+.prices {
+  display: grid;
+  justify-items: start;
+  gap: 0.125rem;
+  padding-right: var(--space-2);
+}
+
+.prices > * {
+  text-align: left;
+}
+
+/* The best seller: one block of strawberry pink across the poster, set the way the shop
+   sets a promo: a small black tag, the name huge, and the shop's own line about it. The
+   line and the row's "− 2 +" share the last line, so the name has the block's width. */
 .pick-best {
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "flag flag" "name name" "tag ctl";
+  justify-items: start;
+  gap: 0 var(--space-3);
   width: calc(100% + var(--bleed) * 2);
   margin-inline: calc(var(--bleed) * -1);
-  padding: 0 var(--bleed) 0 0;
-  gap: var(--space-4);
+  padding: var(--space-4) calc(var(--bleed) + var(--best-inset)) var(--space-3);
   background: var(--flavor-strawberry);
   color: var(--flavor-strawberry-ink);
   --fg: var(--flavor-strawberry-ink);
   --rule: var(--flavor-strawberry-ink);
 }
 
-.pick-photo {
-  flex: none;
-  position: relative;
-  width: 9rem;
-  min-height: 9rem;
-}
-
-.pick-photo img {
-  position: absolute;
-  inset: 0;
-  height: 100%;
-  object-fit: cover;
-}
-
-.pick-words {
-  align-self: center;
-  display: grid;
-  gap: var(--space-1);
-  min-width: 0;
-  padding-block: var(--space-3);
-}
-
-.pick-best .pick-n {
-  align-self: center;
+.pick-flag {
+  grid-area: flag;
+  padding: 0.1875rem var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--flavor-strawberry-ink);
+  color: var(--flavor-strawberry);
+  font-size: var(--text-small);
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .pick-best .pick-name {
+  grid-area: name;
+  margin-top: var(--space-2);
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: var(--text-h3);
+  font-size: var(--text-best);
   letter-spacing: var(--display-tracking);
   line-height: 1;
 }
 
 .pick-tag {
+  grid-area: tag;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--space-2);
   font-size: var(--text-quiet);
   line-height: 1.05;
+}
+
+.pick-best .pick-ctl {
+  grid-area: ctl;
+  justify-self: end;
 }
 
 .pick-best[data-count] .pick-n {
   background: var(--order-ink);
   color: var(--order);
+}
+
+/* On the block, the button that takes a cup off is on the line of the count. */
+.picks-wide .less {
+  --fg: var(--flavor-strawberry-ink);
+  top: auto;
+  bottom: var(--space-3);
+  right: calc(var(--best-inset) + var(--ctl-add) + var(--ctl-n));
+  height: var(--tap);
+  color: var(--flavor-strawberry-ink);
 }
 
 .row-name {
@@ -705,8 +775,6 @@ h1 {
   line-height: 1.25;
 }
 
-/* The snack, straight out of the fryer: a small square on its own row, so the menu's
-   big picture stays a drink. */
 /* The room after a price where its dot hangs, the same as after a drink's prices. */
 .extra .price {
   margin-right: var(--space-3);
@@ -726,8 +794,65 @@ h1 {
   width: 5rem;
 }
 
-.snack .cap {
-  margin-top: 0;
+.snack figcaption {
+  font-size: var(--text-quiet);
+  line-height: 1.15;
+}
+
+/* Wide enough for columns: two drinks per row under the switch, and a price column per
+   size for the drinks with their own prices, named in the group's header. There the
+   size beside each price is only read out. */
+@media (min-width: 30rem) {
+  .menu {
+    --col-ctl: calc(var(--tap) + var(--ctl-n) + var(--ctl-add));
+  }
+
+  .picks {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .cols,
+  .pick.cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto var(--col-ctl);
+    grid-template-areas: none;
+    gap: 0;
+    align-items: center;
+  }
+
+  .pick.cols .row-name,
+  .pick.cols .prices,
+  .pick.cols .pick-ctl {
+    grid-area: auto;
+  }
+
+  .pick.cols .prices {
+    justify-self: auto;
+  }
+
+  .prices,
+  .grp-head .prices {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--col-price);
+    justify-items: stretch;
+    gap: 0;
+    padding-right: 0;
+    margin-right: var(--space-2);
+  }
+
+  .prices > * {
+    text-align: center;
+  }
+
+  .price-size {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* --- Ways to order: by the white cup ---------------------------------------------- */
@@ -775,7 +900,7 @@ h1 {
   height: 1.5rem;
 }
 
-/* --- Shops: under the teal banner, in the quiet voice ------------------------------- */
+/* --- Shops: on the turquoise of the awning over the shop in front of Griya ----------- */
 
 .shops-when {
   display: grid;
@@ -795,12 +920,9 @@ h1 {
   --tbc-mark: 0;
 }
 
-.shops-in {
-  display: grid;
-  gap: var(--space-6);
-}
-
-/* Every shop is the same row: its name, its street, its map. */
+/* Every shop is one row: its name, its street, its map, and then its front if the shop
+   has posted a photo of it. Nothing in the row waits for the photo, so a shop without
+   one is the same row, only shorter. */
 .shops {
   margin-top: var(--space-5);
   border-top: var(--line-strong) solid var(--fg);
@@ -808,15 +930,19 @@ h1 {
 
 .shop {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
   padding-block: var(--space-4);
   border-bottom: var(--line) solid var(--rule);
 }
 
+.shop-words {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .shop h3 {
-  margin-bottom: var(--space-1);
-  font-size: var(--text-quiet-h3);
-  line-height: 1;
+  margin-bottom: var(--space-2);
 }
 
 .shop-odd {
@@ -834,15 +960,8 @@ h1 {
   gap: 0.875rem;
 }
 
-/* The shops' fronts, each under its shop's name: a set beside the list, so a shop with
-   no photo yet leaves no gap in it. */
-.fronts {
-  display: grid;
-  gap: var(--space-5);
-}
-
 @media (min-width: 30rem) {
-  .shop {
+  .shop-words {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     column-gap: var(--space-4);
@@ -852,11 +971,11 @@ h1 {
 /* --- Pre-order: the black of the shop's promo posters on top, the form on the white of
    the cup. Pink here is only what is in the order: the size and shop picked, the total. */
 
-/* A jump to the form lands on its title, with the photo above it already scrolled
-   past: whoever taps "Pre-order" wants the fields. --head-photo is the photo's height
-   over its width, set on the section by page.mjs. */
+/* A jump to the form lands on its title, right under the sticky links, with the first
+   field in view. */
 #pesan {
-  scroll-margin-top: calc(var(--head-photo, 0) * -100vw - var(--space-4));
+  padding-top: 0;
+  scroll-margin-top: calc(var(--space-4) * -1);
 }
 
 .order-head {
@@ -868,12 +987,23 @@ h1 {
   color: var(--fg);
 }
 
-.order-words {
+.order-top {
+  display: grid;
+  gap: var(--space-4);
   padding-block: var(--space-5);
 }
 
-.order-words .lead {
-  margin-top: var(--space-2);
+/* Bagging a big order, as a small square beside the second line. The picture is a soft
+   video still: it stays small. */
+.order-aside {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.order-aside .photo {
+  flex: none;
+  width: 5.5rem;
 }
 
 .form,
@@ -1241,6 +1371,11 @@ select[aria-invalid="true"]:focus-visible {
   white-space: nowrap;
 }
 
+/* The room after the sum where its dot hangs, clear of the bar's corner. */
+#total-price {
+  margin-right: var(--space-3);
+}
+
 .send-go {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1326,7 +1461,7 @@ select[aria-invalid="true"]:focus-visible {
 
 .reviews blockquote {
   font-size: var(--text-quote);
-  line-height: 1;
+  line-height: 1.05;
   text-wrap: balance;
 }
 
@@ -1341,7 +1476,7 @@ select[aria-invalid="true"]:focus-visible {
 /* --- Foot: the black of the badge on the cups --------------------------------------- */
 
 .foot {
-  padding-block: var(--space-6) var(--space-8);
+  padding-block: var(--space-6) var(--space-5);
 }
 
 .foot-brand {
@@ -1404,15 +1539,29 @@ select[aria-invalid="true"]:focus-visible {
 
 .bar p {
   flex: 1;
+  display: grid;
+  justify-items: start;
+  gap: 0.125rem;
   min-width: 0;
 }
 
-.bar strong {
-  display: block;
+/* The sum, as big as the shop prints a price on a promo poster. Under it, what it is the
+   sum of: how many cups, and in which sizes. */
+#bar-price {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: var(--text-total);
+  letter-spacing: var(--display-tracking);
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
-#bar-cups,
-#bar-price {
+.bar-what {
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+#bar-cups {
   white-space: nowrap;
 }
 
@@ -1420,18 +1569,9 @@ select[aria-invalid="true"]:focus-visible {
   flex: none;
 }
 
-/* --- Small phones: narrower price columns, so a drink's name stays on one line ------- */
+/* --- Small phones ------------------------------------------------------------------ */
 
 @media (max-width: 23.5rem) {
-  .menu {
-    --col-price: 4.7rem;
-    --col-add: 1.75rem;
-  }
-
-  .rows .price {
-    font-size: 0.875rem;
-  }
-
   /* The date needs more room than the hour. */
   .pair {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
@@ -1440,11 +1580,6 @@ select[aria-invalid="true"]:focus-visible {
 
   .pair input {
     padding-inline: var(--space-2);
-  }
-
-  .pick-photo {
-    width: 7.5rem;
-    min-height: 7.5rem;
   }
 
   /* A drink in the order keeps to two lines: the amount's parts sit a little closer. */
@@ -1461,17 +1596,9 @@ select[aria-invalid="true"]:focus-visible {
   }
 }
 
-/* --- Narrowest phones: one flavour per row, so long names keep their plus on screen -- */
+/* --- Narrowest phones ---------------------------------------------------------------- */
 
 @media (max-width: 21rem) {
-  .picks {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .pick-best {
-    gap: var(--space-3);
-  }
-
   /* The size names step down a little, so they keep clear of their frames. */
   .line .seg label > span {
     min-width: 3.25rem;
@@ -1488,19 +1615,20 @@ select[aria-invalid="true"]:focus-visible {
     right: var(--space-2);
   }
 
-  /* A drink stays on two lines: the amount's buttons give up a little width each, so
-     the row's sum and "Hapus" sit on the amount's line. */
-  .qty button {
-    width: 2.25rem;
-  }
-
+  /* A drink takes a third line here: what that row comes to, and "Hapus", under the
+     amount. So every part of the amount keeps its full 44px. A row with neither (one
+     empty row) has no third line. */
   .qty input {
-    width: 2rem;
+    width: var(--tap);
   }
 
   .line-end {
-    gap: 0.875rem;
-    font-size: var(--text-small);
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+
+  .line-end:not(:has(.line-price:not(:empty), .line-remove:not([hidden]))) {
+    display: none;
   }
 }
 
@@ -1520,22 +1648,6 @@ select[aria-invalid="true"]:focus-visible {
     height: auto;
     aspect-ratio: 4 / 3;
   }
-
-  /* The shops' fronts sit side by side while the page is one column wide. */
-  .fronts {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  /* The pink band keeps its photo inside it, and a jump lands on the band's top. */
-  .band-photo#pesan {
-    padding-top: 0;
-    scroll-margin-top: 0;
-  }
-
-  .order-head .wrap {
-    padding-top: var(--space-6);
-  }
-
 }
 
 /* --- Wider screens ---------------------------------------------------------------- */
@@ -1591,10 +1703,6 @@ select[aria-invalid="true"]:focus-visible {
     margin-left: calc(var(--space-3) * -1);
   }
 
-  .jump a + a {
-    border-left: 0;
-  }
-
   .jump a.jump-go {
     margin-left: auto;
     padding-inline: 0;
@@ -1610,18 +1718,15 @@ select[aria-invalid="true"]:focus-visible {
 
   /* Two posters side by side: the switch with the drinks it prices, and everything
      with a price of its own. */
+  /* The best seller's block lines up with the column and its rules. */
   .menu {
-    --bleed: var(--space-3);
+    --bleed: 0px;
+    --best-inset: var(--space-4);
     --col-price: 5.75rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
     align-items: start;
-  }
-
-  .pick-photo {
-    width: 11rem;
-    min-height: 11rem;
   }
 
   .price {
@@ -1632,22 +1737,19 @@ select[aria-invalid="true"]:focus-visible {
     padding-bottom: 0;
   }
 
-  /* The counter left, the three ways right. */
+  /* The counter left, its top on the headline's, the three ways right. */
   .ways {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: var(--space-8);
-    align-items: center;
-  }
-
-  /* The list of shops left, their fronts right. */
-  .shops-in {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
     align-items: start;
   }
 
-  .fronts {
-    grid-template-columns: minmax(0, 1fr);
+  /* A shop's words left, its front right, in the page's two columns. */
+  .shop {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
+    align-items: center;
+    padding-block: var(--space-5);
   }
 
   .shops-when {
@@ -1657,17 +1759,16 @@ select[aria-invalid="true"]:focus-visible {
     align-items: baseline;
   }
 
-  /* The black band: the words left, the photo right, both inside the band. */
-  .order-head .wrap {
-    display: grid;
+  /* The black band: the title left, the small photo and the second line right. */
+  .order-top {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
     align-items: center;
     padding-block: var(--space-6);
   }
 
-  .order-head .photo {
-    grid-area: 1 / 2;
+  .order-aside .photo {
+    width: 7rem;
   }
 
   /* Drinks left, the rest right. The form closes the same way: the small print and

@@ -25,7 +25,7 @@ import {
 } from "./data.mjs";
 import { clock, rupiah } from "./order.mjs";
 import { esc, mark, markAll } from "./mark.mjs";
-import { PHOTO_DIR, drinkPhotos, photoSize, photos, shopPhotos } from "./photos.mjs";
+import { PHOTO_DIR, photoSize, photos, shopPhotos } from "./photos.mjs";
 
 const root = join(import.meta.dirname, "..");
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -158,41 +158,58 @@ function sizeSwitch({ price, flat }) {
 
 /**
  * A drink on the menu: a button that adds one cup to the order, in the size picked in
- * the menu's switch. site.js fills in the count and keeps the size it reads out current.
+ * the menu's switch, and beside it a button that takes one cup off again. That one shows
+ * only while the drink is in the order: the row then reads "− 2 +". site.js fills in the
+ * count and keeps the sizes both buttons read out current.
  */
 function pick(drink, inner, extraClass = "") {
-  return `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-n" aria-hidden="true">+</span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
+  const add = `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-ctl" aria-hidden="true"><span class="pick-n"></span><span class="pick-add">+</span></span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
+  const less = `<button type="button" class="less" data-less="${esc(drink.id)}" hidden><span aria-hidden="true">&minus;</span><span class="sr">Kurangi satu ${esc(drink.name)}</span></button>`;
+  return add + less;
 }
 
 /**
  * A drink with its own prices. A size it isn't sold in leaves no dash: the name takes
- * that room. The price of the size a tap adds is the bold one. The row's prices share
- * one mark, so no dot sits between two prices like a separator.
+ * that room. The price of the size a tap adds is the bold one. The row's prices are one
+ * pair with one mark after it, so no dot sits between two prices like a separator.
+ * Each price names its size: under the column's name on a wide screen that is only read
+ * out, on a phone (where the pair sits under the drink's name) it shows. A drink sold in
+ * one size says so in its note, so its price doesn't say it again.
  */
 function drinkRow(drink) {
   const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
   const lead = sizes.findIndex((s) => drink.prices[s.id] != null); // sizes missing before the first sold one
+  const sizeName = onlySizes(drink) ? "sr" : "price-size";
   const cell = (s) =>
     drink.prices[s.id] == null
       ? '<span class="price"></span>'
-      : `<span class="price${s === firstSize(drink) ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="sr">${esc(s.label)} </span>${esc(rupiah(val(drink.prices[s.id])))}</span>`;
+      : `<span class="price${s === firstSize(drink) ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="${sizeName}">${esc(s.label)} </span>${esc(rupiah(val(drink.prices[s.id])))}</span>`;
   const name = `<span class="row-name"><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}</span> `;
   const prices = markAll(Object.values(drink.prices), sizes.slice(lead).map(cell).join(" "), "prices");
   return `<li>${pick(drink, name + prices, " pick-row cols")}</li>`;
 }
 
-/** The best seller's strip: the cup in a hand, its name, and the shop's own line about it. The menu's one big picture. */
+/**
+ * The shop's own line about a drink, from a caption on its TikTok ("Susu Malabar dengan
+ * buah stroberi segar itu nungguin kamu, iya kamuu", see docs/brand-notes.md).
+ */
+const DRINK_LINES = { strawberry: "Nungguin kamu, iya kamu." };
+
+/**
+ * The best seller: one block of strawberry pink across the menu, set like the shop's promo
+ * posters: a small black tag, the name huge, and the shop's own line about it. No photo:
+ * the same cup is on the first screen.
+ */
 function bestPick(drink) {
-  const photo = drinkPhotos[drink.id];
-  const line = ["Paling laris", photo?.line].filter(Boolean).join(". ");
+  const line = DRINK_LINES[drink.id];
   return pick(
     drink,
-    `${photo ? picture(photo.photo, { sizes: "(min-width: 56rem) 11rem, 9rem", cls: "pick-photo", alt: "" }) : ""}<span class="pick-words"><span class="pick-name">${esc(drink.name)}</span> <span class="pick-tag">${esc(line)}</span></span>`,
+    `<span class="pick-name">${esc(drink.name)}</span><span class="sr">, </span><span class="pick-flag">Paling laris</span>${line ? `<span class="sr">. </span><span class="pick-tag">${esc(line)}</span>` : ""}`,
     " pick-best",
   );
 }
 
-/** A group under the switch's price: names only, the best seller on its own strip. */
+/** A group under the switch's price: names only, the best seller on its own block. */
 function flatSection({ name, list }) {
   const best = list.filter((d) => d.bestSeller);
   const rest = list.filter((d) => !d.bestSeller);
@@ -250,7 +267,7 @@ function menu() {
 
 /** How wide a photo shows: the whole phone screen, or one column of the page on a wide screen. */
 const WIDE = "(min-width: 56rem) 32rem, 100vw";
-const SHOP = "(min-width: 56rem) 30rem, 100vw";
+const SHOP = "(min-width: 56rem) 30rem, (min-width: 36rem) 34rem, 100vw";
 
 /** A row with a price that the form doesn't take: a bundle, a topping, the snacks. `what` is the small line under the name. */
 const extraRow = ([name, what, price]) =>
@@ -289,7 +306,7 @@ function extras() {
   return `
           <section class="grp grp-extras">
             <div class="grp-head"><h3>Teman minum</h3></div>
-            ${snacks.length ? `<figure class="snack">${picture("corndog", { sizes: "5rem" })}<figcaption class="cap">Corndog dong, baru diangkat.</figcaption></figure>` : ""}
+            ${snacks.length ? `<figure class="snack">${picture("corndog", { sizes: "5rem" })}<figcaption class="quiet">Corndog dong, baru diangkat.</figcaption></figure>` : ""}
             <ul class="rows">
               ${rows.map(extraRow).join("")}
             </ul>
@@ -336,56 +353,45 @@ function sharedGofood() {
 }
 
 /**
- * One shop: its name, its street, its map. `gofoodHere: false` leaves its GoFood button
- * out (the link is shown once, elsewhere). The shops' fronts are shown as a set beside
- * the list (shopFronts), so every row is the same whether or not its shop has a photo.
+ * One shop: its name, its street, its map, and its front when the shop has posted a photo
+ * of it (photos.mjs). The photo is the last thing in the row and nothing waits for it, so
+ * a shop without one is the same row, only shorter. `gofoodHere: false` leaves its GoFood
+ * button out (the link is shown once, elsewhere).
  */
 export function shopRow(shop, shared, gofoodHere = true) {
   const h = val(shop.hours);
   // With shared hours a shop only says where it differs. Without, it says its own.
   const own = shared ? oddDays(h) : [`Tiap hari ${span(h.default)}`, oddDays(h)].filter(Boolean).join(", ");
+  const photo = shopPhotos[shop.id];
   return `
         <li class="shop">
-          <div class="shop-what">
-            <h3>${mark(shop.name, shopLabel)}</h3>
-            <p${isLocated(shop) ? "" : ' class="shop-soon"'}>${mark(shop.address)}</p>
-            ${own ? `<p class="shop-odd">${mark(shop.hours, () => own)}</p>` : ""}
-          </div>${
-            isLocated(shop)
-              ? `
-          <div class="shop-go">
-            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta")}${arrow("out")}</a>
-            ${gofoodHere && shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood")}${arrow("out")}</a>` : ""}
-          </div>`
-              : ""
-          }
+          <div class="shop-words">
+            <div class="shop-what">
+              <h3>${mark(shop.name, shopLabel)}</h3>
+              <p${isLocated(shop) ? "" : ' class="shop-soon"'}>${mark(shop.address)}</p>
+              ${own ? `<p class="shop-odd">${mark(shop.hours, () => own)}</p>` : ""}
+            </div>${
+              isLocated(shop)
+                ? `
+            <div class="shop-go">
+              <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta")}${arrow("out")}</a>
+              ${gofoodHere && shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood")}${arrow("out")}</a>` : ""}
+            </div>`
+                : ""
+            }
+          </div>${photo ? `
+          ${picture(photo, { sizes: SHOP, cls: "bleed shop-photo" })}` : ""}
         </li>`;
-}
-
-/** The fronts of the shops that have a photo, each under its shop's name. */
-function shopFronts() {
-  const fronts = shops.filter((s) => shopPhotos[s.id]);
-  if (!fronts.length) return "";
-  return `
-          <ul class="fronts">${fronts
-            .map((s) => `
-            <li><figure>${picture(shopPhotos[s.id], { sizes: SHOP, cls: "bleed" })}<figcaption class="cap">${mark(s.name, shopLabel)}</figcaption></figure></li>`)
-            .join("")}
-          </ul>`;
 }
 
 function shopList() {
   const shared = sharedHours();
   const gofoodHere = !sharedGofood();
   return `
-        <div class="shops-in">
-          <div class="shops-words">
-            <h2 class="quiet">${story.shops} toko di Jatinangor</h2>
-            <p class="shops-when">${shared ? `<span>${openLine(shared)}</span> ` : ""}<span>Paling ramai ${esc(visit.busiest)}</span></p>
-            <ul class="shops">${shops.map((s) => shopRow(s, shared, gofoodHere)).join("")}
-            </ul>
-          </div>${shopFronts()}
-        </div>`;
+        <h2>${story.shops} toko di Jatinangor</h2>
+        <p class="shops-when">${shared ? `<span>${openLine(shared)}</span> ` : ""}<span>Paling ramai ${esc(visit.busiest)}</span></p>
+        <ul class="shops">${shops.map((s) => shopRow(s, shared, gofoodHere)).join("")}
+        </ul>`;
 }
 
 // --- Ways to order ---------------------------------------------------------------
@@ -569,6 +575,12 @@ const DESCRIPTION =
  */
 export const OG_IMAGE = "og.jpg";
 
+/**
+ * The preview picture is as wide as the photo in it (1080 px), so the photo runs from edge
+ * to edge at its real size, never stretched. Same shape as the usual 1200 x 630.
+ */
+export const OG_SIZE = { width: photos.hero.widths[0], height: Math.round((photos.hero.widths[0] * 630) / 1200) };
+
 /** How wide the first photo shows: the phone's width, or its column on a wide screen. */
 const HERO_SIZES = "(min-width: 56rem) 30rem, 100vw";
 
@@ -613,8 +625,8 @@ function head() {
   <meta property="og:title" content="${esc(brand.title)}">
   <meta property="og:description" content="${esc(DESCRIPTION)}">
   <meta property="og:image" content="${esc(site)}/${OG_IMAGE}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image:width" content="${OG_SIZE.width}">
+  <meta property="og:image:height" content="${OG_SIZE.height}">
   <meta property="og:image:alt" content="${esc(brand.name)}, ${esc(brand.tagline)}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${esc(brand.title)}">
@@ -626,7 +638,7 @@ function head() {
 
 // --- Page ---------------------------------------------------------------------
 
-/** The headline, shared with the link-preview card. */
+/** The page's headline. */
 export const HEADLINE = "Susu segar, buah asli.";
 
 export default function page() {
@@ -670,12 +682,12 @@ export default function page() {
       </div>
     </section>
 
-    <section class="band band-paper band-photo" id="pesan" style="--head-photo: ${(photoSize("bungkus").height / photoSize("bungkus").width).toFixed(3)}">
+    <section class="band band-paper" id="pesan">
       <div class="order-head">
-        <div class="wrap">
-          ${picture("bungkus", { sizes: WIDE, cls: "bleed" })}
-          <div class="order-words">
-            <h2>Borong buat sepanitia</h2>
+        <div class="wrap order-top">
+          <h2>Borong buat sepanitia</h2>
+          <div class="order-aside">
+            ${picture("bungkus", { sizes: "(min-width: 56rem) 7rem, 5.5rem" })}
             <p class="lead">Buat sendiri juga bisa.</p>
           </div>
         </div>
@@ -689,7 +701,7 @@ export default function page() {
       <div class="wrap story">
         <figure class="story-photo">${picture("kedai", { sizes: WIDE, cls: "bleed" })}<figcaption class="cap">Toko depan Griya</figcaption></figure>
         <div class="story-words">
-          <h2 class="quiet">${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
+          <h2>${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
           <p>${esc(story.started)}${story.since ? `, tahun ${story.since}` : ""}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
         </div>
         <figure class="reviews">
@@ -714,7 +726,7 @@ export default function page() {
   </footer>
 
   <div class="bar" id="bar" hidden>
-    <p role="status"><strong><span id="bar-cups"></span> · <span id="bar-price"></span></strong><span class="sr" id="bar-last"></span></p>
+    <p role="status"><strong id="bar-price"></strong> <span class="bar-what"><span id="bar-cups"></span> · <span id="bar-sizes"></span></span><span class="sr" id="bar-last"></span></p>
     <a class="btn btn-fill" href="#pesan">Lanjut<span class="sr"> pre-order</span></a>
   </div>`;
 

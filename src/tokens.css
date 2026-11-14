@@ -11,12 +11,13 @@
   font-display: swap;
 }
 
-/* The quiet face: the light serif italic of "Kami ada di mana?" and "Outlet 1" on the
-   shop's location posts. Cormorant Garamond Italic, open licence. */
+/* The quiet face: the upright serif of "Kami ada di mana?" on the shop's location post.
+   Only for words that are the shop's or its customers' own: a line from a caption, a
+   review. Cormorant Garamond, open licence. */
 @font-face {
   font-family: "Cormorant Garamond";
-  src: url("fonts/cormorant-garamond-italic-latin.woff2") format("woff2");
-  font-style: italic;
+  src: url("fonts/cormorant-garamond-latin.woff2") format("woff2");
+  font-style: normal;
   font-weight: 300 700;
   font-display: swap;
 }
@@ -31,7 +32,6 @@
   --display-word-gap: 0.14em; /* this face has a narrow space: these keep words apart */
   --body-word-gap: 0.07em;
   --quiet-weight: 600;
-  --quiet-style: italic;
 
   /* --- Text sizes */
   --text-small: 0.875rem;
@@ -44,10 +44,9 @@
   --text-price: 1.375rem;
   --text-total: 1.625rem; /* the order's total above the send button */
   --text-promo: 3.25rem; /* a running promo's price */
+  --text-best: clamp(2.5rem, 12.5vw, 3.5rem); /* the best seller's name: the menu's one loud line */
   /* The serif runs small for its size, so it gets its own, larger steps. */
-  --text-quiet: 1.3125rem;
-  --text-quiet-h3: 2.25rem;
-  --text-quiet-h2: 2.875rem;
+  --text-quiet: 1.375rem;
   --text-quote: 2.125rem;
 
   /* --- Colours, named after where they come from in the shop */
@@ -55,10 +54,13 @@
   --poster-ink: #ffffff;
   --poster-muted: #b9d6ce;
   --poster-line: #356a62;
-  --banner: #0d6867; /* the teal banner over the shop in front of Griya */
-  --banner-ink: #ffffff;
-  --banner-muted: #d3e8e3;
-  --banner-line: #4b8f8c;
+  /* The turquoise awning over the shop in front of Griya, as it shows in the shop's own
+     photo on this page (#07c6c0 there), a step deeper so black type reads on it and the
+     awning in the photo still stands out. */
+  --banner: #14b3ab;
+  --banner-ink: var(--ink);
+  --banner-muted: #0a312e;
+  --banner-line: #0d7f79;
   --ink: #111111; /* the black of the badge on the cups */
   --ink-line: #3b3b3b;
   --paper: #fdfcf6; /* the white cup, and the off-white type of the promo posters */
@@ -83,7 +85,7 @@
      with two meanings and no others. */
   --petal: #f39e8d;
 
-  /* Strawberry: the best seller's strip on the menu. */
+  /* Strawberry: the best seller's block on the menu. */
   --flavor-strawberry: var(--petal);
   --flavor-strawberry-ink: var(--ink);
 
@@ -128,7 +130,6 @@
   :root {
     --gutter: 2rem;
     --text-h2: 3.25rem;
-    --text-quiet-h2: 3.75rem;
     --text-quote: 2.5rem;
     --badge-size: 4.5rem;
   }
@@ -147,6 +148,5 @@
     --text-price: 1.25rem;
     --text-total: 1.375rem;
     --text-h2: 2.25rem;
-    --text-quiet-h2: 2.5rem;
   }
 }

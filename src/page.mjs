@@ -11,12 +11,14 @@ import {
   bundles,
   drinkGroups,
   drinks,
+  isTbc,
   order as orderRules,
   shops,
   sizes,
   snackPriceRange,
   snacks,
   story,
+  tbc,
   toppings,
   val,
   visit,
@@ -26,39 +28,81 @@ import { esc, mark } from "./mark.mjs";
 
 const root = join(import.meta.dirname, "..");
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const tokens = () => readFileSync(join(root, "src/tokens.css"), "utf8");
 
-/** The logo, inlined so it takes the text colour around it. Swap public/brand/logo.svg to change it. */
+/**
+ * The logo, inlined so it takes the text colour around it. Swap public/brand/logo.svg to
+ * change it: any SVG file works, with or without an <?xml?> line on top.
+ */
 export function logo() {
   return readFileSync(join(root, "public/brand/logo.svg"), "utf8")
+    .replace(/<\?xml[\s\S]*?\?>/g, "")
+    .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "")
-    .replace("<svg ", '<svg class="logo-mark" ')
+    .replace(/<svg\b([^>]*)>/, (_, attrs) =>
+      /\sclass="/.test(attrs) ? `<svg${attrs.replace(/\sclass="/, ' class="logo-mark ')}>` : `<svg class="logo-mark"${attrs}>`,
+    )
     .trim();
 }
 
-/** A colour from tokens.css, for the few places CSS can't reach (the browser's bar colour). */
+/** A value from tokens.css, for the few places CSS can't reach (the browser's bar colour). "" if not there. */
 export function token(name) {
-  const css = readFileSync(join(root, "src/tokens.css"), "utf8");
-  return new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1].trim() || "";
+  return new RegExp(`--${name}:\\s*([^;]+);`).exec(tokens())?.[1].trim() || "";
+}
+
+/** The font files named in tokens.css, so the page preloads exactly what the styles use. */
+export function fontFiles() {
+  const files = [...tokens().matchAll(/@font-face\s*\{[^}]*\}/g)].flatMap(([block]) =>
+    [...block.matchAll(/url\(\s*["']?([^"')]+\.woff2)["']?\s*\)/g)].map((m) => m[1]),
+  );
+  return [...new Set(files)];
 }
 
 // --- Small formatters ---------------------------------------------------------
 
-/** 13000 -> "13.000", the way a menu board writes it. */
-const bare = (n) => rupiah(n).replace("Rp", "");
-const range = ([low, high]) => `${bare(low)}–${bare(high)}`;
+/** One price format everywhere: "Rp13.000". A range says Rp once: "Rp8.000–19.500". */
+const range = ([low, high]) => `${rupiah(low)}–${rupiah(high).replace("Rp", "")}`;
 const span = ([open, close]) => `${clock(open)}–${clock(close)}`;
 
-function hoursText(h) {
-  const odd = Object.entries(h.byDay || {}).map(([day, times]) => `${DAYS[day]} ${span(times)}`);
-  return [`Tiap hari ${span(h.default)}`, ...odd].join(", ");
+/** The days a shop keeps other hours, said as the difference: "Jumat buka mulai 14.00". */
+function oddDays(h) {
+  return Object.entries(h.byDay || {})
+    .map(([day, [open, close]]) => {
+      if (close === h.default[1]) return `${DAYS[day]} buka mulai ${clock(open)}`;
+      if (open === h.default[0]) return `${DAYS[day]} tutup ${clock(close)}`;
+      return `${DAYS[day]} ${span([open, close])}`;
+    })
+    .join(", ");
 }
 
 /** ["Tunai", "QRIS"] -> "tunai atau QRIS" (a short name in capitals stays as it is). */
 const payWith = () => visit.payment.map((p) => (p === p.toUpperCase() ? p : p.toLowerCase())).join(" atau ");
 
-const dot = (id) => `<i class="dot" style="--dot: var(--flavor-${esc(id)})"></i>`;
+/** A fruit's dot. Only drinks with a colour in tokens.css (--flavor-<id>) get one. */
+const dot = (id) => (token(`flavor-${id}`) ? `<i class="dot" style="--dot: var(--flavor-${esc(id)})"></i>` : "");
 
 // --- Menu ---------------------------------------------------------------------
+
+/**
+ * The menu's sections, for the poster and for the form's list. A group with a single
+ * drink is not a section of its own: the drink joins the section before it and
+ * carries its group's name (`kind`).
+ */
+function menuSections() {
+  const out = [];
+  for (const group of drinkGroups) {
+    const list = drinks.filter((d) => d.group === group.id);
+    if (list.length === 1 && out.length) out.at(-1).list.push({ ...list[0], kind: group.name });
+    else if (list.length) out.push({ ...group, list });
+  }
+  return out;
+}
+
+/** "22 oz saja" for a drink not sold in every size, else "". */
+function onlySizes(drink) {
+  const sold = sizes.filter((s) => drink.prices[s.id] != null);
+  return sold.length < sizes.length ? `${sold.map((s) => s.label).join(", ")} saja` : "";
+}
 
 /** True when every drink of a group costs the same, so the price is said once. */
 function samePrices(list) {
@@ -66,204 +110,218 @@ function samePrices(list) {
   return list.every((d) => key(d) === key(list[0]));
 }
 
-function priceCell(drink, size) {
-  const p = drink.prices[size.id];
-  return p == null
-    ? `<span class="price"><span class="sr">${esc(size.label)} tidak ada</span><span aria-hidden="true">-</span></span>`
-    : `<span class="price"><span class="sr">${esc(size.label)} </span>${mark(p, bare)}</span>`;
+const priceCell = (drink, size, extraClass = "") =>
+  `<span class="price${extraClass}"><span class="sr">${esc(size.label)} </span>${mark(drink.prices[size.id], rupiah)}</span>`;
+
+/** The size names, said once above the price columns. Each price repeats its size for screen readers. */
+function sizeHeads() {
+  const heads = `<div class="cols"><span></span>${sizes.map((s) => `<span class="size">${esc(s.label)}</span>`).join("")}</div>`;
+  return `<div class="sizes" aria-hidden="true">${heads}${heads}</div>`;
 }
 
+/** A drink on the menu: a button that adds one cup to the order. site.js fills in the count. */
 function pick(drink, inner, extraClass = "") {
-  return `<button type="button" class="pick ${extraClass}" data-drink="${esc(drink.id)}" data-name="${esc(drink.name)}" aria-label="Tambah ${esc(drink.name)} ke pesanan">${inner}<span class="pick-n" aria-hidden="true">+</span></button>`;
+  return `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-n" aria-hidden="true">+</span><span class="sr pick-sr"></span></button>`;
 }
 
-function drinkGroup(group) {
-  const list = drinks.filter((d) => d.group === group.id);
-  if (list.length === 0) return "";
-  const same = list.length > 1 && samePrices(list);
-  const heads = sizes.map((s) => `<span class="size">${esc(s.label)}</span>`).join("");
+/** A drink with its own prices. A size it isn't sold in leaves no dash: the name takes that room. */
+function drinkRow(drink) {
+  const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
+  const lead = sizes.findIndex((s) => drink.prices[s.id] != null); // sizes missing before the first sold one
+  const cells = sizes
+    .slice(lead)
+    .map((s) => (drink.prices[s.id] == null ? '<span class="price"></span>' : priceCell(drink, s)))
+    .join(" ");
+  const name = `<span class="row-name"${lead > 0 ? ` style="grid-column: span ${lead + 1}"` : ""}>${dot(drink.id)}<span><span class="pick-name">${esc(drink.name)}</span>${drink.bestSeller ? ' <span class="pick-tag">paling laris</span>' : ""}${notes ? ` <small>${notes}</small>` : ""}</span></span> `;
+  return `<li>${pick(drink, name + cells, " pick-row cols")}</li>`;
+}
 
-  if (same) {
+function menuSection({ name, list }) {
+  if (list.length > 1 && samePrices(list)) {
     const best = list.filter((d) => d.bestSeller);
     const rest = list.filter((d) => !d.bestSeller);
     return `
-      <section class="grp">
-        <div class="grp-head grp-head-priced cols">
-          <h3>${esc(group.name)}</h3>${heads}
-          <span></span>${sizes.map((s) => priceCell(list[0], s).replace('class="price"', 'class="price price-all"')).join("")}
-        </div>
-        <ul class="picks">
-          ${best.map((d) => `<li class="picks-wide">${pick(d, `${dot(d.id)}<span class="pick-name">${esc(d.name)}</span><span class="pick-tag">paling laris</span>`, "pick-best")}</li>`).join("")}
-          ${rest.map((d) => `<li>${pick(d, `${dot(d.id)}<span class="pick-name">${esc(d.name)}</span>`)}</li>`).join("")}
-        </ul>
-      </section>`;
+        <section class="grp">
+          <div class="grp-head cols">
+            <h3>${esc(name)}</h3>${sizes.map((s) => (list[0].prices[s.id] == null ? "<span></span>" : priceCell(list[0], s, " price-all"))).join("")}
+          </div>
+          <ul class="picks">
+            ${best.map((d) => `<li class="picks-wide">${pick(d, `<span class="pick-name">${esc(d.name)}</span> <span class="pick-tag">paling laris</span>`, " pick-best")}</li>`).join("")}
+            ${rest.map((d) => `<li>${pick(d, `${dot(d.id)}<span class="pick-name">${esc(d.name)}</span>`)}</li>`).join("")}
+          </ul>
+        </section>`;
   }
-
   return `
-      <section class="grp">
-        <div class="grp-head cols"><h3>${esc(group.name)}</h3>${heads}</div>
-        <ul class="rows">
-          ${list
-            .map(
-              (d) =>
-                `<li>${pick(
-                  d,
-                  `<span class="row-name">${dot(d.id)}<span><span class="pick-name">${esc(d.name)}</span>${d.bestSeller ? '<span class="pick-tag">paling laris</span>' : ""}${d.note ? `<small>${esc(d.note)}</small>` : ""}</span></span>${sizes.map((s) => priceCell(d, s)).join("")}`,
-                  "pick-row cols",
-                )}</li>`,
-            )
-            .join("")}
-        </ul>
-      </section>`;
+        <section class="grp">
+          <div class="grp-head"><h3>${esc(name)}</h3></div>
+          <ul class="rows">
+            ${list.map(drinkRow).join("")}
+          </ul>
+        </section>`;
 }
 
 /** Toppings, snacks and bundles: things with a price that the form doesn't take. */
 function extras() {
   const rows = [];
   const names = (list) => list.map((x) => esc(x.name)).join(", ");
+  const plus = (n) => `+${rupiah(n)}`;
   const sameTopping = toppings.every((t) => val(t.price) === val(toppings[0].price));
   if (toppings.length && sameTopping) {
-    rows.push(["Topping", names(toppings), mark(toppings[0].price, (n) => `+${bare(n)}`)]);
+    rows.push(["Topping", names(toppings), mark(toppings[0].price, plus)]);
   } else {
-    for (const t of toppings) rows.push([`Topping ${esc(t.name)}`, "", mark(t.price, (n) => `+${bare(n)}`)]);
+    for (const t of toppings) rows.push([`Topping ${esc(t.name)}`, "", mark(t.price, plus)]);
   }
   if (snacks.length) rows.push([names(snacks).replace(/, ([^,]+)$/, " dan $1"), "", mark(snackPriceRange, range)]);
-  for (const b of bundles) rows.push([esc(b.name), esc(b.what), b.priceRange ? mark(b.priceRange, range) : mark(b.price, bare)]);
+  for (const b of bundles) rows.push([esc(b.name), esc(b.what), b.priceRange ? mark(b.priceRange, range) : mark(b.price, rupiah)]);
   return `
-      <section class="grp">
-        <div class="grp-head"><h3>Teman minum</h3></div>
-        <ul class="rows">
-          ${rows.map(([name, what, price]) => `<li class="extra"><span class="row-name"><span>${name}${what ? `<small>${what}</small>` : ""}</span></span><span class="price">${price}</span></li>`).join("")}
-        </ul>
-      </section>`;
+        <section class="grp">
+          <div class="grp-head"><h3>Teman minum</h3></div>
+          <ul class="rows">
+            ${rows.map(([name, what, price]) => `<li class="extra"><span class="row-name"><span>${name}${what ? `<small>${what}</small>` : ""}</span></span><span class="price">${price}</span></li>`).join("")}
+          </ul>
+        </section>`;
 }
 
 // --- Shops --------------------------------------------------------------------
 
-function shopRow(shop) {
+/**
+ * A shop's short name: "Susu Malabar Cikeruh" -> "Cikeruh", "Susu Malabar (toko ketiga)"
+ * -> "Toko ketiga". The brand name is already at the top of the page.
+ */
+function shopLabel(name) {
+  const short = name.replace(brand.name, "").trim().replace(/^\((.*)\)$/, "$1") || name;
+  return short[0].toUpperCase() + short.slice(1);
+}
+
+/** The hours every shop keeps, if they all keep the same ones. Said once, above the list. */
+function sharedHours() {
+  const all = shops.map((s) => val(s.hours).default);
+  if (!all.length || !all.every((h) => span(h) === span(all[0]))) return null;
+  const notes = [...new Set(shops.map((s) => s.hours).filter(isTbc).map((h) => h.note))];
+  return notes.length ? tbc(all[0], notes.join(". ")) : all[0];
+}
+
+function shopRow(shop, shared) {
+  const h = val(shop.hours);
+  // With shared hours a shop only says where it differs. Without, it says its own.
+  const own = shared ? oddDays(h) : [`Tiap hari ${span(h.default)}`, oddDays(h)].filter(Boolean).join(", ");
   return `
         <li class="shop">
           <div class="shop-what">
-            <h3>${mark(shop.name)}</h3>
-            <p>${mark(shop.area)}</p>
-            <p class="shop-hours">${mark(shop.hours, hoursText)}</p>
+            <h3>${mark(shop.name, shopLabel, "dot")}</h3>
+            <p>${mark(shop.address)}</p>
+            ${own ? `<p class="shop-odd">${mark(shop.hours, () => own)}</p>` : ""}
           </div>
           <div class="shop-go">
-            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta")}</a>
-            ${shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood")}</a>` : ""}
-            <a class="btn" href="#pesan" data-shop="${esc(shop.id)}">Pre-order</a>
+            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta", "dot")}</a>
+            ${shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood", "dot")}</a>` : ""}
           </div>
         </li>`;
+}
+
+function shopList() {
+  const shared = sharedHours();
+  return `
+        <h2>${story.shops} toko di Jatinangor</h2>
+        <p class="lead">${shared ? `Buka tiap hari ${mark(shared, span)}. ` : ""}Paling ramai ${esc(visit.busiest)}.</p>
+        <ul class="shops">${shops.map((s) => shopRow(s, shared)).join("")}
+        </ul>`;
 }
 
 // --- Pre-order form -------------------------------------------------------------
 
 function drinkOptions() {
-  return drinkGroups
-    .map((g) => {
-      const list = drinks.filter((d) => d.group === g.id);
-      if (!list.length) return "";
-      const label = (d) => {
-        const sold = sizes.filter((s) => d.prices[s.id] != null);
-        return esc(d.name) + (sold.length < sizes.length ? ` (${sold.map((s) => esc(s.label)).join(", ")} saja)` : "");
-      };
-      return `<optgroup label="${esc(g.name)}">${list.map((d) => `<option value="${esc(d.id)}">${label(d)}</option>`).join("")}</optgroup>`;
-    })
+  const label = (d) => esc(d.name) + (onlySizes(d) ? ` (${esc(onlySizes(d))})` : "");
+  return menuSections()
+    .map((g) => `<optgroup label="${esc(g.name)}">${g.list.map((d) => `<option value="${esc(d.id)}">${label(d)}</option>`).join("")}</optgroup>`)
     .join("");
 }
 
 function orderForm() {
   return `
       <form id="order" class="form" novalidate>
-        <fieldset class="field-group">
-          <legend>Minuman</legend>
-          <ol id="lines" class="lines"></ol>
-          <p class="err" id="err-lines" hidden></p>
-          <button type="button" class="btn" id="add-line">Tambah minuman lain</button>
-        </fieldset>
+        <div class="form-col">
+          <fieldset class="field">
+            <legend>Minuman</legend>
+            <ol id="lines" class="lines"></ol>
+            <button type="button" class="btn" id="add-line">Tambah minuman lain</button>
+          </fieldset>
 
-        <fieldset class="field-group" id="field-shop">
-          <legend>Ambil di</legend>
-          <div class="choices">
-            ${shops
-              .map(
-                (s) => `<label class="choice"><input type="radio" name="shop" value="${esc(s.id)}" aria-describedby="err-shop"><span><strong>${mark(s.name)}</strong><small>${mark(s.area)}</small></span></label>`,
-              )
-              .join("")}
-          </div>
-          <p class="err" id="err-shop" hidden></p>
-        </fieldset>
-
-        <div class="pair">
           <div class="field">
-            <label for="date">Tanggal ambil</label>
-            <input type="date" id="date" name="date" aria-describedby="err-date">
-            <p class="err" id="err-date" hidden></p>
+            <label for="notes">Catatan <span class="optional">kalau ada</span></label>
+            <textarea id="notes" name="notes" rows="2" placeholder="Misal buat acara himpunan, pakai whipped cream"></textarea>
           </div>
+        </div>
+
+        <div class="form-col">
           <div class="field">
-            <label for="time">Jam ambil</label>
-            <input type="time" id="time" name="time" aria-describedby="err-time warn-time">
-            <p class="err" id="err-time" hidden></p>
-            <p class="warn" id="warn-time" hidden></p>
+            <span class="label" id="label-shop">Ambil di</span>
+            <div class="seg seg-fill" id="field-shop" role="radiogroup" aria-labelledby="label-shop" aria-describedby="err-shop">
+              ${shops.map((s) => `<label><input type="radio" name="shop" value="${esc(s.id)}"><span>${mark(s.name, shopLabel, "dot")}</span></label>`).join("")}
+            </div>
+            <p class="err" id="err-shop" hidden></p>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="name">Nama pemesan</label>
-          <input type="text" id="name" name="name" autocomplete="name" autocapitalize="words" enterkeyhint="next" aria-describedby="err-name">
-          <p class="err" id="err-name" hidden></p>
-        </div>
-
-        <div class="field">
-          <label for="notes">Catatan <span class="optional">kalau ada</span></label>
-          <textarea id="notes" name="notes" rows="2" placeholder="Misal buat acara himpunan, pakai whipped cream"></textarea>
-        </div>
-
-        <div class="send">
-          <dl class="sum" id="sum" hidden>
-            <div><dt>Total</dt><dd id="sum-cups">0 gelas</dd></div>
-            <div><dt>Perkiraan harga</dt><dd id="sum-price">Rp0</dd></div>
-          </dl>
-          <div id="preview" hidden>
-            <h3 class="preview-title">Pesan yang dikirim</h3>
-            <pre class="bubble" id="preview-text" tabindex="0"></pre>
-            <button type="button" class="link" id="copy">Salin pesan</button>
+          <div class="pair">
+            <div class="field">
+              <label for="date">Tanggal ambil</label>
+              <input type="date" id="date" name="date" aria-describedby="err-date">
+              <p class="err" id="err-date" hidden></p>
+            </div>
+            <div class="field">
+              <label for="time">Jam ambil</label>
+              <input type="time" id="time" name="time" aria-describedby="err-time warn-time">
+              <p class="err" id="err-time" hidden></p>
+              <p class="warn" id="warn-time" hidden></p>
+            </div>
           </div>
-          <p class="hint">Harganya masih perkiraan, pastinya dari toko. Bayar di toko, ${esc(payWith())}.</p>
-          <a class="btn btn-send" id="send" href="#pesan">${mark(WHATSAPP_NUMBER, () => "Kirim lewat WhatsApp")}</a>
-          <p class="sent" id="sent" role="status" hidden>Lanjut di WhatsApp, tinggal tekan kirim.</p>
-          <noscript><p class="err">Form ini butuh JavaScript. Sementara, pesan lewat GoFood dulu.</p></noscript>
+
+          <div class="field">
+            <label for="name">Nama pemesan</label>
+            <input type="text" id="name" name="name" autocomplete="name" autocapitalize="words" enterkeyhint="done" aria-describedby="err-name">
+            <p class="err" id="err-name" hidden></p>
+          </div>
+
+          <div class="send">
+            <p class="total" id="total" hidden><span class="sr">Total </span><span id="total-cups"></span><span id="total-price"></span></p>
+            <a class="btn btn-send" id="send" href="#pesan">${mark(WHATSAPP_NUMBER, () => "Kirim lewat WhatsApp", "dot")}</a>
+            <p class="sent" id="sent" role="status" hidden>Lanjut di WhatsApp, tinggal tekan kirim.</p>
+            <p class="hint">Harganya masih perkiraan, pastinya dari toko. Bisa bayar ${esc(payWith())}.</p>
+            <details class="preview" id="preview" hidden>
+              <summary>Lihat pesan</summary>
+              <pre class="bubble" id="preview-text" tabindex="0"></pre>
+              <button type="button" class="link" id="copy">Salin pesan</button>
+            </details>
+            <noscript><p class="err">Form ini butuh JavaScript. Sementara, pesan lewat GoFood dulu.</p></noscript>
+          </div>
         </div>
       </form>
 
       <template id="line">
         <li class="line">
-          <div class="line-top">
-            <label>Rasa</label>
+          <div class="line-drink">
+            <label class="sr">Rasa</label>
+            <span class="select"><select><option value="">Pilih rasa</option>${drinkOptions()}</select></span>
             <button type="button" class="link line-remove">Hapus</button>
           </div>
-          <select class="line-drink">
-            <option value="">Pilih rasa</option>
-            ${drinkOptions()}
-          </select>
-          <div class="line-how">
-            <fieldset class="seg">
-              <legend>Ukuran</legend>
-              <div class="seg-row">
-                ${sizes.map((s) => `<label><input type="radio" value="${esc(s.id)}"><span>${esc(s.label)}<small data-size="${esc(s.id)}"></small></span></label>`).join("")}
-              </div>
-            </fieldset>
+          <p class="err err-drink" hidden></p>
+          <div class="line-row">
+            <span class="label">Ukuran</span>
+            <div class="seg" role="radiogroup">
+              ${sizes.map((s) => `<label><input type="radio" value="${esc(s.id)}"><span>${esc(s.label)}</span></label>`).join("")}
+            </div>
+            <span class="line-price"></span>
+          </div>
+          <div class="line-row">
+            <label>Jumlah</label>
             <div class="qty">
-              <label>Jumlah</label>
-              <div class="qty-row">
-                <button type="button" data-step="-1" aria-label="Kurangi satu">&minus;</button>
-                <input type="number" inputmode="numeric" min="1" max="${orderRules.maxQtyPerLine}" value="1">
-                <button type="button" data-step="1" aria-label="Tambah satu">+</button>
-                <button type="button" data-step="10" aria-label="Tambah sepuluh">+10</button>
-              </div>
+              <button type="button" data-step="-1" aria-label="Kurangi satu">&minus;</button>
+              <input type="number" inputmode="numeric" min="1" max="${orderRules.maxQtyPerLine}" value="1">
+              <button type="button" data-step="1" aria-label="Tambah satu">+</button>
+              <button type="button" data-step="10" aria-label="Tambah sepuluh">+10</button>
             </div>
           </div>
-          <p class="err" hidden></p>
+          <p class="err err-qty" hidden></p>
         </li>
       </template>`;
 }
@@ -291,6 +349,13 @@ const DESCRIPTION =
 
 function head() {
   const site = val(brand.siteUrl).replace(/\/$/, "");
+  // The page's own address (canonical, og:url) waits until the real one is known:
+  // a placeholder there would tell search engines the page lives somewhere else.
+  const address = isTbc(brand.siteUrl)
+    ? ""
+    : `
+  <link rel="canonical" href="${esc(site)}/">
+  <meta property="og:url" content="${esc(site)}/">`;
   // Only confirmed facts go here: no address, hours, prices, or site URL yet.
   const ld = {
     "@context": "https://schema.org",
@@ -307,11 +372,10 @@ function head() {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(brand.title)}</title>
   <meta name="description" content="${esc(DESCRIPTION)}">
-  <meta name="theme-color" content="${esc(token("banner"))}">
-  <link rel="canonical" href="${esc(site)}/">
+  <meta name="theme-color" content="${esc(token("banner"))}">${address}
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  ${fontFiles().map((file) => `<link rel="preload" href="${esc(file)}" as="font" type="font/woff2" crossorigin>`).join("\n  ")}
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="site.css">
   <meta property="og:type" content="website">
@@ -319,7 +383,6 @@ function head() {
   <meta property="og:site_name" content="${esc(brand.name)}">
   <meta property="og:title" content="${esc(brand.title)}">
   <meta property="og:description" content="${esc(DESCRIPTION)}">
-  <meta property="og:url" content="${esc(site)}/">
   <meta property="og:image" content="${esc(site)}/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -360,26 +423,25 @@ export default function page() {
   <main>
     <section class="band band-poster" id="menu">
       <div class="wrap">
-        <h2>Menu</h2>
+        <h2 class="sr">Menu</h2>
         <div class="menu">
-          ${drinkGroups.map(drinkGroup).join("")}
+          <div class="menu-drinks">
+            ${sizeHeads()}
+            ${menuSections().map(menuSection).join("")}
+          </div>
           ${extras()}
         </div>
       </div>
     </section>
 
     <section class="band band-paper" id="toko">
-      <div class="wrap">
-        <h2>${story.shops} toko di Jatinangor</h2>
-        <p class="lead">Paling ramai ${esc(visit.busiest)}.</p>
-        <ul class="shops">${shops.map(shopRow).join("")}
-        </ul>
+      <div class="wrap">${shopList()}
       </div>
     </section>
 
     <section class="band band-banner" id="pesan">
       <div class="wrap">
-        <h2>Pre-order, buat sendiri atau sepanitia</h2>
+        <h2>Pre-order, <span class="keep">buat sendiri</span> <span class="keep">atau sepanitia</span></h2>
         ${orderForm()}
       </div>
     </section>
@@ -402,6 +464,7 @@ export default function page() {
     <div class="wrap">
       <p class="foot-name">${esc(brand.title)}</p>
       <ul class="foot-links">
+        <li><a href="https://wa.me/${esc(val(WHATSAPP_NUMBER))}" target="_blank" rel="noopener">${mark(WHATSAPP_NUMBER, () => "Chat WhatsApp", "dot")}</a></li>
         <li><a href="${esc(brand.instagram.url)}" target="_blank" rel="noopener">Instagram @${esc(brand.instagram.handle)}</a></li>
         <li><a href="${esc(brand.tiktok.url)}" target="_blank" rel="noopener">TikTok @${esc(brand.tiktok.handle)}</a></li>
         <li>${mark(brand.siteUrl, (url) => url.replace(/^https?:\/\//, ""))}</li>
@@ -411,14 +474,14 @@ export default function page() {
   </footer>
 
   <div class="bar" id="bar" hidden>
-    <p><strong id="bar-cups"></strong> <span id="bar-price"></span></p>
-    <a class="btn btn-fill" href="#pesan">Lanjut pesan</a>
+    <p role="status"><strong><span id="bar-cups"></span> · <span id="bar-price"></span></strong><span id="bar-last"></span></p>
+    <a class="btn btn-fill" href="#pesan">Lanjut pre-order</a>
   </div>`;
 
   // The footer says how many marks are on the page, and wears the mark itself.
-  const marks = (body.match(/class="tbc"/g) || []).length;
+  const marks = (body.match(/class="tbc[ "]/g) || []).length;
   const count = marks
-    ? `<p class="foot-draft"><span class="tbc" title="Yang bergaris putus-putus belum dicek pemilik">${marks} hal di halaman ini belum dicek pemilik</span></p>`
+    ? `<p class="foot-draft"><span class="tbc" title="Yang bergaris putus-putus atau bertitik belum dicek pemilik">${marks} hal di halaman ini belum dicek pemilik</span></p>`
     : "";
 
   return `<!doctype html>

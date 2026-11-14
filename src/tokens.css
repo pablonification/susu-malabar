@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: "Archivo";
-  src: url("/fonts/archivo-latin.woff2") format("woff2");
+  src: url("fonts/archivo-latin.woff2") format("woff2"); /* the page preloads every file named here */
   font-weight: 100 900;
   font-stretch: 62% 125%;
   font-display: swap;
@@ -17,6 +17,7 @@
   --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --display-stretch: 62%;
   --display-weight: 800;
+  --display-word-gap: 0.1em; /* a narrow font has a narrow space: this keeps words apart */
   --numeral-stretch: 75%;
 
   /* --- Text sizes */
@@ -27,7 +28,8 @@
   --text-h2: 2.75rem;
   --text-h1: clamp(3.25rem, 15.5vw, 6.5rem);
   --text-figure: 2.25rem;
-  --text-price: 1.5rem;
+  --text-quote: 1.75rem;
+  --text-price: 1.375rem;
 
   /* --- Colours, named after where they come from in the shop */
   --banner: #bfe3cf; /* the mint banner out front */
@@ -44,12 +46,12 @@
   --wall: #0e6f66; /* the teal walls and stools */
   --wall-ink: #ffffff;
   --wall-line: #4e9a92;
-  --chat: #d9fdd3; /* a WhatsApp message bubble */
   --danger: #a8261c;
   --notice: #7a4b00;
 
-  /* A flavour's colour, used only on that flavour. Keyed by the drink id in data.mjs. */
-  --flavor-strawberry: #ff8a9a;
+  /* A fruit's colour, used only on that fruit. Keyed by the drink id in data.mjs.
+     A drink with no colour here shows no dot on the menu. */
+  --flavor-strawberry: #ff8a9a; /* the best seller's strip on the menu */
   --flavor-strawberry-ink: #3a0b14;
   --flavor-pisang: #f2cf4a;
   --flavor-alpukat: #9bbf4d;
@@ -57,18 +59,16 @@
   --flavor-melon: #bfe39a;
   --flavor-apel: #d9463c;
   --flavor-semangka: #f46a6a;
-  --flavor-taro: #c7aebd;
-  --flavor-oreo: #8c8c8c;
-  --flavor-regal: #dcb97f;
-  --flavor-cokelat: #8a5a3c;
-  --flavor-kopi: #b88a63;
-  --flavor-original: #fffaf0;
-  --flavor-matcha: #7da453;
-  --flavor-strawberry-et-choco: #ff8a9a;
+
+  /* What is in your order: the cups you added, the size and shop you picked, the total.
+     It borrows the strawberry strip's pink. */
+  --order: var(--flavor-strawberry);
+  --order-ink: var(--flavor-strawberry-ink);
 
   /* --- Placeholder marks (values the owner has not confirmed, tbc() in data.mjs).
-     Set --tbc-line to `none` to hide every mark at once. */
-  --tbc-line: underline;
+     A dashed line under a value, a dot after a button or heading.
+     Set --tbc-mark to 0 to hide every mark at once. */
+  --tbc-mark: 1;
   --tbc-on-light: #b45f06;
   --tbc-on-dark: #f2b84b;
 
@@ -100,5 +100,13 @@
   :root {
     --gutter: 2rem;
     --text-h2: 3.5rem;
+    --text-quote: 2.25rem;
+  }
+}
+
+/* Small phones: the shared price in a menu header gives the drink names more room. */
+@media (max-width: 23.5rem) {
+  :root {
+    --text-price: 1.25rem;
   }
 }

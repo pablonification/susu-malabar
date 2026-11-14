@@ -2,7 +2,8 @@
 // the link-preview image (public/og.png) from dist/og-card.html.
 //   npm run shots                 -> docs/screenshots/
 //   npm run shots -- --out <dir>  -> another folder (e.g. for a review round)
-//   npm run shots -- --form       -> also a phone picture of a filled form
+//   npm run shots -- --form       -> also phone pictures of the form in use: a tap on the
+//                                    menu, an empty send, and 40 cups across two drinks
 // Uses the Google Chrome installed on this machine (no browser download).
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -51,9 +52,40 @@ try {
   await shoot("phone.png", { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 
   if (args.includes("--form")) {
-    await shoot("phone-form-filled.png", { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, noFull: true }, "/", async (page) => {
-      const form = page.locator("form").first();
-      await form.scrollIntoViewIfNeeded();
+    const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, noFull: true };
+    const toTop = (page, sel) => page.evaluate((s) => scrollTo(0, document.querySelector(s).getBoundingClientRect().top + scrollY - 48), sel);
+
+    await shoot("phone-menu-tapped.png", phone, "/", async (page) => {
+      for (const id of ["strawberry", "strawberry", "mangga"]) await page.locator(`.pick[data-drink="${id}"]`).click();
+      await toTop(page, "#menu");
+    });
+
+    await shoot("phone-empty-send.png", phone, "/", async (page) => {
+      await page.locator("#send").click();
+    });
+
+    const fill = async (page) => {
+      await page.locator(".line select").first().selectOption("strawberry");
+      for (let i = 0; i < 3; i++) await page.locator('.line [data-step="10"]').first().click(); // 1, 10, 20, 30
+      await page.locator("#add-line").click();
+      await page.locator(".line select").nth(1).selectOption("original");
+      await page.locator('.line:nth-child(2) .seg input[value="22"]').check({ force: true });
+      await page.locator('.line:nth-child(2) [data-step="10"]').click(); // 10
+      await page.locator("#notes").fill("Buat acara himpunan");
+      await page.locator('input[name="shop"][value="cikeruh"]').check({ force: true });
+      await page.locator("#date").fill(new Date(Date.now() + 3 * 86400_000).toISOString().slice(0, 10)); // not today, so the hour is never past
+      await page.locator("#time").fill("16:30");
+      await page.locator("#name").fill("Raka");
+      await page.locator("#name").blur();
+    };
+    await shoot("phone-form-40-drinks.png", phone, "/", async (page) => {
+      await fill(page);
+      await toTop(page, "#pesan");
+    });
+    await shoot("phone-form-40-send.png", phone, "/", async (page) => {
+      await fill(page);
+      await page.locator("#preview summary").click();
+      await toTop(page, "#field-shop");
     });
   }
 

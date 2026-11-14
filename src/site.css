@@ -47,12 +47,18 @@ fieldset {
   min-width: 0;
 }
 
+/* The poster type: narrow, heavy, with the word gap from tokens.css. */
 h1,
 h2,
-h3 {
+h3,
+.rating strong,
+.pick-best .pick-name,
+.quotes blockquote,
+.foot-name {
   font-family: var(--font-display);
   font-stretch: var(--display-stretch);
   font-weight: var(--display-weight);
+  word-spacing: var(--display-word-gap);
   line-height: 0.95;
 }
 
@@ -105,16 +111,40 @@ small {
   top: var(--space-2);
 }
 
+/* Words that stay on one line together. */
+.keep {
+  white-space: nowrap;
+}
+
 /* --- Placeholder mark ---------------------------------------------------------
-   The one rule for every value still wrapped in tbc() in data.mjs.
-   Hide all marks by setting --tbc-line to none in tokens.css. */
+   Every value still wrapped in tbc() in data.mjs. A plain value gets a dashed
+   line. The label of a button, link or heading gets a dot instead, since a line
+   there would read as a link. Hide all of them by setting --tbc-mark to 0 in
+   tokens.css. */
 .tbc {
-  text-decoration-line: var(--tbc-line);
-  text-decoration-style: dashed;
-  text-decoration-color: var(--tbc);
+  text-decoration: underline dashed color-mix(in srgb, var(--tbc) calc(var(--tbc-mark) * 100%), transparent);
   text-decoration-thickness: 2px;
   text-underline-offset: 0.2em;
   text-decoration-skip-ink: none;
+}
+
+.tbc-dot {
+  text-decoration-line: none;
+  white-space: nowrap; /* a short label and its dot stay on one line */
+}
+
+/* An inline block, so a link's own underline does not run on under the dot. */
+.tbc-dot::after {
+  content: "\2022";
+  display: inline-block;
+  position: relative;
+  top: -0.35em;
+  margin-left: 0.2em;
+  color: var(--tbc);
+  font-family: var(--font-body);
+  font-size: calc(1em * var(--tbc-mark));
+  font-weight: 900;
+  line-height: 0;
 }
 
 /* --- Bands: the page is a stack of full-width grounds ---------------------------- */
@@ -133,8 +163,7 @@ small {
   --tbc: var(--tbc-on-light);
 }
 
-.band-paper,
-.bar {
+.band-paper {
   --bg: var(--paper);
   --fg: var(--ink);
   --muted: var(--paper-muted);
@@ -255,17 +284,15 @@ h1 {
 
 .rating {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-3);
   margin-top: var(--space-4);
   padding-top: var(--space-3);
   border-top: var(--line) solid var(--rule);
+  line-height: 1.25;
 }
 
 .rating strong {
-  font-family: var(--font-display);
-  font-stretch: var(--display-stretch);
-  font-weight: var(--display-weight);
   font-size: var(--text-figure);
   line-height: 1;
 }
@@ -307,19 +334,42 @@ h1 {
 
 /* --- Menu: the poster on the wall ----------------------------------------------- */
 
+#menu {
+  padding-top: var(--space-5);
+}
+
 .menu {
-  --col-price: 4.75rem;
+  --col-price: 5.75rem;
   --col-add: 2rem;
   --bleed: var(--gutter);
-  margin-top: var(--space-5);
+}
+
+/* The size names, once. On a phone they stay under the jump links for as long as
+   the drinks scroll by, so every price column keeps its name. */
+.sizes {
+  position: sticky;
+  top: var(--tap-big);
+  z-index: 1;
+  padding-block: var(--space-2);
+  background: var(--bg);
+}
+
+.sizes .cols + .cols {
+  display: none;
+}
+
+.size {
+  text-align: right;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .grp {
-  break-inside: avoid;
   padding-bottom: var(--space-6);
 }
 
-.grp:last-child {
+.menu > .grp:last-child {
   padding-bottom: 0;
 }
 
@@ -333,17 +383,6 @@ h1 {
   align-items: end;
   padding-bottom: var(--space-2);
   border-bottom: var(--line-strong) solid var(--fg);
-}
-
-.grp-head-priced h3 {
-  grid-row: span 2;
-  align-self: center;
-}
-
-.size {
-  text-align: right;
-  font-size: var(--text-small);
-  color: var(--muted);
 }
 
 .price {
@@ -362,8 +401,9 @@ h1 {
 
 .picks {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: var(--space-5);
+  padding-top: var(--space-1);
 }
 
 .picks li,
@@ -402,20 +442,22 @@ h1 {
   justify-self: end;
   display: grid;
   place-items: center;
-  width: 1.75rem;
+  min-width: 1.75rem;
   height: 1.75rem;
   margin-left: auto;
-  border-radius: 50%;
+  border-radius: 1rem;
   font-size: var(--text-lead);
   font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   transition: transform var(--press);
 }
 
-/* Once a flavour is in the order, its plus becomes how many cups of it. */
+/* Once a flavour is in the order, its plus becomes how many cups of it, in the order's pink. */
 .pick[data-count] .pick-n {
-  background: var(--fg);
-  color: var(--bg);
+  padding-inline: var(--space-2);
+  background: var(--order);
+  color: var(--order-ink);
   font-size: var(--text-small);
 }
 
@@ -426,17 +468,14 @@ h1 {
   background: var(--flavor-strawberry);
   color: var(--flavor-strawberry-ink);
   --fg: var(--flavor-strawberry-ink);
-  --bg: var(--flavor-strawberry);
 }
 
-.pick-best .dot {
-  display: none;
+.pick-best[data-count] .pick-n {
+  background: var(--order-ink);
+  color: var(--order);
 }
 
 .pick-best .pick-name {
-  font-family: var(--font-display);
-  font-stretch: var(--display-stretch);
-  font-weight: var(--display-weight);
   font-size: var(--text-h3);
   line-height: 1;
 }
@@ -474,7 +513,6 @@ h1 {
   gap: var(--space-4);
   min-height: var(--tap-big);
   padding-block: var(--space-2);
-  padding-right: var(--col-add);
   font-weight: 600;
   line-height: 1.25;
 }
@@ -501,40 +539,39 @@ h1 {
   margin-bottom: var(--space-2);
 }
 
-.shop-hours {
-  color: var(--muted);
+.shop-odd {
+  font-weight: 600;
 }
 
 .shop-go {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
-}
-
-.shop-go .btn {
-  padding-inline: var(--space-2);
 }
 
 /* --- Pre-order: on the banner's green, white fields ------------------------------- */
 
-#pesan h2 {
-  text-wrap: balance;
+.form,
+.form-col {
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
 }
 
 .form {
-  display: grid;
-  gap: var(--space-5);
   margin-top: var(--space-5);
 }
 
 legend,
-label {
+label,
+.label {
   padding: 0;
   font-weight: 700;
 }
 
-.field label,
-.field-group > legend {
+.field > label,
+.field > legend,
+.field > .label {
   display: block;
   margin-bottom: var(--space-2);
 }
@@ -570,8 +607,43 @@ textarea {
   opacity: 1;
 }
 
-[aria-invalid="true"] {
+/* A select with its own arrow, so the arrow sits in from the edge like the text does. */
+.select {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--space-7);
+  text-overflow: ellipsis;
+}
+
+.select::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  width: 0.5rem;
+  height: 0.5rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+/* A field with a problem: red edge. The focus ring still wins while it has focus. */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+.seg[aria-invalid="true"] label > span {
   border-color: var(--danger);
+}
+
+input[aria-invalid="true"]:not(:focus-visible),
+select[aria-invalid="true"]:not(:focus-visible) {
   outline: 1.5px solid var(--danger);
 }
 
@@ -596,49 +668,62 @@ textarea {
 }
 
 .line {
+  display: grid;
+  gap: var(--space-3);
   padding-block: var(--space-4);
   border-bottom: var(--line) solid var(--rule);
 }
 
-.line-top {
+.line .err {
+  margin-top: 0;
+}
+
+.line-drink {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: var(--tap);
-}
-
-.line-top label,
-.line-top .link,
-.seg legend,
-.qty label {
-  font-size: var(--text-small);
-}
-
-.line-how {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-3);
 }
 
-.seg legend,
-.qty label {
-  display: block;
-  margin-bottom: var(--space-1);
+.line-remove {
+  flex: none;
+  min-width: var(--tap);
 }
 
-.seg-row {
+/* Size and amount: the name on the left, the control beside it. */
+.line-row {
+  display: grid;
+  grid-template-columns: 4.5rem auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.line-price {
+  padding-left: var(--space-3);
+  font-stretch: var(--numeral-stretch);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A switch between a few choices: the size of a drink, the shop to pick it up at. */
+.seg {
   display: flex;
 }
 
-.seg-row label {
+.seg label {
   position: relative;
-  font-weight: 700;
 }
 
-.seg-row input {
+/* Fills its row. A longer name gets a wider part. */
+.seg-fill label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.seg-fill label > span {
+  min-width: 0;
+}
+
+.seg input {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -648,58 +733,61 @@ textarea {
   cursor: pointer;
 }
 
-.seg-row label > span {
+.seg label > span {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-width: 4.25rem;
+  height: 100%;
   min-height: var(--tap-big);
-  padding-inline: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   border: 1.5px solid var(--fg);
   background: var(--field);
   line-height: 1.15;
+  text-align: center;
 }
 
-.seg-row small {
-  font-weight: 500;
-  font-stretch: var(--numeral-stretch);
+.seg label + label > span {
+  margin-left: -1.5px;
 }
 
-.seg-row label:first-child > span {
+.seg label:first-child > span {
   border-radius: var(--radius-control) 0 0 var(--radius-control);
 }
 
-.seg-row label:last-child > span {
-  margin-left: -1.5px;
+.seg label:last-child > span {
   border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
 
-.seg-row input:checked + span {
-  background: var(--fg);
-  color: var(--bg);
+/* The picked one wears the order's pink. */
+.seg input:checked + span {
+  position: relative;
+  background: var(--order);
+  color: var(--order-ink);
+  --tbc: var(--order-ink);
 }
 
-.seg-row input:focus-visible + span {
+.seg input:focus-visible + span {
+  position: relative;
   outline: var(--line-strong) solid var(--fg);
   outline-offset: 2px;
 }
 
-.seg-row input:disabled {
+.seg input:disabled {
   cursor: not-allowed;
 }
 
-.seg-row input:disabled + span {
+.seg input:disabled + span {
   border-color: var(--rule);
   background: var(--rule);
   color: var(--muted);
 }
 
-.qty-row {
+.qty {
   display: flex;
 }
 
-.qty-row button {
+.qty button {
   flex: none;
   width: var(--tap);
   min-height: var(--tap-big);
@@ -714,15 +802,15 @@ textarea {
   transition: transform var(--press);
 }
 
-.qty-row button:active {
+.qty button:active {
   transform: scale(0.97);
 }
 
-.qty-row button:first-child {
+.qty button:first-child {
   border-radius: var(--radius-control) 0 0 var(--radius-control);
 }
 
-.qty-row input {
+.qty input {
   width: 3rem;
   padding-inline: 0;
   border-inline: 0;
@@ -734,18 +822,18 @@ textarea {
   -moz-appearance: textfield;
 }
 
-.qty-row input::-webkit-inner-spin-button,
-.qty-row input::-webkit-outer-spin-button {
+.qty input::-webkit-inner-spin-button,
+.qty input::-webkit-outer-spin-button {
   appearance: none;
   -webkit-appearance: none;
   margin: 0;
 }
 
-.qty-row button[data-step="1"] {
+.qty button[data-step="1"] {
   border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
 
-.qty-row button[data-step="10"] {
+.qty button[data-step="10"] {
   margin-left: var(--space-2);
   border-radius: var(--radius-control);
   font-size: var(--text-body);
@@ -753,39 +841,6 @@ textarea {
 
 #add-line {
   margin-top: var(--space-4);
-}
-
-.choices {
-  border-top: var(--line) solid var(--fg);
-}
-
-.choice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--tap-big);
-  padding-block: var(--space-3);
-  border-bottom: var(--line) solid var(--rule);
-  font-weight: 400;
-  line-height: 1.3;
-  cursor: pointer;
-}
-
-.choice input {
-  flex: none;
-  width: 1.375rem;
-  height: 1.375rem;
-  margin: 0;
-  accent-color: var(--fg);
-}
-
-.choice strong,
-.choice small {
-  display: block;
-}
-
-.choice small {
-  color: var(--muted);
 }
 
 .pair {
@@ -799,20 +854,17 @@ textarea {
   min-width: 0;
 }
 
-.sum > div {
+/* The order's total, right above the button that sends it. */
+.total {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
-  padding-block: var(--space-2);
-  border-top: var(--line) solid var(--rule);
-}
-
-.sum > div:first-child {
-  border-top: var(--line-strong) solid var(--fg);
-}
-
-.sum dd {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--order);
+  color: var(--order-ink);
+  --tbc: var(--order-ink);
   font-family: var(--font-display);
   font-stretch: var(--numeral-stretch);
   font-weight: var(--display-weight);
@@ -821,25 +873,16 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
-.preview-title {
-  padding-top: var(--space-4);
-  border-top: var(--line-strong) solid var(--fg);
-  font-family: var(--font-body);
-  font-stretch: normal;
-  font-size: var(--text-body);
-  font-weight: 700;
-  line-height: 1.5;
+.btn-send {
+  width: 100%;
+  min-height: 3.5rem;
+  margin-top: var(--space-2);
+  font-size: var(--text-lead);
 }
 
-.bubble {
-  margin: var(--space-2) 0 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-sheet) var(--radius-sheet) 2px var(--radius-sheet);
-  background: var(--chat);
-  font: inherit;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.sent {
+  margin-top: var(--space-3);
+  font-weight: 600;
 }
 
 .hint {
@@ -848,16 +891,22 @@ textarea {
   color: var(--muted);
 }
 
-.btn-send {
-  width: 100%;
-  min-height: 3.5rem;
-  margin-top: var(--space-4);
-  font-size: var(--text-lead);
+.preview summary {
+  width: fit-content;
+  padding-block: var(--space-3);
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.sent {
-  margin-top: var(--space-3);
-  font-weight: 600;
+.bubble {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  font: inherit;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* --- Story: inside, by the teal wall ------------------------------------------- */
@@ -873,16 +922,13 @@ textarea {
 }
 
 .quotes blockquote {
-  font-family: var(--font-display);
-  font-stretch: var(--display-stretch);
-  font-weight: var(--display-weight);
-  font-size: var(--text-h2);
-  line-height: 0.95;
+  font-size: var(--text-quote);
+  line-height: 1;
   text-wrap: balance;
 }
 
 .quotes blockquote + blockquote {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
 .quotes figcaption {
@@ -898,9 +944,6 @@ textarea {
 }
 
 .foot-name {
-  font-family: var(--font-display);
-  font-stretch: var(--display-stretch);
-  font-weight: var(--display-weight);
   font-size: var(--text-h3);
   line-height: 1;
 }
@@ -909,13 +952,8 @@ textarea {
   margin-top: var(--space-3);
 }
 
+.foot-links li,
 .foot-links a {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-}
-
-.foot-links li:last-child {
   display: flex;
   align-items: center;
   min-height: var(--tap);
@@ -929,9 +967,12 @@ textarea {
   font-size: var(--text-small);
 }
 
-/* --- Order bar: shows while there are cups in the order and the form is off screen - */
+/* --- Order bar: answers a tap on the menu, while the form is off screen ------------- */
 
 .bar {
+  --bg: var(--order);
+  --fg: var(--order-ink);
+  --tbc: var(--order-ink);
   position: fixed;
   inset: auto 0 0 0;
   z-index: 3;
@@ -943,22 +984,49 @@ textarea {
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
   background: var(--bg);
   color: var(--fg);
-  border-top: var(--line-strong) solid var(--fg);
   line-height: 1.25;
+}
+
+.bar p {
+  flex: 1;
+  min-width: 0;
 }
 
 .bar strong {
   display: block;
 }
 
-/* --- Wider screens ---------------------------------------------------------------- */
+#bar-cups,
+#bar-price {
+  white-space: nowrap;
+}
 
-@media (min-width: 30rem) {
-  .line-how {
-    justify-content: flex-start;
-    gap: var(--space-5);
+#bar-last {
+  font-size: var(--text-small);
+}
+
+.bar .btn {
+  flex: none;
+}
+
+/* --- Small phones: narrower price columns, so a drink's name stays on one line ------- */
+
+@media (max-width: 23.5rem) {
+  .menu {
+    --col-price: 5.25rem;
+    --col-add: 1.75rem;
   }
 }
+
+/* --- Narrowest phones: one flavour per row, so long names keep their plus on screen -- */
+
+@media (max-width: 21rem) {
+  .picks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Wider screens ---------------------------------------------------------------- */
 
 @media (min-width: 56rem) {
   header.band {
@@ -969,7 +1037,6 @@ textarea {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
     column-gap: var(--space-7);
-    align-items: end;
   }
 
   .logo {
@@ -979,6 +1046,35 @@ textarea {
 
   .logo-mark {
     height: 2rem;
+  }
+
+  /* The promise and the rating fill the right side, as tall as the headline. */
+  .hero-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-top: var(--space-6);
+  }
+
+  .hero-side .lead {
+    font-family: var(--font-display);
+    font-stretch: var(--display-stretch);
+    font-weight: var(--display-weight);
+    word-spacing: var(--display-word-gap);
+    font-size: var(--text-h2);
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  .rating {
+    gap: var(--space-4);
+    padding-top: var(--space-4);
+    font-size: var(--text-lead);
+  }
+
+  .rating strong {
+    font-size: var(--text-h1);
+    line-height: 0.8;
   }
 
   .jump .wrap {
@@ -991,10 +1087,37 @@ textarea {
     border-left: 0;
   }
 
+  #menu {
+    padding-top: var(--space-6);
+  }
+
+  /* Two posters side by side, each with its own size names on top. */
   .menu {
     --bleed: var(--space-3);
-    columns: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     column-gap: var(--space-8);
+  }
+
+  .menu-drinks {
+    display: contents;
+  }
+
+  .sizes {
+    position: static;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--space-8);
+  }
+
+  .sizes .cols + .cols {
+    display: grid;
+  }
+
+  .menu > .grp:last-child,
+  .menu-drinks > .grp:last-child {
+    padding-bottom: 0;
   }
 
   .shop {
@@ -1003,16 +1126,12 @@ textarea {
   }
 
   .shop-go {
-    grid-template-columns: repeat(3, 8.5rem);
+    grid-template-columns: repeat(2, 8.5rem);
   }
 
   .form {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
-  }
-
-  .form > :first-child {
-    grid-row: span 5;
   }
 
   .story {
@@ -1023,6 +1142,10 @@ textarea {
   .bar {
     justify-content: center;
     gap: var(--space-6);
+  }
+
+  .bar p {
+    flex: none;
   }
 }
 

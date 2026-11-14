@@ -21,7 +21,8 @@ const js = await read("dist/site.js");
 
 const head = html.slice(0, html.indexOf("</head>"));
 const body = html.slice(html.indexOf("<body"));
-const MARK = /<span class="tbc" title="([^"]*)">([^<]*)<\/span>/g;
+// A mark is a dashed line under a value, or (class tbc-dot) a dot after a button, link or heading.
+const MARK = /<span class="tbc(?: tbc-dot)?" title="([^"]*)">([^<]*)<\/span>/g;
 /** The words a visitor reads: no tags, no marked values. */
 const text = (h) =>
   h
@@ -40,16 +41,15 @@ test("the title names Jatinangor and the page is Indonesian", () => {
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
 });
 
-test("link previews, icon, bar colour and canonical are set", async () => {
+test("link previews, icon and bar colour are set", async () => {
   const site = data.val(data.brand.siteUrl);
-  for (const tag of ["og:title", "og:description", "og:type", "og:url", "og:image", "og:image:width", "og:image:height", "og:image:alt"]) {
+  for (const tag of ["og:title", "og:description", "og:type", "og:image", "og:image:width", "og:image:height", "og:image:alt"]) {
     assert.match(head, new RegExp(`<meta property="${tag}" content="[^"]+">`), tag);
   }
   for (const tag of ["twitter:card", "twitter:title", "twitter:description", "twitter:image"]) {
     assert.match(head, new RegExp(`<meta name="${tag}" content="[^"]+">`), tag);
   }
   assert.ok(head.includes(`<meta property="og:image" content="${site}/og.png">`));
-  assert.ok(head.includes(`<link rel="canonical" href="${site}/">`));
   assert.match(head, /<link rel="icon" href="favicon\.svg"/);
   assert.match(head, /<meta name="theme-color" content="#[0-9a-f]{6}">/);
 
@@ -57,6 +57,30 @@ test("link previews, icon, bar colour and canonical are set", async () => {
   const png = await readFile(join(root, "dist/og.png"));
   assert.equal(png.readUInt32BE(16), 1200);
   assert.equal(png.readUInt32BE(20), 630);
+  // The card page is only there to be photographed.
+  assert.match(card, /<meta name="robots" content="noindex">/);
+});
+
+test("the page names its own address only once the real one is known", () => {
+  const site = data.val(data.brand.siteUrl);
+  if (data.isTbc(data.brand.siteUrl)) {
+    assert.doesNotMatch(head, /rel="canonical"/, "a canonical link to a placeholder address");
+    assert.doesNotMatch(head, /property="og:url"/, "og:url with a placeholder address");
+  } else {
+    assert.ok(head.includes(`<link rel="canonical" href="${site}/">`));
+    assert.ok(head.includes(`<meta property="og:url" content="${site}/">`));
+  }
+});
+
+test("the fonts the page preloads are the ones tokens.css uses", async () => {
+  const used = [...tokens.matchAll(/@font-face\s*\{[^}]*?url\(\s*["']?([^"')]+)["']?\s*\)/g)].map((m) => m[1]);
+  const preloaded = [...head.matchAll(/<link rel="preload" href="([^"]+)" as="font"/g)].map((m) => m[1]);
+  assert.ok(used.length > 0);
+  assert.deepEqual(preloaded, used);
+  for (const file of used) {
+    assert.doesNotMatch(file, /^\/|^https?:/, `${file}: font paths are relative, like every other path on the page`);
+    await readFile(join(root, "dist", file));
+  }
 });
 
 test("structured data holds confirmed facts only", () => {
@@ -86,7 +110,7 @@ test("every unconfirmed value on the page carries the mark", () => {
     if (typeof v === "string" && /^https?:/.test(v)) {
       // A link: every <a> that goes there has the mark inside it.
       const links = [...body.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)].filter((m) => m[1] === v);
-      for (const [, , inner] of links) assert.match(inner, /class="tbc"/, `link without mark: ${v}`);
+      for (const [, , inner] of links) assert.match(inner, /class="tbc tbc-dot"/, `link without its dot: ${v}`);
       // The site address is only shown as words.
       assert.ok(!unmarked.includes(v.replace(/^https?:\/\//, "")), `address without mark: ${v}`);
     } else if (typeof v === "string") {
@@ -105,20 +129,80 @@ test("every unconfirmed value on the page carries the mark", () => {
   for (const t of [data.WHATSAPP_NUMBER, data.brand.siteUrl, data.drinks[0].prices[14], data.shops[0].hours, data.shops[0].mapUrl, data.shops[0].gofoodUrl, data.shops[2].name]) {
     assert.ok(notes.has(t.note), `no mark for: ${t.note}`);
   }
-  // The send button is a placeholder link too.
-  assert.match(/<a\b[^>]*id="send"[^>]*>([\s\S]*?)<\/a>/.exec(body)[1], /class="tbc"/);
+  // The send button and the chat link go to a placeholder number too.
+  assert.match(/<a\b[^>]*id="send"[^>]*>([\s\S]*?)<\/a>/.exec(body)[1], /class="tbc tbc-dot"/);
+  for (const [, inner] of body.matchAll(/<a\b[^>]*href="https:\/\/wa\.me\/[^"]*"[^>]*>([\s\S]*?)<\/a>/g)) {
+    assert.match(inner, /class="tbc tbc-dot"/, "a WhatsApp link without its dot");
+  }
+  // A line under a link's or heading's own words would read as a link: those get the dot.
+  // (A menu row is a button too, but its prices are plain values and keep the line.)
+  for (const [, tag, inner] of body.matchAll(/<(a|h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/g)) {
+    assert.doesNotMatch(inner, /class="tbc"/, `a dashed line inside <${tag}>`);
+  }
 });
 
-test("the mark is one rule, switched by one token", () => {
-  assert.equal((css.match(/\.tbc\b[^{]*\{/g) || []).length, 1);
-  assert.match(css, /\.tbc \{[^}]*text-decoration-line: var\(--tbc-line\)/);
-  assert.match(tokens, /--tbc-line: underline;/);
+test("the mark has one helper and one switch", () => {
+  // Three rules draw it: the line, and the dot that replaces the line.
+  const rules = (css.match(/\.tbc\b[^{]*\{/g) || []).map((r) => r.replace(/\s*\{$/, ""));
+  assert.deepEqual(rules, [".tbc", ".tbc-dot", ".tbc-dot::after"]);
+  // Both the line and the dot go away when --tbc-mark is 0.
+  assert.match(css, /\.tbc \{[^}]*text-decoration:[^;]*var\(--tbc-mark\)/);
+  assert.match(css, /\.tbc-dot::after \{[^}]*font-size:[^;]*var\(--tbc-mark\)/);
+  assert.match(tokens, /--tbc-mark: 1;/);
   assert.ok(js.includes('from "./mark.mjs"'), "the form's script uses the same helper");
 });
 
 test("the stamp card shows nothing until it has rules", () => {
   assert.equal(data.brand.stampCard, null);
   assert.ok(!html.includes('id="kartu"'));
+});
+
+// --- What the first review found, kept fixed --------------------------------------
+
+/** One section of the page, by its id. */
+const section = (id) => new RegExp(`<section[^>]*id="${id}"[\\s\\S]*?</section>`).exec(body)[0];
+
+test("nothing is said twice in the shop list", () => {
+  const toko = text(section("toko"));
+  assert.ok(!toko.includes(data.brand.name), "the brand name again in the shop list");
+  assert.ok(!toko.includes("Pre-order"), "a pre-order button on every shop");
+  // Hours every shop shares are said once, above the list.
+  const shared = `${clock("12:00")}–${clock("22:00")}`;
+  assert.equal(section("toko").split(shared).length - 1, 1, "the shared hours more than once");
+  // The form asks only which shop, by its short name.
+  const pickup = /<div class="seg seg-fill"[\s\S]*?<\/div>/.exec(body)[0];
+  assert.ok(!text(pickup).includes(data.brand.name));
+  for (const shop of data.shops) assert.ok(!text(pickup.replace(MARK, " ")).includes(data.val(shop.area)));
+});
+
+test("a section's name is not shown twice, and size names once per poster", () => {
+  const nav = [...body.matchAll(/<nav[\s\S]*?<\/nav>/g)].flatMap(([n]) => [...n.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map((m) => m[1]));
+  for (const [, attrs, title] of body.matchAll(/<h2([^>]*)>([\s\S]*?)<\/h2>/g)) {
+    if (nav.includes(text(title).trim())) assert.match(attrs, /class="sr"/, `"${text(title).trim()}" is both a jump link and a visible title`);
+  }
+  const menu = section("menu");
+  for (const size of data.sizes) {
+    assert.equal(menu.split(`<span class="size">${size.label}</span>`).length - 1, 2, `${size.label} heads each poster column once`);
+  }
+});
+
+test("menu buttons keep their words for screen readers", () => {
+  const picks = [...body.matchAll(/<button type="button" class="pick[^>]*>[\s\S]*?<\/button>/g)].map((m) => m[0]);
+  assert.equal(picks.length, data.drinks.length);
+  for (const b of picks) {
+    assert.doesNotMatch(b, /aria-label/, "aria-label would hide the price and notes");
+    assert.match(b, /<span class="sr">Tambah <\/span>/);
+  }
+  assert.doesNotMatch(js, /toggleAttribute\("aria-invalid"/, 'aria-invalid must be "true", not empty');
+  assert.doesNotMatch(js, /window\.\w+ =/, "no debugging hook on window");
+});
+
+test("one price format, and nothing about when to pay", () => {
+  // Every price on the page is written by rupiah(): "Rp13.000".
+  for (const [, , inner] of body.matchAll(MARK)) {
+    if (/\d\.\d{3}/.test(inner)) assert.match(inner, /^\+?Rp\d/, `a price without Rp: ${inner}`);
+  }
+  assert.doesNotMatch(text(body), /bayar di toko/i, "when to pay is not confirmed");
 });
 
 // --- Banned looks and words ----------------------------------------------------

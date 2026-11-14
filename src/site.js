@@ -2,9 +2,9 @@
 // All rules (checking, the message, the wa.me link) are in order.mjs. This file only
 // reads the form into an `order` object and shows what those functions return.
 
-import { order as rules, drinks, isTbc, sizes, tbc } from "./data.mjs";
+import { order as rules, isTbc, sizes, tbc } from "./data.mjs";
 import { buildMessage, checkOrder, findDrink, rupiah, todayWib, totals, unitPrice, whatsappLink } from "./order.mjs";
-import { mark } from "./mark.mjs";
+import { esc, mark } from "./mark.mjs";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -20,6 +20,7 @@ let lineCount = 0; // only for unique ids
 let tried = false; // true once the person pressed send, so every problem shows
 const touched = new Set(); // fields the person has already left
 let formOnScreen = false;
+let lastAdded = ""; // what the last tap on the menu put in, e.g. "Strawberry 14 oz"
 
 // --- Lines ----------------------------------------------------------------------
 
@@ -31,14 +32,21 @@ function addLine({ drinkId = "", size = "", qty = 1 } = {}) {
   const li = template.content.firstElementChild.cloneNode(true);
   const select = $("select", li);
   const qtyInput = $(".qty input", li);
+  const sizeLabel = $(".line-row .label", li);
+
   select.id = `drink-${n}`;
-  $(".line-top label", li).htmlFor = select.id;
-  qtyInput.id = `qty-${n}`;
-  $(".qty label", li).htmlFor = qtyInput.id;
-  $(".err", li).id = `err-line-${n}`;
-  select.setAttribute("aria-describedby", `err-line-${n}`);
-  qtyInput.setAttribute("aria-describedby", `err-line-${n}`);
+  $(".line-drink label", li).htmlFor = select.id;
+  $(".err-drink", li).id = `err-drink-${n}`;
+  select.setAttribute("aria-describedby", `err-drink-${n}`);
+
+  sizeLabel.id = `size-label-${n}`;
+  $(".seg", li).setAttribute("aria-labelledby", sizeLabel.id);
   for (const radio of $$(".seg input", li)) radio.name = `size-${n}`;
+
+  qtyInput.id = `qty-${n}`;
+  $(".line-row > label", li).htmlFor = qtyInput.id;
+  $(".err-qty", li).id = `err-qty-${n}`;
+  qtyInput.setAttribute("aria-describedby", `err-qty-${n}`);
 
   select.value = drinkId;
   qtyInput.value = qty;
@@ -69,7 +77,7 @@ function readOrder() {
   };
 }
 
-/** Sizes not sold are switched off, and each size shows its price for the picked drink. */
+/** Sizes not sold are switched off, and the picked size's price shows beside the switch. */
 function fitSizes(li) {
   const drinkId = $("select", li).value;
   const sold = soldSizes(drinkId);
@@ -81,35 +89,31 @@ function fitSizes(li) {
     const first = $$(".seg input", li).find((r) => !r.disabled);
     if (first) first.checked = true;
   }
-  for (const label of $$("[data-size]", li)) {
-    const price = findDrink(drinkId)?.prices?.[label.dataset.size];
-    label.innerHTML = price == null ? "" : mark(price, rupiah);
-  }
+  const price = findDrink(drinkId)?.prices?.[$(".seg input:checked", li)?.value];
+  $(".line-price", li).innerHTML = price == null ? "" : mark(price, rupiah);
 }
 
-/** One step on the quantity buttons. "+10" lands on the next round ten: 1, 10, 20, 30... */
+/** One step on the quantity buttons. "+10" makes the first cup ten, then adds ten: 1, 10, 20, 30, 40. */
 function step(li, by) {
   const input = $(".qty input", li);
   const now = Math.max(0, Math.floor(Number(input.value) || 0));
-  const next = by === 10 ? Math.floor(now / 10) * 10 + 10 : now + by;
+  const next = by === 10 && now <= 1 ? 10 : now + by;
   input.value = Math.min(rules.maxQtyPerLine, Math.max(1, next));
 }
 
-/** From the menu: fill the empty row, or add to a row with the same drink, or start a new one. */
+/** From the menu: add a cup to the row with that drink, or fill the empty row, or start a new one. */
 function addFromMenu(drinkId) {
   const rows = $$(".line", list);
   const same = rows.find((li) => readLine(li).drinkId === drinkId);
   if (same) {
     step(same, 1);
-    return;
+    return same;
   }
   const empty = rows.find((li) => !readLine(li).drinkId);
-  if (empty) {
-    $("select", empty).value = drinkId;
-    $(".qty input", empty).value = 1;
-  } else {
-    addLine({ drinkId });
-  }
+  if (!empty) return addLine({ drinkId });
+  $("select", empty).value = drinkId;
+  $(".qty input", empty).value = 1;
+  return empty;
 }
 
 // --- Showing the state ------------------------------------------------------------
@@ -120,11 +124,15 @@ function estimate(order, price) {
   return mark(old ? tbc(price, old.note) : price, rupiah);
 }
 
-function showProblem(el, input, message) {
-  el.textContent = message || "";
-  el.hidden = !message;
+/**
+ * Shows a problem from checkOrder in its place, or clears it. A problem that comes
+ * from unconfirmed data (`tbc`) wears the mark. An error also turns its field red.
+ */
+function show(el, input, problem) {
+  el.innerHTML = !problem ? "" : problem.tbc ? mark(tbc(problem.message, problem.note)) : esc(problem.message);
+  el.hidden = !problem;
   if (!input) return;
-  if (message && el.classList.contains("err")) input.setAttribute("aria-invalid", "true");
+  if (problem) input.setAttribute("aria-invalid", "true");
   else input.removeAttribute("aria-invalid");
 }
 
@@ -135,29 +143,29 @@ function refresh() {
   $$(".line-remove", list).forEach((b) => (b.hidden = rows.length < 2));
 
   const result = checkOrder(order);
-  const first = (kind, field) => result[kind].find((p) => p.field === field)?.message;
+  const first = (kind, field) => result[kind].find((p) => p.field === field);
 
-  // A problem inside a row shows right away. The rest wait until the person
-  // has left that field or pressed send.
+  // A problem with a row's amount shows right away, under the amount. "Pick a
+  // drink" shows under the first drink field, once the person has pressed send.
+  // The rest wait until the person has left that field or pressed send.
+  const nothingPicked = !order.lines.some((l) => l.drinkId);
   rows.forEach((li, i) => {
-    const message = first("errors", `line-${i}`);
-    showProblem($(".err", li), null, message);
-    $(".qty input", li).toggleAttribute("aria-invalid", Boolean(message));
+    show($(".err-qty", li), $(".qty input", li), first("errors", `line-${i}`));
+    show($(".err-drink", li), $("select", li), tried && nothingPicked && i === 0 ? first("errors", "lines") : null);
   });
-  showProblem($("#err-lines"), null, tried ? first("errors", "lines") : "");
   for (const field of ["shop", "date", "time", "name"]) {
-    const show = tried || touched.has(field);
-    showProblem($(`#err-${field}`), field === "shop" ? null : fields[field], show ? first("errors", field) : "");
+    const waiting = !(tried || touched.has(field));
+    show($(`#err-${field}`), fields[field], waiting ? null : first("errors", field));
   }
-  showProblem($("#warn-time"), null, first("warnings", "time"));
+  show($("#warn-time"), null, first("warnings", "time"));
 
+  // The total stays above the button as long as there is a drink. A complete
+  // order also offers the message itself, and the button becomes a real link.
   const { cups, price } = totals(order.lines);
-  $("#sum-cups").textContent = `${cups} gelas`;
-  $("#sum-price").innerHTML = estimate(order, price);
+  $("#total").hidden = cups === 0;
+  $("#total-cups").textContent = `${cups} gelas`;
+  $("#total-price").innerHTML = estimate(order, price);
 
-  // A complete order shows the message itself in place of the totals, and the
-  // button becomes a real link to WhatsApp.
-  $("#sum").hidden = result.ok || cups === 0;
   $("#preview").hidden = !result.ok;
   if (result.ok) {
     const message = buildMessage(order);
@@ -172,22 +180,29 @@ function refresh() {
   }
   $("#copy").textContent = "Salin pesan";
 
-  // The menu shows how many cups of each flavour are in the order.
+  // On the menu, a flavour's plus becomes how many cups of it are in the order.
   for (const button of $$(".pick")) {
     const n = order.lines.filter((l) => l.drinkId === button.dataset.drink).reduce((sum, l) => sum + (Math.floor(l.qty) || 0), 0);
-    const name = button.dataset.name;
-    $(".pick-n", button).textContent = n ? n : "+";
+    $(".pick-n", button).textContent = n || "+";
+    $(".pick-sr", button).textContent = n ? `, ${n} gelas di pesanan` : "";
     if (n) button.dataset.count = n;
     else delete button.dataset.count;
-    button.setAttribute("aria-label", n ? `${name}, ${n} gelas di pesanan. Tambah satu lagi` : `Tambah ${name} ke pesanan`);
   }
 
+  // The bar answers a tap on the menu: what went in, the total so far, the way on.
   $("#bar-cups").textContent = `${cups} gelas`;
   $("#bar-price").innerHTML = estimate(order, price);
+  $("#bar-last").textContent = lastAdded ? `${lastAdded} masuk` : "";
   bar.hidden = cups === 0 || formOnScreen;
   document.body.style.paddingBottom = bar.hidden ? "" : `${bar.offsetHeight}px`;
 
   return result;
+}
+
+/** A change made in the form itself: the bar no longer speaks of the last menu tap. */
+function edited() {
+  lastAdded = "";
+  return refresh();
 }
 
 /** After a failed send: go to the first thing that needs fixing. */
@@ -201,8 +216,9 @@ function focusFirstProblem(result) {
       : field === "shop"
         ? $('input[name="shop"]', form)
         : fields[field];
-  target?.focus();
-  target?.scrollIntoView({ block: "center" });
+  target?.focus({ preventScroll: true });
+  // The middle of the screen is clear of the sticky links on top.
+  (target?.closest(".line, .field") || target)?.scrollIntoView({ block: "center" });
 }
 
 // --- Wiring -----------------------------------------------------------------------
@@ -214,19 +230,19 @@ list.addEventListener("click", (e) => {
   if (stepBy) step(li, Number(stepBy));
   else if (e.target.closest(".line-remove")) li.remove();
   else return;
-  refresh();
+  edited();
 });
 
 $("#add-line").addEventListener("click", () => {
   const li = addLine();
-  refresh();
+  edited();
   $("select", li).focus();
 });
 
-form.addEventListener("input", refresh);
+form.addEventListener("input", edited);
 form.addEventListener("change", (e) => {
   if (e.target.name === "shop") touched.add("shop");
-  refresh();
+  edited();
 });
 for (const field of ["date", "time", "name"]) {
   fields[field].addEventListener("blur", () => {
@@ -248,12 +264,6 @@ send.addEventListener("click", (e) => {
   $("#sent").hidden = false;
 });
 
-// Enter in a field does what the button does.
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  send.click();
-});
-
 $("#copy").addEventListener("click", async (e) => {
   try {
     await navigator.clipboard.writeText($("#preview-text").textContent);
@@ -264,21 +274,15 @@ $("#copy").addEventListener("click", async (e) => {
   }
 });
 
+// A tap on a flavour in the menu adds one cup of it.
 document.addEventListener("click", (e) => {
   const pick = e.target.closest(".pick");
-  if (pick) {
-    addFromMenu(pick.dataset.drink);
-    refresh();
-    return;
-  }
-  // "Pre-order" on a shop picks that shop in the form.
-  const shop = e.target.closest("a[data-shop]");
-  if (shop) {
-    const radio = $(`input[name="shop"][value="${shop.dataset.shop}"]`, form);
-    if (radio) radio.checked = true;
-    touched.add("shop");
-    refresh();
-  }
+  if (!pick) return;
+  const li = addFromMenu(pick.dataset.drink);
+  fitSizes(li); // settle the row's size before reading it
+  const { drinkId, size } = readLine(li);
+  lastAdded = `${findDrink(drinkId).name} ${sizes.find((s) => s.id === size)?.label || ""}`.trim();
+  refresh();
 });
 
 new IntersectionObserver(([entry]) => {
@@ -292,6 +296,3 @@ fields.date.min = todayWib();
 fields.date.value = todayWib();
 addLine();
 refresh();
-
-// For checks in a browser console and in tests.
-window.susuMalabar = { readOrder, drinks };

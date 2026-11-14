@@ -3,9 +3,10 @@
 // icon (public/apple-touch-icon.png) from dist/favicon.svg.
 //   npm run shots                 -> docs/screenshots/
 //   npm run shots -- --out <dir>  -> another folder (e.g. for a review round)
-//   npm run shots -- --form       -> also pictures of the form in use at 390 px (phone-*) and
-//                                    320 px (small-*): taps on the menu in both sizes, an
-//                                    empty send, and 40 cups across five drinks
+//   npm run shots -- --form       -> also the whole page at 320 px (small.png), and pictures
+//                                    of the form in use at 390 px (phone-*) and 320 px
+//                                    (small-*): taps on the menu in both sizes, an empty
+//                                    send, and 40 cups across five drinks
 // Uses the Google Chrome installed on this machine (no browser download).
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -99,6 +100,9 @@ try {
       await page.locator("#name").fill("Raka");
       await page.locator("#name").blur();
     };
+
+    // The whole page on the narrowest phone, for a review round.
+    await shoot("small.png", { viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 
     for (const [prefix, width] of [["phone", 390], ["small", 320]]) {
       const phone = { viewport: { width, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, noFull: true };

@@ -80,6 +80,14 @@ const ARROWS = { down: "M8 2.5v10M3.5 8.5 8 13l4.5-4.5", out: "M4 12l8-8M5.5 4H1
 const arrow = (kind) =>
   `<svg class="arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${ARROWS[kind]}" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square"/></svg>`;
 
+/**
+ * The plus and the minus of the count buttons, drawn like the arrows: one stroke, in the
+ * middle of its box. A typed "−" sits lower than a typed "+" and the number between them.
+ */
+const SIGNS = { plus: "M8 1.5v13M1.5 8h13", minus: "M1.5 8h13" };
+const sign = (kind) =>
+  `<svg class="sign" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="${SIGNS[kind]}" fill="none" stroke="currentColor" stroke-width="3"/></svg>`;
+
 // --- Small formatters ---------------------------------------------------------
 
 /** One price format everywhere: "Rp13.000". A range says Rp once: "Rp8.000–19.500". */
@@ -163,18 +171,19 @@ function sizeSwitch({ price, flat }) {
  * count and keeps the sizes both buttons read out current.
  */
 function pick(drink, inner, extraClass = "") {
-  const add = `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-ctl" aria-hidden="true"><span class="pick-n"></span><span class="pick-add">+</span></span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
-  const less = `<button type="button" class="less" data-less="${esc(drink.id)}" hidden><span aria-hidden="true">&minus;</span><span class="sr">Kurangi satu ${esc(drink.name)}</span></button>`;
+  const add = `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-ctl" aria-hidden="true"><span class="pick-n"></span><span class="pick-add">${sign("plus")}</span></span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
+  const less = `<button type="button" class="less" data-less="${esc(drink.id)}" hidden>${sign("minus")}<span class="sr">Kurangi satu ${esc(drink.name)}</span></button>`;
   return add + less;
 }
 
 /**
  * A drink with its own prices. A size it isn't sold in leaves no dash: the name takes
- * that room. The price of the size a tap adds is the bold one. The row's prices are one
- * pair with one mark after it, so no dot sits between two prices like a separator.
+ * that room. The price of the size a tap adds is the bold one, in the pink of the picked
+ * half of the switch. The row's prices are one pair with one mark right after it, so no
+ * dot sits between two prices like a separator.
  * Each price names its size: under the column's name on a wide screen that is only read
- * out, on a phone (where the pair sits under the drink's name) it shows. A drink sold in
- * one size says so in its note, so its price doesn't say it again.
+ * out, on a phone (where the pair is one line under the drink's name) it shows. A drink
+ * sold in one size says so in its note, so its price doesn't say it again.
  */
 function drinkRow(drink) {
   const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
@@ -261,13 +270,15 @@ function menu() {
             ${right.map(ownSection).join("")}
             ${packs()}
             ${extras()}
+            ${noPlus()}
           </div>
         </div>`;
 }
 
-/** How wide a photo shows: the whole phone screen, or one column of the page on a wide screen. */
-const WIDE = "(min-width: 56rem) 32rem, 100vw";
+/** How wide a shop's front shows: the whole phone screen, or one column of the page on a wide screen. */
 const SHOP = "(min-width: 56rem) 30rem, (min-width: 36rem) 34rem, 100vw";
+/** A soft photo (a video still) is a small square beside a line, on every screen. */
+const SMALL = "(min-width: 56rem) 7rem, 5.5rem";
 
 /** A row with a price that the form doesn't take: a bundle, a topping, the snacks. `what` is the small line under the name. */
 const extraRow = ([name, what, price]) =>
@@ -311,6 +322,16 @@ function extras() {
               ${rows.map(extraRow).join("")}
             </ul>
           </section>`;
+}
+
+/**
+ * Why the bundles, the snacks and the toppings have no plus: the plus puts one drink into
+ * the pre-order, and the form takes nothing else. Said once, under the last of them.
+ * Whether the shop takes them in a pre-order is not known, so it says to ask, no more.
+ */
+function noPlus() {
+  if (!bundles.length && !snacks.length && !toppings.length) return "";
+  return '<p class="menu-note">Tombol + cuma buat minuman satuan. Yang lain tanya toko dulu.</p>';
 }
 
 // --- Shops --------------------------------------------------------------------
@@ -396,7 +417,10 @@ function shopList() {
 
 // --- Ways to order ---------------------------------------------------------------
 
-/** Walk in, GoFood, or pre-order on WhatsApp: each row goes to the real thing. */
+/**
+ * Walk in, GoFood, or pre-order on WhatsApp: each row goes to the real thing. No photo: the
+ * only ones of the counter are soft video stills, and those never run across the page.
+ */
 function ways() {
   const gofood = sharedGofood();
   const anyGofood = shops.some((s) => isLocated(s) && s.gofoodUrl);
@@ -404,21 +428,18 @@ function ways() {
     `<li><a class="way" ${attrs}><span class="way-name">${name}</span><span class="way-what">${what}</span>${arrow(kind)}</a></li>`;
   return `
         <div class="ways">
-          ${picture("pickup", { sizes: WIDE, cls: "bleed" })}
-          <div>
-            <h2>Mau pesan lewat mana?</h2>
-            <ul class="way-list">
-              ${row('href="#toko"', "Mampir ke toko", `Bayar ${esc(payWith())}`, "down")}
-              ${
-                gofood
-                  ? row(`href="${esc(val(gofood))}" target="_blank" rel="noopener"`, mark(gofood, () => "GoFood"), "Diantar ojol", "out")
-                  : anyGofood
-                    ? row('href="#toko"', "GoFood", "Pilih tokonya dulu", "down")
-                    : ""
-              }
-              ${row('href="#pesan"', "Pre-order WhatsApp", "Buat acara atau pesanan banyak", "down")}
-            </ul>
-          </div>
+          <h2>Mau pesan lewat mana?</h2>
+          <ul class="way-list">
+            ${row('href="#toko"', "Mampir ke toko", `Bayar ${esc(payWith())}`, "down")}
+            ${
+              gofood
+                ? row(`href="${esc(val(gofood))}" target="_blank" rel="noopener"`, mark(gofood, () => "GoFood"), "Diantar ojol", "out")
+                : anyGofood
+                  ? row('href="#toko"', "GoFood", "Pilih tokonya dulu", "down")
+                  : ""
+            }
+            ${row('href="#pesan"', "Pre-order WhatsApp", "Buat acara atau pesanan banyak", "down")}
+          </ul>
         </div>`;
 }
 
@@ -516,9 +537,9 @@ function orderForm() {
           <div class="line-count">
             <div class="qty">
               <label class="sr">Jumlah gelas</label>
-              <button type="button" data-step="-1" aria-label="Kurangi satu">&minus;</button>
+              <button type="button" data-step="-1" aria-label="Kurangi satu">${sign("minus")}</button>
               <input type="number" inputmode="numeric" min="1" max="${orderRules.maxQtyPerLine}" value="1">
-              <button type="button" data-step="1" aria-label="Tambah satu">+</button>
+              <button type="button" data-step="1" aria-label="Tambah satu">${sign("plus")}</button>
               <button type="button" data-step="10" aria-label="Tambah sepuluh">+10</button>
             </div>
             <span class="line-end">
@@ -672,7 +693,7 @@ export default function page() {
       </div>
     </section>
 
-    <section class="band band-paper band-photo" id="cara">
+    <section class="band band-paper" id="cara">
       <div class="wrap">${ways()}
       </div>
     </section>
@@ -687,7 +708,7 @@ export default function page() {
         <div class="wrap order-top">
           <h2>Borong buat sepanitia</h2>
           <div class="order-aside">
-            ${picture("bungkus", { sizes: "(min-width: 56rem) 7rem, 5.5rem" })}
+            ${picture("bungkus", { sizes: SMALL })}
             <p class="lead">Buat sendiri juga bisa.</p>
           </div>
         </div>
@@ -697,12 +718,12 @@ export default function page() {
       </div>
     </section>
     ${stampCard(brand.stampCard)}
-    <section class="band band-poster band-photo" id="cerita">
+    <section class="band band-poster" id="cerita">
       <div class="wrap story">
-        <figure class="story-photo">${picture("kedai", { sizes: WIDE, cls: "bleed" })}<figcaption class="cap">Toko depan Griya</figcaption></figure>
         <div class="story-words">
           <h2>${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
           <p>${esc(story.started)}${story.since ? `, tahun ${story.since}` : ""}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
+          <figure class="story-photo">${picture("kedai", { sizes: SMALL })}<figcaption>Toko depan Griya</figcaption></figure>
         </div>
         <figure class="reviews">
           <figcaption class="rating">${esc(brand.google.rating)} di Google, dari ${esc(brand.google.reviews)} ulasan</figcaption>
@@ -726,7 +747,7 @@ export default function page() {
   </footer>
 
   <div class="bar" id="bar" hidden>
-    <p role="status"><strong id="bar-price"></strong> <span class="bar-what"><span id="bar-cups"></span> · <span id="bar-sizes"></span></span><span class="sr" id="bar-last"></span></p>
+    <p role="status"><strong id="bar-price"></strong> <span class="bar-what" id="bar-what"></span><span class="sr" id="bar-last"></span></p>
     <a class="btn btn-fill" href="#pesan">Lanjut<span class="sr"> pre-order</span></a>
   </div>
   <p class="sr" role="status" id="tap-said"></p>`;

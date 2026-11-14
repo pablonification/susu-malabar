@@ -110,11 +110,12 @@ The dark green field. Teal walls and stools. Chalk doodles on the menu.
 - Type: the heavy sans for everything the site says. The upright serif of "Kami ada di
   mana?" only for the shop's own lines and review quotes. No italics.
 - A little of the promo posters, where it has a job: the best seller's block (a small black
-  tag, the name huge) and the order bar (the sum as big as a poster's price).
+  tag, the name huge), the order bar (the sum as big as a poster's price), and the form's
+  total above the send button (a small line, the sum huge under it: the form's one loud line).
 - The real badge in one colour (`logo-badge.svg`, PNG when it is small), black on white like
   the cups.
 - Real photos: strawberry milk first, each shop's front inside its own row, the Griya counter
-  with the painted "MALABAR" wall.
+  with the painted "MALABAR" wall as a small square in the story (it is a soft video still).
 - Their framing: from above, a hand and a cup, the real street around it.
 - Their words: "Kemurnian dari Jatinangor", "<flavour> Malabar" names, "kamu/kalian".
 - Shops by landmark, the way they say it: "depan Griya", "depan MST", "depan Ikopin".

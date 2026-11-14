@@ -7,11 +7,16 @@
 // shop is. Chat apps show the card small, and some crop it to a square, so those sit in
 // the middle 567 px, under the middle of the photo (the cup in the hand). The name is
 // the big bold line: it is what has to be readable at thumbnail size.
+// The photo's window is tall enough for the whole cup, from its lid to its base, with a
+// little of the ground under it: the green band never cuts the cup.
 
 import { brand } from "./data.mjs";
 import { esc } from "./mark.mjs";
 import { OG_SIZE, logo } from "./page.mjs";
 import { PHOTO_DIR, photos } from "./photos.mjs";
+
+/** How much of the card's height the photo takes. The cup in it is 307 px tall. */
+const PHOTO_HEIGHT = 352;
 
 export default function card() {
   const photo = photos.hero;
@@ -32,8 +37,8 @@ export default function card() {
       color: var(--poster-ink);
       font-family: var(--font-body);
     }
-    .photo { display: block; width: ${photo.widths[0]}px; height: 330px; object-fit: cover; object-position: 50% 45%; }
-    main { display: flex; align-items: center; justify-content: center; gap: 22px; height: ${OG_SIZE.height - 330}px; }
+    .photo { display: block; width: ${photo.widths[0]}px; height: ${PHOTO_HEIGHT}px; object-fit: cover; object-position: 50% 54%; }
+    main { display: flex; align-items: center; justify-content: center; gap: 22px; height: ${OG_SIZE.height - PHOTO_HEIGHT}px; }
     .disc {
       flex: none;
       display: grid;

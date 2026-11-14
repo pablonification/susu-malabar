@@ -31,7 +31,7 @@ The mark is one small amber dot after the value: the same dot on a price, an add
 or a button, and never a line under it (a line reads as a link). The reason is in the tooltip.
 The dot hangs after the value, level with the middle of it, and takes no room, so nothing
 moves when a value is confirmed.
-A menu row with two prices wears one dot for the pair, set a little apart after it (`markAll()`).
+A menu row with two prices wears one dot for the pair, right after the last price (`markAll()`).
 It comes from one helper, `mark()` in `src/mark.mjs`, and the `.tbc` rules in `src/site.css`.
 The footer counts them. When the owner confirms a value, unwrap it in `src/data.mjs` and its
 mark goes away.
@@ -86,6 +86,8 @@ where each colour was sampled. Logo, colours, fonts and photos each have one pla
   `public/assets/photos/`, which is what the page loads. Rules the tests keep: only photos
   the shop posted itself, never made bigger than the original, no retouching, no words over
   a photo, no original used for two photos. A new original needs a line in `SOURCES.md`.
+  A still from a video is soft: give it `soft: true` in the list and show it only as a small
+  square beside a line (`SMALL` in `src/page.mjs`), never across the page.
   Which photo is which shop's front is at the bottom of the same file (`shopPhotos`): it shows
   inside that shop's row, and a shop without one is the same row without a photo.
 
@@ -98,7 +100,8 @@ edge at its real size (the usual 1200 x 630 shape, a little smaller).
 
 ## Ways to order, and a promo
 
-"Mau pesan lewat mana?" lists three ways: walk in, GoFood, pre-order on WhatsApp. While every
+"Mau pesan lewat mana?" lists three ways: walk in, GoFood, pre-order on WhatsApp. It has no
+photo (the only ones of the counter are soft video stills). While every
 shop has the same GoFood link it is one row there. Give the shops different links in
 `src/data.mjs` and each shop gets its own GoFood button instead.
 
@@ -110,12 +113,18 @@ posters. Set it back to `null` when the promo ends.
 ## How the menu adds to the order
 
 The menu has one size switch at its top (14 oz or 22 oz). It carries the price of the groups
-that share one (Buah and Rasa), so that price is on the page once. Drinks with their own
-prices show both at full strength, and the picked size's column is the bold one. A tap on a drink adds one
+that share one (Buah and Rasa), so that price is on the page once. The switch stays under the
+jump links while those drinks are on screen and leaves with them, so their price and the
+picked size are always in sight. Drinks with their own prices show both at full strength,
+and the picked size's is the bold one, in the pink of the switch's picked half. On a phone
+the two prices are one line under the drink's name. A tap on a drink adds one
 cup in the picked size. A drink that is in the order shows its count with a minus before it
 ("− 2 +"): the minus takes one cup off, from the picked size first, else from the other.
 The bar at the bottom says the sum, the cups and the sizes they are in ("4 gelas · 3 × 14 oz ·
-1 × 22 oz"). The rules are in `src/pick.mjs` (which size, which row of the form, the cups by
+1 × 22 oz"; where the line wraps, no dot is left at a line's end). The plus and the minus
+are drawn (`sign()` in `src/page.mjs`), so they sit level with the count. Bundles, snacks
+and toppings have no plus: the form takes drinks only, and one line under them says so.
+The rules are in `src/pick.mjs` (which size, which row of the form, the cups by
 size) and tested in `test/site.test.mjs`.
 
 ## Later: the stamp card

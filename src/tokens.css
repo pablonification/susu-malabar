@@ -42,7 +42,8 @@
   --text-h1: clamp(3rem, 15.4vw, 4.5rem); /* wider screens set their own below */
   --h1-leading: 1.04; /* tight, but the g of "segar," clears the l of "asli" under it */
   --text-price: 1.375rem;
-  --text-total: 1.625rem; /* the order's total above the send button */
+  --text-total: 1.625rem; /* the sum in the order bar */
+  --text-sum: clamp(2rem, 10.5vw, 3.25rem); /* the order's total above the send button: the form's one loud line */
   --text-promo: 3.25rem; /* a running promo's price */
   --text-best: clamp(2.5rem, 12.5vw, 3.5rem); /* the best seller's name: the menu's one loud line */
   /* The serif runs small for its size, so it gets its own, larger steps. */

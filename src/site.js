@@ -241,10 +241,11 @@ function refresh() {
   // (the drink's count), so here it is only read out.
   const bySize = cupsBySize(order.lines);
   $("#bar-price").innerHTML = estimate(order, price);
-  $("#bar-cups").textContent = `${cups} gelas`;
-  // "3 × 14 oz" never breaks inside: on a narrow phone the line wraps between sizes.
-  const whole = (words) => words.replace(/ /g, " ");
-  $("#bar-sizes").textContent = bySize.length === 1 ? whole(sizeName(bySize[0].size)) : bySize.map((s) => whole(`${s.cups} × ${sizeName(s.size)}`)).join(" · ");
+  // Each part is a piece of its own ("4 gelas", "3 × 14 oz") that never breaks inside. The
+  // dots between them are drawn by site.css, which hides one where the line wraps, so no
+  // line of the bar ends or starts with a dot.
+  const inSizes = bySize.length === 1 ? [sizeName(bySize[0].size)] : bySize.map((s) => `${s.cups} × ${sizeName(s.size)}`);
+  $("#bar-what").innerHTML = [`${cups} gelas`, ...inSizes].map((part) => `<span>${esc(part)}</span>`).join(" ");
   $("#bar-last").textContent = lastTap ? `, ${lastTap}` : "";
   bar.hidden = cups === 0 || formOnScreen;
   // With the bar gone (the last cup was taken off), what the tap did is still read out.

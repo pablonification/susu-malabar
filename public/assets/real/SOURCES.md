@@ -36,19 +36,23 @@ The page does not use the files above as they are. `npm run photos` cuts them in
 crop and a resize, never bigger than its original. Nothing is retouched, sharpened or
 generated. The only other change is a plain brightness lift ("levels" in that list) for
 pictures that are dark as posted. The two shop fronts were posted under a dark overlay
-with the address written on it, so they get the strongest lift.
+with the address written on it, so they get the strongest lift. A still from a video is
+soft, so it is marked `soft` in that list and only ever shows as a small square (a test
+keeps that).
 
 | Cut | From | Where on the page |
 | --- | --- | --- |
 | `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card (full width there, at its real 1080 px) |
 | `corndog` | `corndog-fryer`, a square close on the corndog | A small square under "Teman minum" on the menu |
-| `pickup` | `counter-griya-wide`, whole (the "PICK UP HERE" sign, both people serving, the customer's head not cut). A crop further right was tried and dropped: the letter missing from "MALABAR" is behind the head of the person serving, not behind the customer, so no crop shows the whole word. It would lose the "PICK UP HERE" sign and be softer. | "Mau pesan lewat mana?" |
-| `toko-griya` | `shop-front-griya`, whole, lifted | Inside the row of the shop "depan Griya" |
+| `toko-griya` | `shop-front-griya`, 722 px of its 1080 px width (104 px in from the left), full height, lifted: the banner with the name, the zinc counter, the scooter. Left out on the left: a passer-by half out of the frame. Left out on the right: the neighbour's bright "AYAM KA..." sign and its red menu strip. On a wide screen it shows 12rem tall, so it is never larger than it is sharp. | Inside the row of the shop "depan Griya" |
 | `toko-ikopin` | `shop-front-ikopin`, whole, lifted | Inside the row of the shop "depan Ikopin" |
-| `bungkus` | `staff-griya`, a 520 px square from the top, 278 px in from the left: one person, his hands and the tops of the cups. The second person at the frame's right edge is left out. It is a soft video still, so it is only shown as a small square (88 px on a phone, 112 px on a wide screen), where it holds up. | A small square beside the second line of the pre-order title |
-| `kedai` | `counter-griya`, whole | The story |
+| `bungkus` | `staff-griya`, a 520 px square, 278 px in from the left and 24 px down from the top: one person, his hands and the cups. The original frame ends in his hair, so the whole head can't be shown. The cut starts a little lower, through the hair and clear of its tips, so the top edge is a clean line. The second person at the frame's right edge is left out. A soft video still: only a small square (88 px on a phone, 112 px on a wide screen). | A small square beside the second line of the pre-order title |
+| `kedai` | `counter-griya`, a 560 px square from its right side (440 px in, 80 px down): the wall with "MALABAR" and the painted fruit, two people at work. The ceiling light at the top and the third person on the left are left out. A soft video still: only a small square, the same size as `bungkus`. | A small square in the story, beside "Toko depan Griya" |
 
-Not on the page: a second cut of `strawberry-milk-2` (the best seller's row had one: it was the
+Not on the page: `counter-griya-wide` (the counter at night was shown across the page as
+`pickup`: a soft video still with a customer's back over the wall's lettering, and the same
+room as `kedai`. Dropped in review round 3, and the ways to order have no photo),
+a second cut of `strawberry-milk-2` (the best seller's row had one: it was the
 first screen's cup again), `strawberry-milk-1` (too soft, even small), `strawberry-milk-topdown`
 (the lid alone: no cup, and soft), the two promo posters (old
 promos, and one names prices the owner has not confirmed), and a front of the shop "depan

@@ -253,12 +253,10 @@ test("menu buttons keep their words for screen readers", () => {
     assert.match(b, /<span class="sr">Tambah <\/span>/);
   }
   // Right after each drink's button comes the one that takes a cup off: hidden until the
-  // drink is in the order, and named for a screen reader (the "−" itself is not read).
+  // drink is in the order, and named for a screen reader (the drawn minus is not read).
   for (const d of data.drinks) {
-    assert.ok(
-      body.includes(`</button><button type="button" class="less" data-less="${d.id}" hidden><span aria-hidden="true">&minus;</span><span class="sr">Kurangi satu ${d.name}</span></button>`),
-      `${d.id} has no way to take a cup off`,
-    );
+    const less = new RegExp(`</button><button type="button" class="less" data-less="${d.id}" hidden><svg class="sign"[^>]*aria-hidden="true">.*?</svg><span class="sr">Kurangi satu ${d.name}</span></button>`);
+    assert.match(body, less, `${d.id} has no way to take a cup off`);
   }
   assert.doesNotMatch(js, /toggleAttribute\("aria-invalid"/, 'aria-invalid must be "true", not empty');
   assert.doesNotMatch(js, /window\.\w+ =/, "no debugging hook on window");
@@ -394,8 +392,9 @@ test("hints in empty fields are short and lighter than typed words", () => {
 test("nothing is scrolled under the sticky links or the order bar", () => {
   assert.match(css, /html \{[^}]*scroll-padding-top: calc\(var\(--tap-big\) \+/);
   assert.match(js, /scrollPaddingBottom = /);
-  // Only the jump links stay on top.
-  assert.equal((css.match(/position: sticky/g) || []).length, 1);
+  // Two things stay on top: the jump links, and under them the menu's size switch while the
+  // drinks it prices are on screen (see the third review of the second design, below).
+  assert.equal((css.match(/position: sticky/g) || []).length, 2);
 });
 
 test("one headline, one section name, and the link preview shows no price", () => {
@@ -435,8 +434,10 @@ test("the order bar says the total and the way on, and reads out what went in", 
   assert.match(bar, /<p role="status">[\s\S]*<span class="sr" id="bar-last"><\/span><\/p>/, "what went in is read out, not shown");
   assert.ok(body.includes('<p class="sr" role="status" id="tap-said"></p>'), "taking off the last cup hides the bar, so its words need a status of their own");
   assert.match(bar, /<a class="btn btn-fill" href="#pesan">Lanjut<span class="sr"> pre-order<\/span><\/a>/);
-  // The sum, then what it is the sum of: the cups, and the sizes they are in.
-  assert.match(bar, /<strong id="bar-price"><\/strong> <span class="bar-what"><span id="bar-cups"><\/span> · <span id="bar-sizes"><\/span><\/span>/);
+  // The sum, then what it is the sum of: the cups, and the sizes they are in, each a part
+  // of its own that site.js writes.
+  assert.match(bar, /<strong id="bar-price"><\/strong> <span class="bar-what" id="bar-what"><\/span>/);
+  assert.ok(js.includes("[`${cups} gelas`, ...inSizes]"));
   // The menu's count is read apart from the size a tap adds.
   assert.ok(js.includes(". Sudah ${n} gelas di pesanan"));
 });
@@ -694,16 +695,19 @@ test("the dot sits at one height everywhere, clear of corners, and after a pair 
   assert.doesNotMatch(dot, /bottom:/);
   // The form's total keeps room for it inside the bar.
   assert.match(css, /#total-price \{[^}]*margin-right: var\(--space-3\)/);
-  // A row's two prices are one pair with room after it, so the one dot marks the pair.
-  assert.match(css, /\.prices \{[^}]*padding-right: var\(--space-2\)/);
+  // A row's two prices are one pair on one line, as wide as its words, so the one dot hangs
+  // right after the last price (third review of the second design, below).
+  assert.match(css, /\.prices \{[^}]*display: flex;/);
+  assert.doesNotMatch(/\.prices \{([^}]*)\}/.exec(css)[1], /padding|justify-content/);
 });
 
-test("small phones: a drink's sum and Hapus get their own line, and no amount button is under 44px", () => {
-  const narrow = /@media \(max-width: 21rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
-  assert.match(narrow, /\.line-end \{[^}]*flex-basis: 100%/);
-  for (const [rule] of css.matchAll(/\.qty button[^{]*\{[^}]*\}/g)) {
+test("small phones: a drink's sum and Hapus get their own line, and no part of the amount is under 44px", () => {
+  const small = /@media \(max-width: 23\.5rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
+  assert.match(small, /\.line-end \{[^}]*flex-basis: 100%/);
+  // The buttons, and the number between them: 44px wide wherever the form is narrow.
+  for (const [rule] of css.matchAll(/\.qty (?:button|input)[^{]*\{[^}]*\}/g)) {
     const width = /(?:^|[\s;])width: ([^;]+);/.exec(rule)?.[1];
-    assert.ok(!width || width === "var(--tap)", `an amount button narrower than 44px: ${rule}`);
+    assert.ok(!width || width === "var(--tap)" || parseFloat(width) >= 2.75, `a part of the amount narrower than 44px: ${rule}`);
   }
 });
 
@@ -716,6 +720,115 @@ test("the shops' band is the awning's turquoise, and the sticky links have no lo
   for (const [rule] of css.matchAll(/\.jump[^{]*\{[^}]*\}/g)) assert.doesNotMatch(rule, /border-left/);
   // The footer ends soon after its last line.
   assert.match(css, /\.foot \{[^}]*padding-block: var\(--space-6\) var\(--space-5\)/);
+});
+
+// --- What the third review of the second design found, kept fixed --------------------
+
+test("a soft photo is only ever a small square: none runs across the page", async () => {
+  const sources = await read("public/assets/real/SOURCES.md");
+  const pictures = Object.fromEntries([...body.matchAll(/<picture[^>]*>[\s\S]*?<\/picture>/g)].map((m) => [/assets\/photos\/([a-z-]+?)-\d+\./.exec(m[0])[1], m[0]]));
+  let soft = 0;
+  for (const [name, photo] of Object.entries(photos)) {
+    // A still from a video is soft, whatever the list says: SOURCES.md knows which ones are.
+    const row = sources.split("\n").find((line) => line.startsWith(`| \`${photo.from}\` |`));
+    if (/\(still at/.test(row)) assert.equal(photo.soft, true, `${name} is a video still: mark it soft`);
+    if (!photo.soft) continue;
+    soft += 1;
+    const [, , w, h] = photo.crop;
+    assert.equal(w, h, `${name}: a soft photo is a square`);
+    assert.ok(photo.widths[0] <= 448, `${name}: a soft photo is cut small`);
+    assert.doesNotMatch(/sizes="([^"]*)"/.exec(pictures[name])[1], /vw/, `${name}: a soft photo is sized to the screen`);
+    assert.doesNotMatch(pictures[name], /class="photo [^"]*bleed/, `${name}: a soft photo runs edge to edge`);
+  }
+  assert.ok(soft >= 2);
+  // No CSS shows a small square wider than 7rem.
+  for (const [, rem] of css.matchAll(/(?:\.snack|\.story-photo|\.order-aside) \.photo(?:,\s*\.[\w-]+ \.photo)* \{[^}]*width: ([\d.]+)rem/g)) assert.ok(Number(rem) <= 7);
+  // The counter at night (a customer's back over the wall's lettering) is gone, and the
+  // ways to order have no photo. The room with the painted wall shows once, small, in the story.
+  assert.ok(!("pickup" in photos));
+  assert.doesNotMatch(section("cara"), /<picture|<img/);
+  assert.match(section("cerita"), /<figure class="story-photo"><picture class="photo">[\s\S]*?<\/picture><figcaption>Toko depan Griya<\/figcaption><\/figure>/);
+  assert.doesNotMatch(html + css, /band-photo/);
+});
+
+test("the size switch stays in sight over the drinks it prices, and covers nothing focused", () => {
+  // Under the jump links, on the poster's own ground, for as long as its column is on screen.
+  const sw = /\.seg-poster \{([^}]*)\}/.exec(css)[1];
+  assert.match(sw, /position: sticky;/);
+  assert.match(sw, /top: calc\(var\(--tap-big\) - 1px\)/);
+  assert.match(sw, /background: var\(--bg\)/);
+  // It is the first thing in the column of the drinks that share its price, and only theirs.
+  const menu = section("menu");
+  const first = /<div class="menu-col">([\s\S]*?)<div class="menu-col">/.exec(menu)[1];
+  assert.match(first, /^\s*<div class="seg seg-poster"/);
+  assert.deepEqual([...first.matchAll(/<h3>([^<]+)<\/h3>/g)].map((m) => m[1]), ["Buah", "Rasa"]);
+  assert.doesNotMatch(first, /class="price"|pick-row/, "a drink with its own price under the switch's price");
+  // A drink or a minus reached with the keyboard stops below the switch.
+  assert.match(css, /\.pick,\s*\.less \{[^}]*scroll-margin-top: var\(--switch\)/);
+  assert.match(css, /--switch: [\d.]+rem;/);
+  // On a screen too short for it, it scrolls away like the rest.
+  assert.match(css, /@media \(max-height: 30rem\) \{\s*\.seg-poster \{\s*position: static;/);
+});
+
+test("a row's prices: one line on a phone, the dot right after, and pink for the size picked", () => {
+  // The prices run under the name, across the row, on one line. The count keeps to the name's line.
+  assert.match(css, /\.pick\.cols \{[^}]*grid-template-areas: "name ctl" "prices prices"/);
+  assert.match(css, /\.rows \.less \{[^}]*height: calc\(var\(--ctl-add\) \+ var\(--space-2\) \* 2\)/, "the minus beside a two-line row is not 44px around the plus's line");
+  assert.match(tokens, /--tap: 2\.75rem;/);
+  assert.match(css, /--ctl-add: 1\.75rem;/); // 1.75rem + 2 x 0.5rem = 44px
+  // The size a tap adds is bold and wears the order's pink, like the picked half of the switch.
+  assert.match(css, /\.pick \.price\[data-size\]:not\(\.price-off\),\s*\.grp-head \.size\[data-size\]:not\(\.price-off\) \{\s*color: var\(--order\);/);
+  // On the best seller's block the count sits in a 44px box on the line of the minus.
+  assert.match(css, /\.pick-best \.pick-ctl \{[^}]*align-self: end;[^}]*min-height: var\(--tap\)/);
+});
+
+test("the plus and the minus are drawn, and a list's last row has no rule under it", () => {
+  // Drawn like the arrows, so each sits in the middle of its button: no typed sign in a count button.
+  const signs = [...body.matchAll(/<svg class="sign"[^>]*><path d="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(signs.length, data.drinks.length * 2 + 2); // a plus and a minus per drink, and the form's pair
+  assert.equal(new Set(signs).size, 2);
+  assert.doesNotMatch(body, /&minus;|−<\/|class="pick-add">\+</);
+  assert.match(/<template id="line">([\s\S]*?)<\/template>/.exec(body)[1], /data-step="-1" aria-label="Kurangi satu"><svg class="sign"[\s\S]*?data-step="1" aria-label="Tambah satu"><svg class="sign"/);
+  assert.match(css, /\.sign \{[^}]*display: block;/);
+  // No thin rule between a list's last row and the end of its band.
+  assert.match(css, /\.picks li:last-child,\s*\.rows li:last-child \{\s*border-bottom: 0;/);
+  assert.match(css, /\.way-list li:last-child \.way \{\s*border-bottom: 0;/);
+  assert.match(css, /\.shop:last-child \{[^}]*padding-bottom: 0;[^}]*border-bottom: 0;/);
+});
+
+test("rows with no plus say why, once, without promising anything", () => {
+  const menu = section("menu");
+  const notes = [...menu.matchAll(/<p class="menu-note">([^<]*)<\/p>/g)].map((m) => m[1]);
+  assert.deepEqual(notes, ["Tombol + cuma buat minuman satuan. Yang lain tanya toko dulu."]);
+  // It comes after the last row that has no plus, and claims no way to order those.
+  assert.ok(menu.indexOf("menu-note") > menu.lastIndexOf('<li class="extra">'));
+  assert.doesNotMatch(notes[0], /GoFood|pre-order|catatan|bisa/i);
+  for (const [li] of menu.matchAll(/<li class="extra">[\s\S]*?<\/li>/g)) assert.doesNotMatch(li, /<button|<small>[^<]*toko/);
+});
+
+test("narrow phones: no line of the bar ends in a dot, the shops stack, the second line stays whole", () => {
+  // The bar's parts are whole pieces. The dot before each is drawn in the gap, and cut off
+  // where a part starts a new line.
+  assert.match(css, /\.bar-what \{[^}]*flex-wrap: wrap;[^}]*overflow: hidden;/);
+  assert.match(css, /\.bar-what span \{[^}]*white-space: nowrap;/);
+  assert.match(css, /\.bar-what span \+ span::before \{[^}]*content: "·";[^}]*position: absolute;[^}]*left: -/);
+  assert.doesNotMatch(js, /join\(" · "\)/);
+  const small = /@media \(max-width: 23\.5rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
+  assert.match(small, /\.seg-fill \{\s*flex-direction: column;/);
+  const narrow = /@media \(max-width: 21rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
+  assert.match(narrow, /\.order-aside \.lead \{\s*font-size: var\(--text-body\);/);
+});
+
+test("the first photo lines up with the words beside it, and the link preview shows the whole cup", () => {
+  const wide = css.slice(css.indexOf("@media (min-width: 56rem)"));
+  assert.match(wide, /\.hero-photo \{[^}]*align-self: stretch;/);
+  assert.match(wide, /\.hero-open \{[^}]*min-height: 0;/);
+  // The cup in the first photo is about 307 px tall at the card's size: the photo's window is taller.
+  const window = Number(/\.photo \{[^}]*height: (\d+)px/.exec(card)[1]);
+  assert.ok(window >= 340 && OG_SIZE.height - window >= 200, `the card's photo is ${window}px tall`);
+  // The form's total is its one loud line, sized in tokens.css.
+  assert.match(css, /#total-price \{[^}]*font-size: var\(--text-sum\)/);
+  assert.match(tokens, /--text-sum: clamp\(/);
 });
 
 // --- Banned looks and words ----------------------------------------------------

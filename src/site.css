@@ -473,7 +473,6 @@ h1 {
 }
 
 .menu {
-  --col-price: 5.2rem;
   --ctl-add: 1.75rem; /* the plus at a row's end */
   --ctl-n: 2rem; /* how many cups, before the plus */
   --row: 3.5rem; /* the least height of every row of the menu */
@@ -516,16 +515,10 @@ h1 {
   }
 }
 
-/* A group's name. Over rows with their own prices, the header also names the price
-   columns (on a screen wide enough for columns). */
+/* A group's name. */
 .grp-head {
-  align-items: end;
   padding-bottom: var(--space-2);
   border-bottom: var(--line-strong) solid var(--fg);
-}
-
-.grp-head .prices {
-  display: none;
 }
 
 .size {
@@ -540,20 +533,15 @@ h1 {
   white-space: nowrap;
 }
 
-/* Both sizes are for sale, so both prices are at full strength. The one a tap adds is
-   bold, in the pink of the picked half of the switch: the size you picked. */
-.price-off,
-.grp-head .size.price-off {
+/* Both sizes are for sale, so a price in the size not picked is at full strength, only
+   lighter in weight. A price in the picked size is bold, in the pink of the picked half of
+   the switch. A drink sold in one size is pink only while that size is the picked one. */
+.price-off {
   font-weight: 400;
 }
 
-.pick .price[data-size]:not(.price-off),
-.grp-head .size[data-size]:not(.price-off) {
+.pick .price[data-size]:not(.price-off) {
   color: var(--order);
-}
-
-.grp-head .size {
-  font-weight: 800;
 }
 
 .price-all {
@@ -671,7 +659,7 @@ h1 {
 }
 
 /* A drink with its own prices. On a phone: its name with the count and the plus at the
-   line's end, and under them its prices on one line, each with its size. */
+   line's end, and under them the price that differs from the switch's, with its size. */
 .pick.cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -700,17 +688,18 @@ h1 {
   height: calc(var(--ctl-add) + var(--space-2) * 2);
 }
 
-/* The prices of one row are one pair on one line, and the row's one dot hangs right after
-   the last of them, like after any other price: it is attached to the pair, never afloat
-   between two lines. The line is as wide as its words, and fits the narrowest phone. */
+/* The prices of one row are one piece on one line, as wide as its words, and the row's one
+   dot hangs right after the last number, like after any other price: never afloat in a
+   column of its own. */
 .prices {
   display: flex;
   flex-wrap: wrap;
   gap: 0 var(--space-3);
 }
 
-.prices > * {
-  text-align: left;
+/* The size a price is for, said before it at the weight of a note. */
+.price-size {
+  font-weight: 400;
 }
 
 /* The best seller: one block of strawberry pink across the poster, set the way the shop
@@ -752,14 +741,17 @@ h1 {
   line-height: 1;
 }
 
+/* On the narrowest phone the line takes two lines: they keep clear of each other and of
+   the name above. On one line the room is already there, and nothing grows. */
 .pick-tag {
   grid-area: tag;
   display: flex;
   align-items: center;
   min-height: var(--tap);
   margin-top: var(--space-2);
+  padding-block: var(--space-1);
   font-size: var(--text-quiet);
-  line-height: 1.05;
+  line-height: 1.2;
 }
 
 /* The count and the plus sit in a 44px box on the block's last line, where the minus is. */
@@ -813,14 +805,6 @@ h1 {
   margin-right: var(--space-3);
 }
 
-/* Why some rows have no plus: once, under the last of them. */
-.menu-note {
-  margin-top: var(--space-4);
-  font-size: var(--text-small);
-  line-height: 1.4;
-  color: var(--muted);
-}
-
 /* The snack, straight out of the fryer: a small square beside the shop's line about it,
    so the menu's big picture stays a drink. */
 .snack {
@@ -840,9 +824,8 @@ h1 {
   line-height: 1.15;
 }
 
-/* Wide enough for columns: two drinks per row under the switch, and a price column per
-   size for the drinks with their own prices, named in the group's header. There the
-   size beside each price is only read out. */
+/* Wide enough for columns: two drinks per row under the switch, and a drink with its own
+   price is one line: its name, its price, then the count and the plus. */
 @media (min-width: 30rem) {
   .menu {
     --col-ctl: calc(var(--tap) + var(--ctl-n) + var(--ctl-add));
@@ -852,9 +835,7 @@ h1 {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  .cols,
   .pick.cols {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) auto var(--col-ctl);
     grid-template-areas: none;
     gap: 0;
@@ -867,8 +848,10 @@ h1 {
     grid-area: auto;
   }
 
+  /* The room after the price is where its dot hangs, clear of the minus. */
   .pick.cols .prices {
-    justify-self: auto;
+    justify-self: end;
+    margin-right: var(--space-3);
   }
 
   /* Here the row is one line, and the minus is as tall as the row again. */
@@ -886,29 +869,6 @@ h1 {
   .picks-wide ~ li:nth-last-child(2):nth-child(even),
   .picks li:first-child:not(.picks-wide) ~ li:nth-last-child(2):nth-child(odd) {
     border-bottom: 0;
-  }
-
-  .prices,
-  .grp-head .prices {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: var(--col-price);
-    justify-items: stretch;
-    gap: 0;
-    margin-right: var(--space-2);
-  }
-
-  .prices > * {
-    text-align: center;
-  }
-
-  .price-size {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 }
 
@@ -1021,9 +981,9 @@ h1 {
   gap: var(--space-2);
 }
 
-/* The mark on a button hangs in the gap before its arrow. */
+/* The mark on a button hangs in the gap before its arrow, with the usual room after it. */
 .shop-go .btn {
-  gap: 0.875rem;
+  gap: 1.25rem;
 }
 
 @media (min-width: 30rem) {
@@ -1053,29 +1013,12 @@ h1 {
   color: var(--fg);
 }
 
+/* The title, and a second line under it. No photo: the only ones of a big order being
+   packed are soft video stills. */
 .order-top {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
   padding-block: var(--space-5);
-}
-
-/* Bagging a big order, as a small square beside the second line. The picture is a soft
-   video still: it stays small. The story's photo is another, and gets the same square. */
-.order-aside,
-.story-photo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.story-photo .photo,
-.order-aside .photo {
-  flex: none;
-  width: 5.5rem;
-}
-
-.order-aside .lead {
-  text-wrap: balance;
 }
 
 .form,
@@ -1519,16 +1462,6 @@ select[aria-invalid="true"]:focus-visible {
   margin-top: var(--space-4);
 }
 
-/* The shop's inside, as a small square beside the line that says which shop it is. */
-.story-photo {
-  margin-top: var(--space-5);
-}
-
-.story-photo figcaption {
-  font-weight: 600;
-  line-height: 1.3;
-}
-
 /* What Google says, as one plain line, then what reviewers wrote, as they wrote it. */
 .reviews {
   padding-top: var(--space-5);
@@ -1639,13 +1572,18 @@ select[aria-invalid="true"]:focus-visible {
   white-space: nowrap;
 }
 
-/* "4 gelas · 3 × 14 oz · 1 × 22 oz": each part is whole, with a dot drawn in the gap before
-   it. Where the line wraps, the part that starts the new line has its dot outside the
-   box, where it is cut off: no line ends or starts with a dot. */
-.bar-what {
+/* "4 gelas · 3 × 14 oz · 1 × 22 oz": two parts, the cups and the sizes they are in, each
+   whole, with a dot drawn in the gap before it. Where the line wraps, the sizes go to the
+   next line together, and their dot is outside the box, where it is cut off: no line ends
+   or starts with a dot, and no size is left alone on a line. */
+.bar-what,
+.bar-sizes {
   display: flex;
-  flex-wrap: wrap;
   column-gap: 1em;
+}
+
+.bar-what {
+  flex-wrap: wrap;
   overflow: hidden;
   font-size: var(--text-small);
   font-weight: 600;
@@ -1718,11 +1656,6 @@ select[aria-invalid="true"]:focus-visible {
 /* --- Narrowest phones ---------------------------------------------------------------- */
 
 @media (max-width: 21rem) {
-  /* The line beside the small photo steps down, so it stays whole on one line. */
-  .order-aside .lead {
-    font-size: var(--text-body);
-  }
-
   /* The size names step down a little, so they keep clear of their frames. */
   .line .seg label > span {
     min-width: 3.25rem;
@@ -1839,7 +1772,6 @@ select[aria-invalid="true"]:focus-visible {
   .menu {
     --bleed: 0px;
     --best-inset: var(--space-4);
-    --col-price: 5.75rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
@@ -1861,19 +1793,23 @@ select[aria-invalid="true"]:focus-visible {
     align-items: start;
   }
 
-  /* A shop's words left, its front right, in the page's two columns. The fronts are one
-     height, each as wide as its own shape gives: none is shown larger than it is sharp. */
+  /* A shop's words left, its front right, in the page's two columns: the fronts are cut to
+     one shape, so they are one size. The words take the room the row has, so in a row
+     with no photo they run its whole width, the map button at its far end. */
   .shop {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: var(--space-8);
+    display: flex;
     align-items: center;
+    gap: var(--space-8);
     padding-block: var(--space-5);
   }
 
-  .shop-photo img {
-    width: auto;
-    max-width: 100%;
-    max-height: 12rem;
+  .shop-words {
+    flex: 1;
+  }
+
+  .shop-photo {
+    flex: none;
+    width: calc((100% - var(--space-8)) / 2);
   }
 
   .shops-when {
@@ -1883,17 +1819,14 @@ select[aria-invalid="true"]:focus-visible {
     align-items: baseline;
   }
 
-  /* The black band: the title left, the small photo and the second line right. */
+  /* The black band: the title left, the second line right, on the title's last line. It
+     starts where the form's right half starts. */
   .order-top {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
-    align-items: center;
+    align-items: end; /* for a browser that doesn't know the line below */
+    align-items: last baseline;
     padding-block: var(--space-6);
-  }
-
-  .story-photo .photo,
-  .order-aside .photo {
-    width: 7rem;
   }
 
   /* Drinks left, the rest right. The form closes the same way: the small print and

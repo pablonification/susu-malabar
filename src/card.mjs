@@ -3,8 +3,9 @@
 //
 // The card is as wide as the photo (OG_SIZE in page.mjs: 1080 x 567, the usual preview
 // shape), so the photo runs from edge to edge at its real size, never bigger. Under it,
-// the page's own lockup: the badge, the shop's name and its line, which says where the
-// shop is. Chat apps show the card small, and some crop it to a square, so those sit in
+// the badge, the shop's name and the page's headline: one line about the shop, not two.
+// (Where the shop is comes with the link's title, "Susu Malabar Jatinangor".)
+// Chat apps show the card small, and some crop it to a square, so those sit in
 // the middle 567 px, under the middle of the photo (the cup in the hand). The name is
 // the big bold line: it is what has to be readable at thumbnail size.
 // The photo's window is tall enough for the whole cup, from its lid to its base, with a
@@ -12,7 +13,7 @@
 
 import { brand } from "./data.mjs";
 import { esc } from "./mark.mjs";
-import { OG_SIZE, logo } from "./page.mjs";
+import { HEADLINE, OG_SIZE, logo } from "./page.mjs";
 import { PHOTO_DIR, photos } from "./photos.mjs";
 
 /** How much of the card's height the photo takes. The cup in it is 307 px tall. */
@@ -68,7 +69,7 @@ export default function card() {
     <span class="disc">${logo()}</span>
     <div>
       <h1>${esc(brand.name)}</h1>
-      <p class="line">${esc(brand.tagline)}</p>
+      <p class="line">${esc(HEADLINE)}</p>
     </div>
   </main>
 </body>

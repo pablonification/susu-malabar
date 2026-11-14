@@ -13,7 +13,7 @@ npm install      # only needed for screenshots
 npm run dev      # http://localhost:4321, rebuilt on every page load
 npm run build    # static files into dist/
 npm test         # the order form's logic, and what must stay true of the built page
-npm run shots -- --form --out /tmp/shots   # also the form in use, at 390 px and 320 px
+npm run shots -- --form --out /tmp/shots   # also the menu and the form in use, at 1440, 390 and 320 px
 npm run photos   # only after changing a photo or its crop (see "Change the look")
 ```
 
@@ -87,9 +87,13 @@ where each colour was sampled. Logo, colours, fonts and photos each have one pla
   the shop posted itself, never made bigger than the original, no retouching, no words over
   a photo, no original used for two photos. A new original needs a line in `SOURCES.md`.
   A still from a video is soft: give it `soft: true` in the list and show it only as a small
-  square beside a line (`SMALL` in `src/page.mjs`), never across the page.
+  square beside a line (like the corndog on the menu), never across the page.
   Which photo is which shop's front is at the bottom of the same file (`shopPhotos`): it shows
-  inside that shop's row, and a shop without one is the same row without a photo.
+  inside that shop's row, and a shop without one is the same row without a photo. The fronts
+  are cut to one shape (about 5 wide to 2 tall), so they are one size on every screen: cut a
+  new one to that shape too.
+  No photo shows a person the page would have to name: nobody knows who is in the shop's
+  stills, so the story and the form's title have no photo.
 
 Then run `npm run shots` to remake the pictures in `docs/screenshots/`, the link-preview image
 (`public/og.jpg`, drawn by `src/card.mjs`) and the home-screen icon, and `npm run check`.
@@ -115,17 +119,21 @@ posters. Set it back to `null` when the promo ends.
 The menu has one size switch at its top (14 oz or 22 oz). It carries the price of the groups
 that share one (Buah and Rasa), so that price is on the page once. The switch stays under the
 jump links while those drinks are on screen and leaves with them, so their price and the
-picked size are always in sight. Drinks with their own prices show both at full strength,
-and the picked size's is the bold one, in the pink of the switch's picked half. On a phone
-the two prices are one line under the drink's name. A tap on a drink adds one
-cup in the picked size. A drink that is in the order shows its count with a minus before it
-("− 2 +"): the minus takes one cup off, from the picked size first, else from the other.
-The bar at the bottom says the sum, the cups and the sizes they are in ("4 gelas · 3 × 14 oz ·
-1 × 22 oz"; where the line wraps, no dot is left at a line's end). The plus and the minus
+picked size are always in sight. A drink with its own prices shows only the price that is
+not the switch's ("22 oz Rp15.000"), so no price is on the menu twice. The price that is the
+same is still read out by a screen reader. A price is bold and pink while its size is the
+picked one, and white otherwise. On a phone that price is one line under the drink's name.
+
+A tap on a drink adds one cup in the picked size. The count beside a drink ("− 2 +") is its
+cups in the picked size, and the minus takes one of those off: the count, the plus and the
+minus are always about the size the switch shows. Cups in the other size show again when
+that size is picked. The bar at the bottom always says the whole order: the sum, the cups
+and the sizes they are in ("4 gelas · 3 × 14 oz · 1 × 22 oz"; where the line wraps, the sizes
+go to the next line together and no dot is left at a line's end). The plus and the minus
 are drawn (`sign()` in `src/page.mjs`), so they sit level with the count. Bundles, snacks
-and toppings have no plus: the form takes drinks only, and one line under them says so.
-The rules are in `src/pick.mjs` (which size, which row of the form, the cups by
-size) and tested in `test/site.test.mjs`.
+and toppings have no plus: the form takes drinks only. No line explains that.
+The rules are in `src/pick.mjs` (which size, which row of the form, a drink's cups in one
+size, the cups by size) and tested in `test/site.test.mjs`.
 
 ## Later: the stamp card
 

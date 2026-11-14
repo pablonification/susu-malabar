@@ -11,7 +11,7 @@
 //   crop    [x, y, width, height] in the original's pixels
 //   widths  the sizes to make. The first is the largest, and never wider than the crop.
 //   soft    true for a still from a video. Those are soft, so they only ever show as a
-//           small square beside a line (7rem at most), never across the page.
+//           small square beside a line (5rem), never across the page.
 //   alt     what the picture shows, in Indonesian. Say what is there, nothing more.
 
 export const photos = {
@@ -32,14 +32,16 @@ export const photos = {
     levels: [2, 216, 1.12],
     alt: "Corndog kentang diangkat dari keranjang penggorengan",
   },
-  // The shop alone: its banner with the name, the zinc counter, a scooter parked in front.
-  // Cut in from both sides, to lose a passer-by half out of the frame on the left and the
-  // neighbour's bright sign on the right.
+  // The shop's front, as wide and as low as the photo of the shop in front of Ikopin: the
+  // banner with the name, the doorway, the zinc counter. Cut in from both sides, to lose a
+  // passer-by on the left and the neighbour's bright sign on the right, and cut off below
+  // the counter's top, so the picture is the shop and not the scooter parked in front.
+  // Lifted more than the others: it was posted under a dark overlay, and its doorway is deep.
   "toko-griya": {
     from: "shop-front-griya",
-    crop: [104, 0, 722, 444],
-    widths: [722, 480],
-    levels: [14, 128, 1.14],
+    crop: [78, 0, 748, 300],
+    widths: [748, 480],
+    levels: [4, 132, 1.4],
     alt: "Spanduk hijau toska bertulisan SUSU MALABAR di atas konter seng toko depan Griya",
   },
   "toko-ikopin": {
@@ -48,27 +50,6 @@ export const photos = {
     widths: [1080, 720],
     levels: [12, 112, 1.1],
     alt: "Poster menu hijau tua, bangku plastik, dan pembeli di atas motor di toko depan Ikopin",
-  },
-  // Inside the Griya shop: "MALABAR" painted on the wall with fruit around it, two people at
-  // work under it. A soft video still, so a small square: the cut is four times its size.
-  kedai: {
-    from: "counter-griya",
-    crop: [440, 80, 560, 560],
-    widths: [448, 224],
-    soft: true,
-    levels: [6, 224, 1.04],
-    alt: "Dua orang meracik pesanan di dalam toko depan Griya, di depan dinding bertulisan MALABAR dan gambar buah",
-  },
-  // Bagging a big order: a square close on one person, his hands and the cups. A soft video
-  // still, so a small square. The original frame ends in his hair, so the cut starts a
-  // little lower, through the hair and clear of its tips: no ragged edge at the top. The
-  // second person at the frame's right edge is left out.
-  bungkus: {
-    from: "staff-griya",
-    crop: [278, 24, 520, 520],
-    widths: [448, 224],
-    soft: true,
-    alt: "Pegawai tersenyum sambil membungkus tumpukan gelas putih pesanan",
   },
 };
 

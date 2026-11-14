@@ -136,10 +136,12 @@
   }
 }
 
-/* Wide screens: the headline sits beside the photo. */
+/* Wide screens: the headline sits beside the photo, and the reviews stand beside the story,
+   a step larger so the two columns end together. */
 @media (min-width: 56rem) {
   :root {
     --text-h1: clamp(4rem, 6.1vw, 5.5rem);
+    --text-quote: 2.75rem;
   }
 }
 

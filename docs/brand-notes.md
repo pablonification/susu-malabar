@@ -114,8 +114,8 @@ The dark green field. Teal walls and stools. Chalk doodles on the menu.
   total above the send button (a small line, the sum huge under it: the form's one loud line).
 - The real badge in one colour (`logo-badge.svg`, PNG when it is small), black on white like
   the cups.
-- Real photos: strawberry milk first, each shop's front inside its own row, the Griya counter
-  with the painted "MALABAR" wall as a small square in the story (it is a soft video still).
+- Real photos: strawberry milk first, each shop's front inside its own row, cut to one shape.
+  No photo of a person at work: they are soft video stills, and nobody knows who is in them.
 - Their framing: from above, a hand and a cup, the real street around it.
 - Their words: "Kemurnian dari Jatinangor", "<flavour> Malabar" names, "kamu/kalian".
 - Shops by landmark, the way they say it: "depan Griya", "depan MST", "depan Ikopin".

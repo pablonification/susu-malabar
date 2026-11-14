@@ -5,7 +5,7 @@
 import { order as rules, isTbc, sizes, tbc } from "./data.mjs";
 import { buildMessage, checkOrder, findDrink, rupiah, todayWib, totals, unitPrice, whatsappLink } from "./order.mjs";
 import { esc, mark } from "./mark.mjs";
-import { cupsBySize, rowFor, rowToTake, sizeToAdd, soldSizes } from "./pick.mjs";
+import { cupsBySize, cupsOf, rowFor, rowToTake, sizeToAdd, soldSizes } from "./pick.mjs";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -123,9 +123,9 @@ function addFromMenu(drinkId, size) {
 }
 
 /**
- * From the menu: one cup less of a drink. It comes off the drink's row in the picked size,
- * else off its last row in another size. A row left with no cups goes away, or is emptied
- * if it is the form's only row. Returns the size the cup was in, "" if there was none.
+ * From the menu: one cup less of a drink, off its row in the picked size (the size its
+ * count on the menu is in). A row left with no cups goes away, or is emptied if it is the
+ * form's only row. Returns the size the cup was in, "" if there was none.
  */
 function takeFromMenu(drinkId) {
   const rows = $$(".line", list);
@@ -142,14 +142,10 @@ function takeFromMenu(drinkId) {
   return size;
 }
 
-/** The menu's size switch: the price columns light up under the picked size, and each drink shows the price it adds at. */
+/** The menu's size switch: a drink's own price lights up while it is the price of the picked size. */
 function showMenuSize() {
   for (const radio of $$(".seg-poster input")) radio.checked = radio.value === menuSize;
-  for (const head of $$(".grp-head [data-size]")) head.classList.toggle("price-off", head.dataset.size !== menuSize);
-  for (const button of $$(".pick")) {
-    const adds = sizeToAdd(button.dataset.drink, menuSize);
-    for (const price of $$(".price[data-size]", button)) price.classList.toggle("price-off", price.dataset.size !== adds);
-  }
+  for (const price of $$(".pick .price[data-size]")) price.classList.toggle("price-off", price.dataset.size !== menuSize);
 }
 
 // --- Showing the state ------------------------------------------------------------
@@ -216,24 +212,24 @@ function refresh() {
   }
   $("#copy").textContent = "Salin pesan";
 
-  // On the menu, a drink in the order shows how many cups of it, with a minus before the
-  // count that takes one off. The minus says which size it takes: the picked one if the
-  // drink has a cup in it, else the other.
+  // On the menu, a drink shows how many cups of it the order holds in the picked size (the
+  // size a tap adds), with a minus before the count that takes one of those off. So the
+  // count, the plus and the minus are about one size, the one the switch shows. Cups in
+  // the other size show again when that size is picked, and stay in the bar meanwhile.
   for (const button of $$(".pick")) {
     const drinkId = button.dataset.drink;
     const adds = sizeToAdd(drinkId, menuSize);
-    const n = order.lines.filter((l) => l.drinkId === drinkId).reduce((sum, l) => sum + Math.max(0, Math.floor(l.qty) || 0), 0);
+    const n = cupsOf(order.lines, drinkId, adds);
     $(".pick-n", button).textContent = n || "";
-    $(".pick-sr", button).textContent = `, ukuran ${sizeName(adds)}${n ? `. Sudah ${n} gelas di pesanan` : ""}`;
+    $(".pick-sr", button).textContent = `, ukuran ${sizeName(adds)}${n ? `. Sudah ${n} gelas ukuran ini di pesanan` : ""}`;
     if (n) button.dataset.count = n;
     else delete button.dataset.count;
 
     const less = button.nextElementSibling;
-    const from = order.lines[rowToTake(order.lines, drinkId, adds)];
     const hadFocus = document.activeElement === less;
-    less.hidden = !from;
-    if (from) $(".sr", less).textContent = `Kurangi satu ${findDrink(drinkId).name} ${sizeName(from.size)}`;
-    else if (hadFocus) button.focus({ preventScroll: true }); // the last cup went: the keyboard stays on this drink
+    less.hidden = !n;
+    $(".sr", less).textContent = `Kurangi satu ${findDrink(drinkId).name} ${sizeName(adds)}`;
+    if (!n && hadFocus) button.focus({ preventScroll: true }); // the last cup went: the keyboard stays on this drink
   }
 
   // The bar answers a tap on the menu: the sum so far, what it is the sum of (how many
@@ -241,11 +237,13 @@ function refresh() {
   // (the drink's count), so here it is only read out.
   const bySize = cupsBySize(order.lines);
   $("#bar-price").innerHTML = estimate(order, price);
-  // Each part is a piece of its own ("4 gelas", "3 × 14 oz") that never breaks inside. The
-  // dots between them are drawn by site.css, which hides one where the line wraps, so no
+  // Two parts that never break inside: the cups ("4 gelas") and the sizes they are in
+  // ("3 × 14 oz", "1 × 22 oz"), so where the bar is narrow the sizes share a line. The dots
+  // between pieces are drawn by site.css, which hides the one where the line wraps, so no
   // line of the bar ends or starts with a dot.
   const inSizes = bySize.length === 1 ? [sizeName(bySize[0].size)] : bySize.map((s) => `${s.cups} × ${sizeName(s.size)}`);
-  $("#bar-what").innerHTML = [`${cups} gelas`, ...inSizes].map((part) => `<span>${esc(part)}</span>`).join(" ");
+  const piece = (words) => `<span>${esc(words)}</span>`;
+  $("#bar-what").innerHTML = `${piece(`${cups} gelas`)} <span class="bar-sizes">${inSizes.map(piece).join(" ")}</span>`;
   $("#bar-last").textContent = lastTap ? `, ${lastTap}` : "";
   bar.hidden = cups === 0 || formOnScreen;
   // With the bar gone (the last cup was taken off), what the tap did is still read out.
@@ -355,8 +353,10 @@ document.addEventListener("change", (e) => {
   refresh();
 });
 
-new IntersectionObserver(([entry]) => {
-  formOnScreen = entry.isIntersecting;
+// The browser may report several changes at once (a fast scroll past the form): the last
+// one is where the form is now.
+new IntersectionObserver((entries) => {
+  formOnScreen = entries[entries.length - 1].isIntersecting;
   refresh();
 }).observe(form);
 

@@ -4,9 +4,10 @@
 //   npm run shots                 -> docs/screenshots/
 //   npm run shots -- --out <dir>  -> another folder (e.g. for a review round)
 //   npm run shots -- --form       -> also the whole page at 320 px (small.png), and pictures
-//                                    of the form in use at 390 px (phone-*) and 320 px
-//                                    (small-*): taps on the menu in both sizes, an empty
-//                                    send, and 40 cups across five drinks
+//                                    of the form in use at 390 px (phone-*), 320 px (small-*)
+//                                    and 1440 px (desktop-*): taps on the menu in both sizes
+//                                    (with 22 oz picked, and back on 14 oz), an empty send,
+//                                    and 40 cups across five drinks
 // Uses the Google Chrome installed on this machine (no browser download).
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -101,16 +102,39 @@ try {
       await page.locator("#name").blur();
     };
 
+    // Two Strawberry and a Mangga in 14 oz, then a Strawberry in 22 oz. Leaves 22 oz picked.
+    const mixed = async (page) => {
+      for (const id of ["strawberry", "strawberry", "mangga"]) await tap(page, id);
+      await size(page, "22");
+      await tap(page, "strawberry");
+    };
+
     // The whole page on the narrowest phone, for a review round.
     await shoot("small.png", { viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+
+    // The same two states on a wide screen: the menu with cups in both sizes, the form filled in.
+    await shoot("desktop-menu-tapped.png", { viewport: { width: 1440, height: 900 }, noFull: true }, "/", async (page) => {
+      await mixed(page);
+      await toTop(page, "#menu");
+    });
+    await shoot("desktop-form-40.png", { viewport: { width: 1440, height: 1800 }, noFull: true }, "/", async (page) => {
+      await fill(page);
+      await page.locator("#preview summary").click();
+      await toTop(page, "#pesan");
+    });
 
     for (const [prefix, width] of [["phone", 390], ["small", 320]]) {
       const phone = { viewport: { width, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, noFull: true };
 
+      // Cups in both sizes. The menu counts the picked size: with 22 oz picked, the one
+      // 22 oz cup. Back on 14 oz, the three 14 oz cups. The bar says all four both times.
       await shoot(`${prefix}-menu-tapped.png`, phone, "/", async (page) => {
-        for (const id of ["strawberry", "strawberry", "mangga"]) await tap(page, id);
-        await size(page, "22");
-        await tap(page, "original");
+        await mixed(page);
+        await toTop(page, "#menu");
+      });
+      await shoot(`${prefix}-menu-tapped-14.png`, phone, "/", async (page) => {
+        await mixed(page);
+        await size(page, "14");
         await toTop(page, "#menu");
       });
 

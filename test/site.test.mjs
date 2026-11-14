@@ -9,9 +9,9 @@ import { build } from "../build.mjs";
 import * as data from "../src/data.mjs";
 import { checkOrder, clock, rupiah } from "../src/order.mjs";
 import { findTbc } from "../src/mark.mjs";
-import { OG_IMAGE, OG_SIZE, isLocated, pickupChoices, promoBand, shopRow } from "../src/page.mjs";
+import { HEADLINE, OG_IMAGE, OG_SIZE, isLocated, pickupChoices, promoBand, shopRow } from "../src/page.mjs";
 import { PHOTO_DIR, photos, shopPhotos } from "../src/photos.mjs";
-import { cupsBySize, rowFor, rowToTake, sizeToAdd, soldSizes } from "../src/pick.mjs";
+import { cupsBySize, cupsOf, rowFor, rowToTake, sizeToAdd, soldSizes } from "../src/pick.mjs";
 
 const root = join(import.meta.dirname, "..");
 await build();
@@ -228,19 +228,18 @@ test("a section's name is not shown twice, and the menu has one size switch", ()
   for (const [, attrs, title] of body.matchAll(/<h2([^>]*)>([\s\S]*?)<\/h2>/g)) {
     if (nav.includes(text(title).trim())) assert.match(attrs, /class="sr"/, `"${text(title).trim()}" is both a jump link and a visible title`);
   }
-  // One switch for the whole menu, each size in it once. Rows with their own prices get
-  // plain column names in their header (not a second switch), and no row repeats them in view.
+  // One switch for the whole menu, each size in it once. A group's header is its name and
+  // nothing else: a row with a price of its own names the size beside that price.
   const menu = section("menu");
   const switches = [...menu.matchAll(/<div class="seg seg-poster[^"]*" role="radiogroup" aria-label="Ukuran[^"]*">[\s\S]*?<\/div>/g)];
   assert.equal(switches.length, 1, "the size switch is drawn once");
   assert.equal((menu.match(/role="radiogroup"/g) || []).length, 1);
-  const heads = [...menu.matchAll(/<div class="grp-head cols">[\s\S]*?<\/div>/g)].map((m) => m[0]);
-  assert.ok(heads.length >= 1, "rows with their own prices have their columns named");
+  const heads = [...menu.matchAll(/<div class="grp-head[^"]*">[\s\S]*?<\/div>/g)].map((m) => m[0]);
+  assert.ok(heads.length >= 4);
   for (const size of data.sizes) {
     assert.equal(switches[0][0].split(`<span class="size">${size.label}</span>`).length - 1, 1, `${size.label} once in the switch`);
-    for (const head of heads) assert.equal(head.split(`>${size.label}</span>`).length - 1, 1, `${size.label} once over its column`);
   }
-  for (const head of heads) assert.doesNotMatch(head, /<input|<label|<button/, "column names are words, not a control");
+  for (const head of heads) assert.match(head, /^<div class="grp-head"><h3>[^<]+<\/h3><\/div>$/, "a group's header is more than its name");
   assert.doesNotMatch(/<section class="grp grp-extras">[\s\S]*?<\/section>/.exec(menu)[0], /class="size|seg-poster/, "size names over things with no sizes");
   assert.doesNotMatch(css, /\.sizes\b/, "the sticky strip of size names is gone");
 });
@@ -340,7 +339,7 @@ test("the menu picks the size: one switch, and a tap adds that size", () => {
 });
 
 test("the menu takes a cup off again, and the bar says which sizes its sum is made of", () => {
-  // The minus takes from the drink's row in the picked size, else from its last row in another size.
+  // The minus takes from the drink's row in the picked size, and only from that size.
   const lines = [
     { drinkId: "mangga", size: "14", qty: 2 },
     { drinkId: "", size: "14", qty: 1 },
@@ -349,10 +348,21 @@ test("the menu takes a cup off again, and the bar says which sizes its sum is ma
   ];
   assert.equal(rowToTake(lines, "mangga", "22"), 2);
   assert.equal(rowToTake(lines, "mangga", "14"), 0);
-  assert.equal(rowToTake([lines[0]], "mangga", "22"), 0, "no cup in the picked size: it comes off the other");
+  assert.equal(rowToTake([lines[0]], "mangga", "22"), -1, "no cup in the picked size: the cups in the other size are left alone");
   assert.equal(rowToTake(lines, "kopi", "14"), -1, "a row with no cups has nothing to take");
   assert.equal(rowToTake(lines, "taro", "14"), -1);
   assert.equal(rowToTake([], "mangga", "14"), -1);
+
+  // The count beside a drink is its cups in the picked size, so it is the number the minus
+  // counts down (fourth review of the second design, below).
+  assert.equal(cupsOf(lines, "mangga", "14"), 2);
+  assert.equal(cupsOf(lines, "mangga", "22"), 1);
+  assert.equal(cupsOf([lines[0]], "mangga", "22"), 0);
+  assert.equal(cupsOf([...lines, { drinkId: "mangga", size: "14", qty: "3" }], "mangga", "14"), 5, "two rows of one drink and size count together");
+  assert.equal(cupsOf(lines, "kopi", "14"), 0);
+  assert.equal(cupsOf([{ drinkId: "strawberry-et-choco", size: "14", qty: 3 }], "strawberry-et-choco", "14"), 0, "a size the drink isn't sold in holds no cups");
+  assert.equal(cupsOf([], "mangga", "14"), 0);
+  for (const size of data.sizes) assert.equal(cupsOf(lines, "mangga", size.id) > 0, rowToTake(lines, "mangga", size.id) >= 0, "a count without a minus, or a minus without a count");
 
   // The bar's sizes count exactly what the total counts.
   assert.deepEqual(cupsBySize(lines), [
@@ -362,7 +372,7 @@ test("the menu takes a cup off again, and the bar says which sizes its sum is ma
   assert.deepEqual(cupsBySize([{ drinkId: "strawberry-et-choco", size: "14", qty: 3 }, { drinkId: "kopi", size: "22", qty: "4" }]), [{ size: "22", cups: 4 }]);
   assert.deepEqual(cupsBySize([]), []);
 
-  assert.ok(js.includes("rowToTake(") && js.includes("cupsBySize("), "the page script uses the tested rules");
+  assert.ok(js.includes("rowToTake(") && js.includes("cupsBySize(") && js.includes("cupsOf(order.lines, drinkId, adds)"), "the page script uses the tested rules");
   // The count sits between the minus and the plus, and the minus is a full 44px target as tall as its row.
   assert.match(css, /\.less \{[^}]*top: 0;[^}]*bottom: 0;[^}]*width: var\(--tap\)/);
   assert.match(css, /\.picks-wide \.less \{[^}]*height: var\(--tap\)/);
@@ -370,7 +380,7 @@ test("the menu takes a cup off again, and the bar says which sizes its sum is ma
   // One drink per row on a phone, so every row has that room.
   assert.match(css, /\.picks \{[^}]*grid-template-columns: minmax\(0, 1fr\);/);
   // What the minus did is read out like what a tap did, and it says which size it takes.
-  assert.ok(js.includes('"masuk" : "dikurangi satu"') && js.includes("`Kurangi satu ${findDrink(drinkId).name} ${sizeName(from.size)}`"));
+  assert.ok(js.includes('"masuk" : "dikurangi satu"') && js.includes("`Kurangi satu ${findDrink(drinkId).name} ${sizeName(adds)}`"));
 });
 
 test("a drink in the form: size and amount without visible labels, but with names", () => {
@@ -437,9 +447,9 @@ test("the order bar says the total and the way on, and reads out what went in", 
   // The sum, then what it is the sum of: the cups, and the sizes they are in, each a part
   // of its own that site.js writes.
   assert.match(bar, /<strong id="bar-price"><\/strong> <span class="bar-what" id="bar-what"><\/span>/);
-  assert.ok(js.includes("[`${cups} gelas`, ...inSizes]"));
-  // The menu's count is read apart from the size a tap adds.
-  assert.ok(js.includes(". Sudah ${n} gelas di pesanan"));
+  assert.ok(js.includes('${piece(`${cups} gelas`)} <span class="bar-sizes">${inSizes.map(piece).join(" ")}</span>'));
+  // The menu's count is read apart from the size a tap adds, and says it is in that size.
+  assert.ok(js.includes(". Sudah ${n} gelas ukuran ini di pesanan"));
 });
 
 // --- The second design: real photos, the real badge ---------------------------------
@@ -582,12 +592,10 @@ test("a menu row has one dot, and every unconfirmed price sits inside a mark", (
 });
 
 test("both sizes read as for sale, and every menu row is one height", () => {
-  // The size a tap doesn't add is lighter in weight only: grey would read as sold out.
-  const off = /\.price-off,\s*\.grp-head \.size\.price-off \{([^}]*)\}/.exec(css)[1];
+  // A price in the size not picked is lighter in weight only: grey would read as sold out.
+  const off = /\.price-off \{([^}]*)\}/.exec(css)[1];
   assert.match(off, /font-weight: 400/);
   assert.doesNotMatch(off, /color|opacity/);
-  // A column's name sits over the middle of its prices.
-  assert.match(css, /\.prices > \* \{[^}]*text-align: center/);
   // Rows take their height from one number, and no column stretches its rows to fill.
   assert.match(css, /\.pick \{[^}]*min-height: var\(--row\)/);
   assert.match(css, /\.extra \{[^}]*min-height: var\(--row\)/);
@@ -669,19 +677,18 @@ test("words: GoFood has its own line, the rating is a plain line, the card names
   assert.ok(card.includes(`<h1>${data.brand.name}</h1>`));
   const px = (sel) => parseFloat(new RegExp(`${sel} \\{[^}]*font-size: (\\d+)px`).exec(card)[1]);
   assert.ok(px("h1") >= 60 && px("h1") > px("\\.line"));
-  // The card says where the shop is, in the shop's own line.
-  assert.ok(card.includes(`<p class="line">${data.brand.tagline}</p>`) && data.brand.tagline.includes("Jatinangor"));
+  // Under the name, one line about the shop: the page's headline. Not two slogans (fourth
+  // review of the second design): the shop's own tagline stays on the page, beside the badge.
+  assert.ok(card.includes(`<p class="line">${HEADLINE}</p>`));
+  assert.ok(!text(card).includes(data.brand.tagline), "two slogans on the link-preview card");
+  assert.ok(body.includes(`<span class="logo-tag">${data.brand.tagline}</span>`) && data.brand.tagline.includes("Jatinangor"));
+  assert.ok(head.includes(`<meta property="og:image:alt" content="${data.brand.name}. ${HEADLINE}">`), "the preview picture's words are not the card's");
 });
 
 // --- What the second review of the second design found, kept fixed -------------------
 
-test("the staff photo is only ever shown small, and a jump to the form lands on its title", () => {
-  // A soft video still: at most a 7rem square, cut at four times that, never a full-width picture.
-  assert.ok(photos.bungkus.widths[0] <= 448);
+test("a jump to the form lands on its title", () => {
   const pesan = section("pesan");
-  assert.match(pesan, /<div class="order-aside">\s*<picture class="photo">/);
-  assert.doesNotMatch(/<picture class="photo">[\s\S]*?<\/picture>/.exec(pesan)[0], /100vw/);
-  for (const [, rem] of css.matchAll(/\.order-aside \.photo \{[^}]*width: ([\d.]+)rem/g)) assert.ok(Number(rem) <= 7);
   // The title is the section's first thing, and the jump puts it right under the sticky links.
   assert.match(pesan, /^<section[^>]*id="pesan">\s*<div class="order-head">\s*<div class="wrap order-top">\s*<h2>/);
   assert.match(css, /#pesan \{[^}]*scroll-margin-top: calc\(var\(--space-4\) \* -1\)/);
@@ -740,14 +747,13 @@ test("a soft photo is only ever a small square: none runs across the page", asyn
     assert.doesNotMatch(/sizes="([^"]*)"/.exec(pictures[name])[1], /vw/, `${name}: a soft photo is sized to the screen`);
     assert.doesNotMatch(pictures[name], /class="photo [^"]*bleed/, `${name}: a soft photo runs edge to edge`);
   }
-  assert.ok(soft >= 2);
+  assert.ok(soft >= 1);
   // No CSS shows a small square wider than 7rem.
-  for (const [, rem] of css.matchAll(/(?:\.snack|\.story-photo|\.order-aside) \.photo(?:,\s*\.[\w-]+ \.photo)* \{[^}]*width: ([\d.]+)rem/g)) assert.ok(Number(rem) <= 7);
+  for (const [, rem] of css.matchAll(/\.snack \.photo \{[^}]*width: ([\d.]+)rem/g)) assert.ok(Number(rem) <= 7);
   // The counter at night (a customer's back over the wall's lettering) is gone, and the
-  // ways to order have no photo. The room with the painted wall shows once, small, in the story.
+  // ways to order have no photo.
   assert.ok(!("pickup" in photos));
   assert.doesNotMatch(section("cara"), /<picture|<img/);
-  assert.match(section("cerita"), /<figure class="story-photo"><picture class="photo">[\s\S]*?<\/picture><figcaption>Toko depan Griya<\/figcaption><\/figure>/);
   assert.doesNotMatch(html + css, /band-photo/);
 });
 
@@ -776,8 +782,8 @@ test("a row's prices: one line on a phone, the dot right after, and pink for the
   assert.match(css, /\.rows \.less \{[^}]*height: calc\(var\(--ctl-add\) \+ var\(--space-2\) \* 2\)/, "the minus beside a two-line row is not 44px around the plus's line");
   assert.match(tokens, /--tap: 2\.75rem;/);
   assert.match(css, /--ctl-add: 1\.75rem;/); // 1.75rem + 2 x 0.5rem = 44px
-  // The size a tap adds is bold and wears the order's pink, like the picked half of the switch.
-  assert.match(css, /\.pick \.price\[data-size\]:not\(\.price-off\),\s*\.grp-head \.size\[data-size\]:not\(\.price-off\) \{\s*color: var\(--order\);/);
+  // A price in the picked size is bold and wears the order's pink, like the picked half of the switch.
+  assert.match(css, /\.pick \.price\[data-size\]:not\(\.price-off\) \{\s*color: var\(--order\);/);
   // On the best seller's block the count sits in a 44px box on the line of the minus.
   assert.match(css, /\.pick-best \.pick-ctl \{[^}]*align-self: end;[^}]*min-height: var\(--tap\)/);
 });
@@ -796,17 +802,12 @@ test("the plus and the minus are drawn, and a list's last row has no rule under 
   assert.match(css, /\.shop:last-child \{[^}]*padding-bottom: 0;[^}]*border-bottom: 0;/);
 });
 
-test("rows with no plus say why, once, without promising anything", () => {
+test("rows with no plus have no button, and promise nothing", () => {
   const menu = section("menu");
-  const notes = [...menu.matchAll(/<p class="menu-note">([^<]*)<\/p>/g)].map((m) => m[1]);
-  assert.deepEqual(notes, ["Tombol + cuma buat minuman satuan. Yang lain tanya toko dulu."]);
-  // It comes after the last row that has no plus, and claims no way to order those.
-  assert.ok(menu.indexOf("menu-note") > menu.lastIndexOf('<li class="extra">'));
-  assert.doesNotMatch(notes[0], /GoFood|pre-order|catatan|bisa/i);
   for (const [li] of menu.matchAll(/<li class="extra">[\s\S]*?<\/li>/g)) assert.doesNotMatch(li, /<button|<small>[^<]*toko/);
 });
 
-test("narrow phones: no line of the bar ends in a dot, the shops stack, the second line stays whole", () => {
+test("narrow phones: no line of the bar ends in a dot, and the shops stack", () => {
   // The bar's parts are whole pieces. The dot before each is drawn in the gap, and cut off
   // where a part starts a new line.
   assert.match(css, /\.bar-what \{[^}]*flex-wrap: wrap;[^}]*overflow: hidden;/);
@@ -815,8 +816,6 @@ test("narrow phones: no line of the bar ends in a dot, the shops stack, the seco
   assert.doesNotMatch(js, /join\(" · "\)/);
   const small = /@media \(max-width: 23\.5rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
   assert.match(small, /\.seg-fill \{\s*flex-direction: column;/);
-  const narrow = /@media \(max-width: 21rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
-  assert.match(narrow, /\.order-aside \.lead \{\s*font-size: var\(--text-body\);/);
 });
 
 test("the first photo lines up with the words beside it, and the link preview shows the whole cup", () => {
@@ -829,6 +828,87 @@ test("the first photo lines up with the words beside it, and the link preview sh
   // The form's total is its one loud line, sized in tokens.css.
   assert.match(css, /#total-price \{[^}]*font-size: var\(--text-sum\)/);
   assert.match(tokens, /--text-sum: clamp\(/);
+});
+
+// --- What the fourth review of the second design found, kept fixed -------------------
+
+/** A piece of HTML as it shows: without the words that are only read out. */
+const shown = (h) => text(h.replace(/<span class="sr[^"]*">[^<]*<\/span>/g, " "));
+
+test("no sentence explains the menu", () => {
+  const menu = section("menu");
+  assert.doesNotMatch(menu, /<p[ >]/, "a paragraph on the menu");
+  assert.doesNotMatch(text(body), /Tombol \+|tanya toko/i);
+  assert.doesNotMatch(css, /\.menu-note/);
+});
+
+test("a price is on the menu once: a row shows only the price that is not the switch's", () => {
+  const menu = section("menu");
+  const switched = data.drinks.find((d) => d.group === "buah").prices; // the price in the switch
+  const own = data.drinks.filter((d) => !["buah", "rasa"].includes(d.group));
+  assert.ok(own.length > 0);
+  const rowOf = (d) => new RegExp(`<button type="button" class="pick pick-row cols" data-drink="${d.id}">[\\s\\S]*?</button>`).exec(menu)[0];
+  for (const d of own) {
+    const row = rowOf(d);
+    for (const size of data.sizes.filter((s) => d.prices[s.id] != null)) {
+      const price = rupiah(data.val(d.prices[size.id]));
+      const same = data.val(d.prices[size.id]) === data.val(switched[size.id]);
+      // Shown or only read out, a price is inside the row's one mark, with its size.
+      assert.ok(rowMarks(row)[0].inner.includes(price), `${d.id} lost its ${size.label} price`);
+      assert.equal(shown(row).includes(price), !same, `${d.id} ${size.label}: ${same ? "the switch's price again" : "its own price is hidden"}`);
+      if (same) assert.ok(row.includes(`<span class="sr">${size.label} ${price} </span>`));
+      else assert.match(row, new RegExp(`data-size="${size.id}"><span class="(?:price-size|sr)">${size.label} </span>${price.replace(".", "\\.")}</span>`));
+    }
+  }
+  for (const size of data.sizes) assert.equal(shown(menu).split(rupiah(data.val(switched[size.id]))).length - 1, 1, `the ${size.label} price shows more than once`);
+
+  // Pink is the picked size and nothing else: a drink sold in 22 oz alone is not pink while 14 oz is picked.
+  const oneSize = own.find((d) => d.prices[data.sizes[0].id] == null);
+  assert.match(rowOf(oneSize), new RegExp(`<span class="price price-off" data-size="${data.sizes[1].id}">`));
+  assert.ok(js.includes('price.classList.toggle("price-off", price.dataset.size !== menuSize)'));
+
+  // The dot hangs right after the number: the row's price is as wide as its words, at the
+  // row's end, and no price sits in a column wider than itself.
+  const wide = /@media \(min-width: 30rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
+  assert.match(wide, /\.pick\.cols \.prices \{[^}]*justify-self: end;[^}]*margin-right: var\(--space-3\)/);
+  assert.doesNotMatch(css, /--col-price|grid-auto-columns|\.prices > \*/);
+  // On a map button the dot has room before the arrow.
+  assert.match(css, /\.shop-go \.btn \{[^}]*gap: 1\.25rem/);
+});
+
+test("no photo of a person nobody can name, and the shop fronts are one shape", async () => {
+  // The two soft stills of people at work are gone: the story and the form's title stand alone.
+  assert.deepEqual(Object.keys(photos), ["hero", "corndog", "toko-griya", "toko-ikopin"]);
+  assert.doesNotMatch(section("pesan") + section("cerita"), /<picture|<img/);
+  assert.doesNotMatch(css, /order-aside|story-photo/);
+  // No file is left behind for a cut that is gone.
+  const { readdir } = await import("node:fs/promises");
+  const cuts = Object.entries(photos).flatMap(([name, p]) => p.widths.flatMap((w) => ["avif", "jpg", "webp"].map((ext) => `${name}-${w}.${ext}`)));
+  assert.deepEqual((await readdir(join(root, "public", PHOTO_DIR))).sort(), cuts.sort(), "a photo file no cut uses");
+
+  // The fronts are cut to one shape, so they are one size on every screen, and the row
+  // without a photo runs the page's width.
+  const shapes = Object.values(shopPhotos).map((name) => photos[name].crop[2] / photos[name].crop[3]);
+  for (const shape of shapes) assert.ok(Math.abs(shape / shapes[0] - 1) < 0.005, "shop fronts of different shapes");
+  const wide = css.slice(css.indexOf("@media (min-width: 56rem)"));
+  assert.match(wide, /\.shop-words \{\s*flex: 1;/);
+  assert.match(wide, /\.shop-photo \{[^}]*width: calc\(\(100% - var\(--space-8\)\) \/ 2\)/);
+  assert.doesNotMatch(css, /\.shop-photo img|max-height: 12rem/);
+});
+
+test("the narrowest phone: the best seller's line has air, and the bar's sizes share a line", () => {
+  assert.ok(Number(/\.pick-tag \{[^}]*grid-area: tag;[^}]*line-height: ([\d.]+);/.exec(css)[1]) >= 1.15);
+  assert.match(css, /\.pick-tag \{[^}]*grid-area: tag;[^}]*padding-block: var\(--space-1\)/);
+  // The sizes are one piece that never wraps inside, so no size is alone on a line.
+  assert.doesNotMatch(/\.bar-what,\s*\.bar-sizes \{([^}]*)\}/.exec(css)[1], /flex-wrap/);
+  assert.match(css, /\.bar-what,\s*\.bar-sizes \{[^}]*display: flex;/);
+});
+
+test("the order bar goes by where the form is now, not by the first of several reports", () => {
+  // After a fast scroll the browser can report "on screen" and "off again" together. Reading
+  // the first one left the bar missing on the menu (found in a real browser, round 4).
+  assert.match(js, /formOnScreen = entries\[entries\.length - 1\]\.isIntersecting;/);
+  assert.doesNotMatch(js, /IntersectionObserver\(\(\[/);
 });
 
 // --- Banned looks and words ----------------------------------------------------

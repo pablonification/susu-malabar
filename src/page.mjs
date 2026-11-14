@@ -167,8 +167,9 @@ function sizeSwitch({ price, flat }) {
 /**
  * A drink on the menu: a button that adds one cup to the order, in the size picked in
  * the menu's switch, and beside it a button that takes one cup off again. That one shows
- * only while the drink is in the order: the row then reads "− 2 +". site.js fills in the
- * count and keeps the sizes both buttons read out current.
+ * only while the drink is in the order in that size: the row then reads "− 2 +". The count
+ * is the cups in the picked size, so the minus takes off what the plus puts in. site.js
+ * fills in the count and keeps the size both buttons read out current.
  */
 function pick(drink, inner, extraClass = "") {
   const add = `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-ctl" aria-hidden="true"><span class="pick-n"></span><span class="pick-add">${sign("plus")}</span></span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
@@ -177,24 +178,25 @@ function pick(drink, inner, extraClass = "") {
 }
 
 /**
- * A drink with its own prices. A size it isn't sold in leaves no dash: the name takes
- * that room. The price of the size a tap adds is the bold one, in the pink of the picked
- * half of the switch. The row's prices are one pair with one mark right after it, so no
- * dot sits between two prices like a separator.
- * Each price names its size: under the column's name on a wide screen that is only read
- * out, on a phone (where the pair is one line under the drink's name) it shows. A drink
- * sold in one size says so in its note, so its price doesn't say it again.
+ * A drink with its own prices. The switch above the menu already says what a cup costs in
+ * each size, so a row shows only the price that is not the switch's: "22 oz Rp15.000". The
+ * price that is the same is only read out, so it is on the screen once. `shared` is the
+ * switch's price per size.
+ * Each price names its size. A drink sold in one size says so in its note, so its price
+ * doesn't say it again. The price in the picked size is the bold one, in the pink of the
+ * picked half of the switch. The row's prices are one piece with one mark right after it.
  */
-function drinkRow(drink) {
+function drinkRow(drink, shared) {
   const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
-  const lead = sizes.findIndex((s) => drink.prices[s.id] != null); // sizes missing before the first sold one
   const sizeName = onlySizes(drink) ? "sr" : "price-size";
-  const cell = (s) =>
-    drink.prices[s.id] == null
-      ? '<span class="price"></span>'
-      : `<span class="price${s === firstSize(drink) ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="${sizeName}">${esc(s.label)} </span>${esc(rupiah(val(drink.prices[s.id])))}</span>`;
+  const cell = (s) => {
+    if (drink.prices[s.id] == null) return "";
+    const price = esc(rupiah(val(drink.prices[s.id])));
+    if (shared?.[s.id] != null && val(shared[s.id]) === val(drink.prices[s.id])) return `<span class="sr">${esc(s.label)} ${price} </span>`;
+    return `<span class="price${s === sizes[0] ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="${sizeName}">${esc(s.label)} </span>${price}</span>`;
+  };
   const name = `<span class="row-name"><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}</span> `;
-  const prices = markAll(Object.values(drink.prices), sizes.slice(lead).map(cell).join(" "), "prices");
+  const prices = markAll(Object.values(drink.prices), sizes.map(cell).filter(Boolean).join(" "), "prices");
   return `<li>${pick(drink, name + prices, " pick-row cols")}</li>`;
 }
 
@@ -232,23 +234,13 @@ function flatSection({ name, list }) {
           </section>`;
 }
 
-/**
- * A group whose drinks have their own prices: a price column per size, named in the
- * header. The names are plain words, not a second switch. site.js lights the picked one.
- */
-function ownSection({ name, list }) {
-  const head = (s, i) =>
-    list.some((d) => d.prices[s.id] != null)
-      ? `<span class="size${i === 0 ? "" : " price-off"}" data-size="${esc(s.id)}" aria-hidden="true">${esc(s.label)}</span>`
-      : "<span></span>";
+/** A group whose drinks have their own prices: a row each, with the price that differs from the switch's. */
+function ownSection({ name, list }, shared) {
   return `
           <section class="grp">
-            <div class="grp-head cols">
-              <h3>${esc(name)}</h3>
-              <span class="prices">${sizes.map(head).join("")}</span>
-            </div>
+            <div class="grp-head"><h3>${esc(name)}</h3></div>
             <ul class="rows">
-              ${list.map(drinkRow).join("")}
+              ${list.map((d) => drinkRow(d, shared)).join("")}
             </ul>
           </section>`;
 }
@@ -264,21 +256,18 @@ function menu() {
         <div class="menu">
           <div class="menu-col">
             ${sizeSwitch(parts)}
-            ${left.map((g) => (parts.flat.includes(g) ? flatSection(g) : ownSection(g))).join("")}
+            ${left.map((g) => (parts.flat.includes(g) ? flatSection(g) : ownSection(g, parts.price))).join("")}
           </div>
           <div class="menu-col">
-            ${right.map(ownSection).join("")}
+            ${right.map((g) => ownSection(g, parts.price)).join("")}
             ${packs()}
             ${extras()}
-            ${noPlus()}
           </div>
         </div>`;
 }
 
 /** How wide a shop's front shows: the whole phone screen, or one column of the page on a wide screen. */
 const SHOP = "(min-width: 56rem) 30rem, (min-width: 36rem) 34rem, 100vw";
-/** A soft photo (a video still) is a small square beside a line, on every screen. */
-const SMALL = "(min-width: 56rem) 7rem, 5.5rem";
 
 /** A row with a price that the form doesn't take: a bundle, a topping, the snacks. `what` is the small line under the name. */
 const extraRow = ([name, what, price]) =>
@@ -298,7 +287,11 @@ function packs() {
           </section>`;
 }
 
-/** Snacks and toppings. The snack's photo is a small square beside the shop's line about it: the menu's big picture is a drink. */
+/**
+ * Snacks and toppings. The snack's photo is a small square beside the shop's line about it: the
+ * menu's big picture is a drink. These rows and the bundles have no plus, and no line says why:
+ * a row without a plus is not tapped.
+ */
 function extras() {
   const rows = [];
   // A two-word name stays whole when the list wraps ("Whipped cream").
@@ -322,16 +315,6 @@ function extras() {
               ${rows.map(extraRow).join("")}
             </ul>
           </section>`;
-}
-
-/**
- * Why the bundles, the snacks and the toppings have no plus: the plus puts one drink into
- * the pre-order, and the form takes nothing else. Said once, under the last of them.
- * Whether the shop takes them in a pre-order is not known, so it says to ask, no more.
- */
-function noPlus() {
-  if (!bundles.length && !snacks.length && !toppings.length) return "";
-  return '<p class="menu-note">Tombol + cuma buat minuman satuan. Yang lain tanya toko dulu.</p>';
 }
 
 // --- Shops --------------------------------------------------------------------
@@ -419,7 +402,7 @@ function shopList() {
 
 /**
  * Walk in, GoFood, or pre-order on WhatsApp: each row goes to the real thing. No photo: the
- * only ones of the counter are soft video stills, and those never run across the page.
+ * only ones of the counter are soft video stills.
  */
 function ways() {
   const gofood = sharedGofood();
@@ -648,7 +631,7 @@ function head() {
   <meta property="og:image" content="${esc(site)}/${OG_IMAGE}">
   <meta property="og:image:width" content="${OG_SIZE.width}">
   <meta property="og:image:height" content="${OG_SIZE.height}">
-  <meta property="og:image:alt" content="${esc(brand.name)}, ${esc(brand.tagline)}">
+  <meta property="og:image:alt" content="${esc(brand.name)}. ${esc(HEADLINE)}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${esc(brand.title)}">
   <meta name="twitter:description" content="${esc(DESCRIPTION)}">
@@ -707,10 +690,7 @@ export default function page() {
       <div class="order-head">
         <div class="wrap order-top">
           <h2>Borong buat sepanitia</h2>
-          <div class="order-aside">
-            ${picture("bungkus", { sizes: SMALL })}
-            <p class="lead">Buat sendiri juga bisa.</p>
-          </div>
+          <p class="lead">Buat sendiri juga bisa.</p>
         </div>
       </div>
       <div class="wrap">
@@ -723,7 +703,6 @@ export default function page() {
         <div class="story-words">
           <h2>${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
           <p>${esc(story.started)}${story.since ? `, tahun ${story.since}` : ""}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
-          <figure class="story-photo">${picture("kedai", { sizes: SMALL })}<figcaption>Toko depan Griya</figcaption></figure>
         </div>
         <figure class="reviews">
           <figcaption class="rating">${esc(brand.google.rating)} di Google, dari ${esc(brand.google.reviews)} ulasan</figcaption>

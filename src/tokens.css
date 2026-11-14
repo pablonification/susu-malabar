@@ -26,7 +26,7 @@
   --text-lead: 1.25rem;
   --text-h3: 1.75rem;
   --text-h2: 2.75rem;
-  --text-h1: clamp(3.25rem, 15.5vw, 6.5rem);
+  --text-h1: clamp(3.25rem, 15.5vw, 6.5rem); /* wider screens set their own below */
   --text-figure: 2.25rem;
   --text-quote: 1.75rem;
   --text-price: 1.375rem;
@@ -38,6 +38,7 @@
   --paper: #fbfaf5; /* the white cup */
   --paper-line: #d6d4c8;
   --field: #ffffff; /* inside of a form field */
+  --field-hint: #6b7972; /* the example words in an empty field: lighter than what you type */
   --paper-muted: #47564e;
   --poster: #12372b; /* the dark green menu posters */
   --poster-ink: #f4eedc;
@@ -49,28 +50,22 @@
   --danger: #a8261c;
   --notice: #7a4b00;
 
-  /* A fruit's colour, used only on that fruit. Keyed by the drink id in data.mjs.
-     A drink with no colour here shows no dot on the menu. */
-  --flavor-strawberry: #ff8a9a; /* the best seller's strip on the menu */
+  /* The best seller's strip on the menu. */
+  --flavor-strawberry: #ff8a9a;
   --flavor-strawberry-ink: #3a0b14;
-  --flavor-pisang: #f2cf4a;
-  --flavor-alpukat: #9bbf4d;
-  --flavor-mangga: #f59e1b;
-  --flavor-melon: #bfe39a;
-  --flavor-apel: #d9463c;
-  --flavor-semangka: #f46a6a;
 
   /* What is in your order: the cups you added, the size and shop you picked, the total.
      It borrows the strawberry strip's pink. */
   --order: var(--flavor-strawberry);
   --order-ink: var(--flavor-strawberry-ink);
 
-  /* --- Placeholder marks (values the owner has not confirmed, tbc() in data.mjs).
-     A dashed line under a value, a dot after a button or heading.
+  /* --- Placeholder mark (values the owner has not confirmed, tbc() in data.mjs).
+     One amber dot after the value, the same size and colour everywhere. On a light
+     ground it gets a dark edge so it stays visible.
      Set --tbc-mark to 0 to hide every mark at once. */
   --tbc-mark: 1;
-  --tbc-on-light: #b45f06;
-  --tbc-on-dark: #f2b84b;
+  --tbc-dot: #f2b84b;
+  --tbc-size: 0.5rem;
 
   /* --- Corners and lines */
   --radius-control: 6px;
@@ -101,6 +96,14 @@
     --gutter: 2rem;
     --text-h2: 3.5rem;
     --text-quote: 2.25rem;
+  }
+}
+
+/* Wide screens: the headline runs the full width of the page, in two lines. */
+@media (min-width: 56rem) {
+  :root {
+    --text-h1: clamp(6rem, 11.4vw, 8.5rem);
+    --text-quote: 2.75rem;
   }
 }
 

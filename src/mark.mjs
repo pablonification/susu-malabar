@@ -2,9 +2,9 @@
 // and for the browser (site.js).
 //
 // A value wrapped in tbc() comes out inside <span class="tbc" title="the note">,
-// which the `.tbc` rule in site.css shows as a dashed underline. On a button, a
-// link or a heading an underline would read as a link, so those ask for a dot:
-// mark(x, show, "dot"). A confirmed value comes out bare.
+// which the `.tbc` rule in site.css shows as one small amber dot after the value:
+// the same dot on a price, an address, a heading or a button. A confirmed value
+// comes out bare.
 
 import { isTbc, val } from "./data.mjs";
 
@@ -17,14 +17,13 @@ export function esc(text) {
 
 /**
  * HTML for a value. `show` turns the plain value into the words to display.
- * `as` is "line" (a plain value) or "dot" (the label of a button, link or heading).
  * For a link whose address is the unconfirmed part, mark its label:
- *   `<a href="${esc(val(url))}">${mark(url, () => "Buka peta", "dot")}</a>`
+ *   `<a href="${esc(val(url))}">${mark(url, () => "Buka peta")}</a>`
  */
-export function mark(x, show = (v) => v, as = "line") {
+export function mark(x, show = (v) => v) {
   const html = esc(show(val(x)));
   if (!isTbc(x)) return html;
-  return `<span class="tbc${as === "dot" ? " tbc-dot" : ""}" title="${esc(x.note)}">${html}</span>`;
+  return `<span class="tbc" title="${esc(x.note)}">${html}</span>`;
 }
 
 /** Every tbc() value inside a piece of data, however deep. */

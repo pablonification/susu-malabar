@@ -2,8 +2,9 @@
 // the link-preview image (public/og.png) from dist/og-card.html.
 //   npm run shots                 -> docs/screenshots/
 //   npm run shots -- --out <dir>  -> another folder (e.g. for a review round)
-//   npm run shots -- --form       -> also phone pictures of the form in use: a tap on the
-//                                    menu, an empty send, and 40 cups across two drinks
+//   npm run shots -- --form       -> also pictures of the form in use at 390 px (phone-*) and
+//                                    320 px (small-*): taps on the menu in both sizes, an
+//                                    empty send, and 40 cups across five drinks
 // Uses the Google Chrome installed on this machine (no browser download).
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -52,25 +53,24 @@ try {
   await shoot("phone.png", { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 
   if (args.includes("--form")) {
-    const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, noFull: true };
     const toTop = (page, sel) => page.evaluate((s) => scrollTo(0, document.querySelector(s).getBoundingClientRect().top + scrollY - 48), sel);
+    const tap = (page, id) => page.locator(`.pick[data-drink="${id}"]`).click();
+    const size = (page, id) => page.locator(`.seg-poster input[value="${id}"]`).first().check({ force: true });
 
-    await shoot("phone-menu-tapped.png", phone, "/", async (page) => {
-      for (const id of ["strawberry", "strawberry", "mangga"]) await page.locator(`.pick[data-drink="${id}"]`).click();
-      await toTop(page, "#menu");
-    });
-
-    await shoot("phone-empty-send.png", phone, "/", async (page) => {
-      await page.locator("#send").click();
-    });
-
+    // 40 cups, five drinks, both sizes: three picked on the menu, two in the form.
     const fill = async (page) => {
-      await page.locator(".line select").first().selectOption("strawberry");
-      for (let i = 0; i < 3; i++) await page.locator('.line [data-step="10"]').first().click(); // 1, 10, 20, 30
+      await tap(page, "strawberry"); // 14 oz
+      await size(page, "22");
+      await tap(page, "mangga");
+      await tap(page, "strawberry-et-choco");
+      for (let row = 1; row <= 3; row++) await page.locator(`.line:nth-child(${row}) [data-step="10"]`).click(); // 10 each
       await page.locator("#add-line").click();
-      await page.locator(".line select").nth(1).selectOption("original");
-      await page.locator('.line:nth-child(2) .seg input[value="22"]').check({ force: true });
-      await page.locator('.line:nth-child(2) [data-step="10"]').click(); // 10
+      await page.locator(".line:nth-child(4) select").selectOption("cokelat");
+      await page.locator('.line:nth-child(4) .seg input[value="14"]').check({ force: true });
+      await page.locator(".line:nth-child(4) .qty input").fill("5");
+      await page.locator("#add-line").click();
+      await page.locator(".line:nth-child(5) select").selectOption("original");
+      await page.locator(".line:nth-child(5) .qty input").fill("5");
       await page.locator("#notes").fill("Buat acara himpunan");
       await page.locator('input[name="shop"][value="cikeruh"]').check({ force: true });
       await page.locator("#date").fill(new Date(Date.now() + 3 * 86400_000).toISOString().slice(0, 10)); // not today, so the hour is never past
@@ -78,15 +78,31 @@ try {
       await page.locator("#name").fill("Raka");
       await page.locator("#name").blur();
     };
-    await shoot("phone-form-40-drinks.png", phone, "/", async (page) => {
-      await fill(page);
-      await toTop(page, "#pesan");
-    });
-    await shoot("phone-form-40-send.png", phone, "/", async (page) => {
-      await fill(page);
-      await page.locator("#preview summary").click();
-      await toTop(page, "#field-shop");
-    });
+
+    for (const [prefix, width] of [["phone", 390], ["small", 320]]) {
+      const phone = { viewport: { width, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, noFull: true };
+
+      await shoot(`${prefix}-menu-tapped.png`, phone, "/", async (page) => {
+        for (const id of ["strawberry", "strawberry", "mangga"]) await tap(page, id);
+        await size(page, "22");
+        await tap(page, "original");
+        await toTop(page, "#menu");
+      });
+
+      await shoot(`${prefix}-empty-send.png`, phone, "/", async (page) => {
+        await page.locator("#send").click();
+      });
+
+      await shoot(`${prefix}-form-40-drinks.png`, phone, "/", async (page) => {
+        await fill(page);
+        await toTop(page, "#pesan");
+      });
+      await shoot(`${prefix}-form-40-send.png`, phone, "/", async (page) => {
+        await fill(page);
+        await page.locator("#preview summary").click();
+        await toTop(page, "#total");
+      });
+    }
   }
 
   // Link-preview image, only if the card page exists.

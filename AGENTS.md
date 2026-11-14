@@ -7,7 +7,7 @@ Plain HTML, CSS and a little JavaScript, built by `build.mjs` with no packages.
   confirmed by the owner is wrapped in `tbc()` and shows on the page with a visible mark.
   `grep -n "tbc(" src/data.mjs` lists them. Never add a fact that isn't in Arqila's research.
 - `src/order.mjs`: the pre-order form's logic with no DOM (check, message, wa.me link). Tested in
-  `test/order.test.mjs`.
+  `test/order.test.mjs`. `src/pick.mjs`: what a tap on the menu adds (which size, which row).
 - `src/page.mjs`: the page template. `src/card.mjs`: the link-preview card (photographed to `public/og.png`).
 - `src/tokens.css`: colours, fonts, sizes. The only place to change the brand look.
 - `public/brand/`: the logo (one file). Until the new logo arrives (due 17 Nov) it is a plain wordmark.

@@ -7,8 +7,10 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { build } from "../build.mjs";
 import * as data from "../src/data.mjs";
-import { clock, rupiah } from "../src/order.mjs";
+import { checkOrder, clock, rupiah } from "../src/order.mjs";
 import { findTbc } from "../src/mark.mjs";
+import { isLocated, pickupChoices, shopRow } from "../src/page.mjs";
+import { rowFor, sizeToAdd, soldSizes } from "../src/pick.mjs";
 
 const root = join(import.meta.dirname, "..");
 await build();
@@ -21,8 +23,8 @@ const js = await read("dist/site.js");
 
 const head = html.slice(0, html.indexOf("</head>"));
 const body = html.slice(html.indexOf("<body"));
-// A mark is a dashed line under a value, or (class tbc-dot) a dot after a button, link or heading.
-const MARK = /<span class="tbc(?: tbc-dot)?" title="([^"]*)">([^<]*)<\/span>/g;
+// A mark is one small dot after a value, the same on a price, an address, a heading or a button.
+const MARK = /<span class="tbc" title="([^"]*)">([^<]*)<\/span>/g;
 /** The words a visitor reads: no tags, no marked values. */
 const text = (h) =>
   h
@@ -110,7 +112,7 @@ test("every unconfirmed value on the page carries the mark", () => {
     if (typeof v === "string" && /^https?:/.test(v)) {
       // A link: every <a> that goes there has the mark inside it.
       const links = [...body.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)].filter((m) => m[1] === v);
-      for (const [, , inner] of links) assert.match(inner, /class="tbc tbc-dot"/, `link without its dot: ${v}`);
+      for (const [, , inner] of links) assert.match(inner, /class="tbc"/, `link without its dot: ${v}`);
       // The site address is only shown as words.
       assert.ok(!unmarked.includes(v.replace(/^https?:\/\//, "")), `address without mark: ${v}`);
     } else if (typeof v === "string") {
@@ -130,25 +132,30 @@ test("every unconfirmed value on the page carries the mark", () => {
     assert.ok(notes.has(t.note), `no mark for: ${t.note}`);
   }
   // The send button and the chat link go to a placeholder number too.
-  assert.match(/<a\b[^>]*id="send"[^>]*>([\s\S]*?)<\/a>/.exec(body)[1], /class="tbc tbc-dot"/);
+  assert.match(/<a\b[^>]*id="send"[^>]*>([\s\S]*?)<\/a>/.exec(body)[1], /class="tbc"/);
   for (const [, inner] of body.matchAll(/<a\b[^>]*href="https:\/\/wa\.me\/[^"]*"[^>]*>([\s\S]*?)<\/a>/g)) {
-    assert.match(inner, /class="tbc tbc-dot"/, "a WhatsApp link without its dot");
-  }
-  // A line under a link's or heading's own words would read as a link: those get the dot.
-  // (A menu row is a button too, but its prices are plain values and keep the line.)
-  for (const [, tag, inner] of body.matchAll(/<(a|h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/g)) {
-    assert.doesNotMatch(inner, /class="tbc"/, `a dashed line inside <${tag}>`);
+    assert.match(inner, /class="tbc"/, "a WhatsApp link without its dot");
   }
 });
 
-test("the mark has one helper and one switch", () => {
-  // Three rules draw it: the line, and the dot that replaces the line.
+test("the mark is one dot, with one helper and one switch", () => {
+  // Two rules draw it: room after the value, and the dot in that room.
   const rules = (css.match(/\.tbc\b[^{]*\{/g) || []).map((r) => r.replace(/\s*\{$/, ""));
-  assert.deepEqual(rules, [".tbc", ".tbc-dot", ".tbc-dot::after"]);
-  // Both the line and the dot go away when --tbc-mark is 0.
-  assert.match(css, /\.tbc \{[^}]*text-decoration:[^;]*var\(--tbc-mark\)/);
-  assert.match(css, /\.tbc-dot::after \{[^}]*font-size:[^;]*var\(--tbc-mark\)/);
+  assert.deepEqual(rules, [".tbc", ".tbc::after"]);
+  const [room, dot] = [/\.tbc \{([^}]*)\}/.exec(css)[1], /\.tbc::after \{([^}]*)\}/.exec(css)[1]];
+  // The dot and its room go away when --tbc-mark is 0.
+  assert.match(room, /padding-right:[^;]*var\(--tbc-mark\)/);
+  assert.match(dot, /width:[^;]*var\(--tbc-mark\)/);
+  assert.match(dot, /height:[^;]*var\(--tbc-mark\)/);
+  assert.match(dot, /border:[^;]*var\(--tbc-mark\)/);
   assert.match(tokens, /--tbc-mark: 1;/);
+  // One size and one colour everywhere: nothing about the dot scales with the text beside it.
+  assert.match(dot, /width: calc\(var\(--tbc-size\)/);
+  assert.match(dot, /background: var\(--tbc-dot\)/);
+  assert.equal((tokens.match(/--tbc-[\w-]+:/g) || []).join(" "), "--tbc-mark: --tbc-dot: --tbc-size:");
+  // No line under a marked value (it would read as a link), and nothing for a screen reader to say.
+  assert.doesNotMatch(room + dot, /text-decoration/);
+  assert.match(dot, /content: "";/);
   assert.ok(js.includes('from "./mark.mjs"'), "the form's script uses the same helper");
 });
 
@@ -159,8 +166,13 @@ test("the stamp card shows nothing until it has rules", () => {
 
 // --- What the first review found, kept fixed --------------------------------------
 
-/** One section of the page, by its id. */
-const section = (id) => new RegExp(`<section[^>]*id="${id}"[\\s\\S]*?</section>`).exec(body)[0];
+/** One section of the page, by its id: from its opening tag to the next section with an id (or the end of <main>). */
+function section(id) {
+  const from = body.search(new RegExp(`<section[^>]*id="${id}"`));
+  const rest = body.slice(from + 1);
+  const to = rest.search(/<section[^>]*id="|<\/main>/);
+  return body.slice(from, from + 1 + to);
+}
 
 test("nothing is said twice in the shop list", () => {
   const toko = text(section("toko"));
@@ -180,10 +192,17 @@ test("a section's name is not shown twice, and size names once per poster", () =
   for (const [, attrs, title] of body.matchAll(/<h2([^>]*)>([\s\S]*?)<\/h2>/g)) {
     if (nav.includes(text(title).trim())) assert.match(attrs, /class="sr"/, `"${text(title).trim()}" is both a jump link and a visible title`);
   }
+  // A size is named once per group of drinks, in the header's switch. No strip of size
+  // names floats over rows that have no size columns, and no row repeats them in view.
   const menu = section("menu");
+  const switches = [...menu.matchAll(/<div class="seg seg-poster[^"]*" role="radiogroup" aria-label="Ukuran ([^"]+)">[\s\S]*?<\/div>/g)];
+  assert.ok(switches.length >= 2);
   for (const size of data.sizes) {
-    assert.equal(menu.split(`<span class="size">${size.label}</span>`).length - 1, 2, `${size.label} heads each poster column once`);
+    assert.equal(menu.split(`<span class="size">${size.label}</span>`).length - 1, switches.length, `${size.label} once per switch`);
+    for (const [sw] of switches) assert.equal(sw.split(`<span class="size">${size.label}</span>`).length - 1, 1);
   }
+  assert.doesNotMatch(/<section class="grp grp-extras">[\s\S]*?<\/section>/.exec(menu)[0], /class="size"|seg-poster/, "size names over things with no sizes");
+  assert.doesNotMatch(css, /\.sizes\b/, "the sticky strip of size names is gone");
 });
 
 test("menu buttons keep their words for screen readers", () => {
@@ -203,6 +222,116 @@ test("one price format, and nothing about when to pay", () => {
     if (/\d\.\d{3}/.test(inner)) assert.match(inner, /^\+?Rp\d/, `a price without Rp: ${inner}`);
   }
   assert.doesNotMatch(text(body), /bayar di toko/i, "when to pay is not confirmed");
+});
+
+// --- What the second review found, kept fixed -------------------------------------
+
+test("a shop is named by its street, and its area is not said again under it", () => {
+  for (const shop of data.shops.filter(isLocated)) {
+    const address = data.val(shop.address);
+    assert.ok(!address.includes(","), `"${address}" is more than the street: the heading already names the area`);
+    assert.ok(!address.includes("Jatinangor"), "Jatinangor is in the title above the list");
+  }
+  assert.equal(text(section("toko")).split("Jatinangor").length - 1, 1);
+});
+
+test("a shop with no known place is listed, but has no buttons and can't be picked", () => {
+  const lost = data.shops.find((s) => !isLocated(s));
+  assert.ok(lost, "every shop is located now: this test can go, the code path stays");
+  const rows = [...section("toko").matchAll(/<li class="shop">[\s\S]*?<\/li>/g)].map((m) => m[0]);
+  assert.equal(rows.length, data.shops.length, "every shop is still in the list");
+  const row = rows[data.shops.indexOf(lost)];
+  assert.doesNotMatch(row, /<a\b|Buka peta|GoFood/, "a map or GoFood button on a shop with no known place");
+  // Its name and its address line still show, both marked.
+  assert.equal((row.match(MARK) || []).length, 2);
+  assert.ok(row.includes(`title="${lost.address.note}">${lost.address.value}</span>`));
+  // The form offers only the shops with a place, and the order's check agrees.
+  const offered = [...body.matchAll(/<input type="radio" name="shop" value="([^"]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(offered, data.shops.filter(isLocated).map((s) => s.id));
+  const order = { lines: [{ drinkId: "strawberry", size: "14", qty: 1 }], shopId: lost.id, date: "2099-01-01", time: "15:00", name: "Raka" };
+  assert.deepEqual(checkOrder(order).errors, [{ field: "shop", message: "Toko ini belum bisa dipilih" }]);
+});
+
+test("the same shop gets its buttons and its place in the form once it is located", () => {
+  const lost = data.shops.find((s) => !isLocated(s));
+  const found = { ...lost, located: true };
+  assert.doesNotMatch(shopRow(lost, null), /Buka peta|GoFood/);
+  const row = shopRow(found, null);
+  assert.ok(row.includes(`href="${data.val(found.mapUrl)}"`) && row.includes("Buka peta"));
+  assert.ok(row.includes(`href="${data.val(found.gofoodUrl)}"`) && row.includes("GoFood"));
+  assert.ok(!pickupChoices([lost]).includes(`value="${lost.id}"`));
+  assert.ok(pickupChoices([found]).includes(`value="${found.id}"`));
+  // A shop that says nothing about it counts as located.
+  assert.ok(isLocated({ id: "x" }) && isLocated({ located: true }) && !isLocated({ located: false }));
+});
+
+test("the menu picks the size: a switch per group, and a tap adds that size", () => {
+  const menu = section("menu");
+  // Each group of drinks has a switch of real radio buttons, the first size picked.
+  for (const [sw] of menu.matchAll(/<div class="seg seg-poster[\s\S]*?<\/div>/g)) {
+    assert.deepEqual([...sw.matchAll(/<input type="radio" name="size-[\w-]+" value="(\w+)"( checked)?>/g)].map((m) => m[1] + (m[2] || "")), [`${data.sizes[0].id} checked`, ...data.sizes.slice(1).map((s) => s.id)]);
+  }
+  // A shared price sits inside the switch, so the price is what you pick.
+  const shared = /aria-label="Ukuran Buah">([\s\S]*?)<\/div>/.exec(menu)[1];
+  assert.equal((shared.match(MARK) || []).length, data.sizes.length);
+  // Every drink's button says which size it adds.
+  for (const d of data.drinks) {
+    const b = new RegExp(`<button type="button" class="pick[^>]*data-drink="${d.id}">[\\s\\S]*?</button>`).exec(menu)[0];
+    const first = data.sizes.find((s) => d.prices[s.id] != null);
+    assert.ok(b.includes(`<span class="sr pick-sr">, ukuran ${first.label}</span>`), d.id);
+  }
+
+  // The size a tap adds: the picked one, or the drink's own when it isn't sold in that.
+  assert.deepEqual(soldSizes("strawberry"), ["14", "22"]);
+  assert.deepEqual(soldSizes("strawberry-et-choco"), ["22"]);
+  assert.deepEqual(soldSizes(""), ["14", "22"]);
+  assert.equal(sizeToAdd("mangga", "14"), "14");
+  assert.equal(sizeToAdd("mangga", "22"), "22");
+  assert.equal(sizeToAdd("strawberry-et-choco", "14"), "22");
+  assert.equal(sizeToAdd("no-such-drink", "14"), "");
+
+  // Where the cup goes: the row with that drink AND size, else the empty row, else a new row.
+  const lines = [
+    { drinkId: "mangga", size: "14", qty: 2 },
+    { drinkId: "", size: "14", qty: 1 },
+    { drinkId: "mangga", size: "22", qty: 1 },
+  ];
+  assert.deepEqual(rowFor(lines, "mangga", "22"), { row: 2, how: "more" });
+  assert.deepEqual(rowFor(lines, "mangga", "14"), { row: 0, how: "more" });
+  assert.deepEqual(rowFor(lines, "kopi", "14"), { row: 1, how: "fill" });
+  assert.deepEqual(rowFor([lines[0]], "mangga", "22"), { row: -1, how: "new" });
+  assert.deepEqual(rowFor([], "kopi", "14"), { row: -1, how: "new" });
+  assert.ok(js.includes("rowFor(") && js.includes("sizeToAdd("), "the page script uses the tested rules");
+});
+
+test("a drink in the form: size and amount without visible labels, but with names", () => {
+  const line = /<template id="line">([\s\S]*?)<\/template>/.exec(body)[1];
+  assert.doesNotMatch(text(line.replace(/<(\w+) class="sr[^>]*>[\s\S]*?<\/\1>/g, "")), /Ukuran|Jumlah/, "a visible label on size or amount");
+  assert.match(line, /<div class="seg" role="radiogroup" aria-label="Ukuran">/);
+  assert.match(line, /<label class="sr">Jumlah gelas<\/label>/);
+  assert.match(line, /<label class="sr">Rasa<\/label>/);
+  for (const name of ["Kurangi satu", "Tambah satu", "Tambah sepuluh"]) assert.ok(line.includes(`aria-label="${name}"`));
+  assert.match(js, /class="sr">Subtotal </, "the row's sum is named for screen readers");
+});
+
+test("hints in empty fields are short and lighter than typed words", () => {
+  for (const [, hint] of body.matchAll(/placeholder="([^"]*)"/g)) assert.ok(hint.length <= 28, `"${hint}" wraps on a small phone`);
+  assert.match(css, /::placeholder \{[^}]*color: var\(--field-hint\)/);
+  assert.match(css, /select\.is-empty \{[^}]*color: var\(--field-hint\)/);
+});
+
+test("nothing is scrolled under the sticky links or the order bar", () => {
+  assert.match(css, /html \{[^}]*scroll-padding-top: calc\(var\(--tap-big\) \+/);
+  assert.match(js, /scrollPaddingBottom = /);
+  // Only the jump links stay on top.
+  assert.equal((css.match(/position: sticky/g) || []).length, 1);
+});
+
+test("one headline, one section name, and the link preview shows no price", () => {
+  assert.doesNotMatch(/<header[\s\S]*?<\/header>/.exec(body)[0], /<h[2-6]/);
+  assert.ok(!text(section("pesan").match(/<h2[\s\S]*?<\/h2>/)[0]).includes("Pre-order"), "the form's title repeats its jump link");
+  assert.doesNotMatch(text(card), /Rp\s?\d|\d\.\d{3}/, "a price on the card, where it can't carry its mark");
+  assert.ok(card.includes('class="logo-mark"'), "the card wears the logo file");
 });
 
 // --- Banned looks and words ----------------------------------------------------

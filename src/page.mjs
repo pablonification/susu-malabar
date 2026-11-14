@@ -78,9 +78,6 @@ function oddDays(h) {
 /** ["Tunai", "QRIS"] -> "tunai atau QRIS" (a short name in capitals stays as it is). */
 const payWith = () => visit.payment.map((p) => (p === p.toUpperCase() ? p : p.toLowerCase())).join(" atau ");
 
-/** A fruit's dot. Only drinks with a colour in tokens.css (--flavor-<id>) get one. */
-const dot = (id) => (token(`flavor-${id}`) ? `<i class="dot" style="--dot: var(--flavor-${esc(id)})"></i>` : "");
-
 // --- Menu ---------------------------------------------------------------------
 
 /**
@@ -110,50 +107,68 @@ function samePrices(list) {
   return list.every((d) => key(d) === key(list[0]));
 }
 
-const priceCell = (drink, size, extraClass = "") =>
-  `<span class="price${extraClass}"><span class="sr">${esc(size.label)} </span>${mark(drink.prices[size.id], rupiah)}</span>`;
+/** The size a tap adds before anyone has touched a switch: the first one the drink is sold in. */
+const firstSize = (drink) => sizes.find((s) => drink.prices[s.id] != null);
 
-/** The size names, said once above the price columns. Each price repeats its size for screen readers. */
-function sizeHeads() {
-  const heads = `<div class="cols"><span></span>${sizes.map((s) => `<span class="size">${esc(s.label)}</span>`).join("")}</div>`;
-  return `<div class="sizes" aria-hidden="true">${heads}${heads}</div>`;
+/**
+ * The size switch in a group's header: it names the sizes and picks which one a tap
+ * on a drink adds. With `price` it also carries the price the whole group shares.
+ * site.js keeps every group's switch on the same size.
+ */
+function sizeSwitch(group, price) {
+  const sold = sizes.filter((s) => group.list.some((d) => d.prices[s.id] != null));
+  if (sold.length < 2) return "";
+  const part = (s, i) =>
+    `<label><input type="radio" name="size-${esc(group.id)}" value="${esc(s.id)}"${i === 0 ? " checked" : ""}><span><span class="size">${esc(s.label)}</span>${price ? ` <span class="price price-all">${mark(price[s.id], rupiah)}</span>` : ""}</span></label>`;
+  return `<div class="seg seg-poster${price ? "" : " seg-heads"}" role="radiogroup" aria-label="Ukuran ${esc(group.name)}">${sold.map(part).join("")}</div>`;
 }
 
-/** A drink on the menu: a button that adds one cup to the order. site.js fills in the count. */
+/**
+ * A drink on the menu: a button that adds one cup to the order, in the size picked in
+ * the group's header. site.js fills in the count and keeps the size it reads out current.
+ */
 function pick(drink, inner, extraClass = "") {
-  return `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-n" aria-hidden="true">+</span><span class="sr pick-sr"></span></button>`;
+  return `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-n" aria-hidden="true">+</span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
 }
 
-/** A drink with its own prices. A size it isn't sold in leaves no dash: the name takes that room. */
+/**
+ * A drink with its own prices. A size it isn't sold in leaves no dash: the name takes
+ * that room. The price of the size a tap adds is the bold one.
+ */
 function drinkRow(drink) {
   const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
   const lead = sizes.findIndex((s) => drink.prices[s.id] != null); // sizes missing before the first sold one
-  const cells = sizes
-    .slice(lead)
-    .map((s) => (drink.prices[s.id] == null ? '<span class="price"></span>' : priceCell(drink, s)))
-    .join(" ");
-  const name = `<span class="row-name"${lead > 0 ? ` style="grid-column: span ${lead + 1}"` : ""}>${dot(drink.id)}<span><span class="pick-name">${esc(drink.name)}</span>${drink.bestSeller ? ' <span class="pick-tag">paling laris</span>' : ""}${notes ? ` <small>${notes}</small>` : ""}</span></span> `;
-  return `<li>${pick(drink, name + cells, " pick-row cols")}</li>`;
+  const cell = (s) =>
+    drink.prices[s.id] == null
+      ? '<span class="price"></span>'
+      : `<span class="price${s === firstSize(drink) ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="sr">${esc(s.label)} </span>${mark(drink.prices[s.id], rupiah)}</span>`;
+  const name = `<span class="row-name"${lead > 0 ? ` style="grid-column: span ${lead + 1}"` : ""}><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}</span> `;
+  return `<li>${pick(drink, name + sizes.slice(lead).map(cell).join(" "), " pick-row cols")}</li>`;
 }
 
-function menuSection({ name, list }) {
+function menuSection(group) {
+  const { name, list } = group;
   if (list.length > 1 && samePrices(list)) {
     const best = list.filter((d) => d.bestSeller);
     const rest = list.filter((d) => !d.bestSeller);
     return `
         <section class="grp">
-          <div class="grp-head cols">
-            <h3>${esc(name)}</h3>${sizes.map((s) => (list[0].prices[s.id] == null ? "<span></span>" : priceCell(list[0], s, " price-all"))).join("")}
+          <div class="grp-head">
+            <h3>${esc(name)}</h3>
+            ${sizeSwitch(group, list[0].prices) || sizes.map((s) => (list[0].prices[s.id] == null ? "" : `<span class="price price-all">${mark(list[0].prices[s.id], rupiah)}</span>`)).join("")}
           </div>
           <ul class="picks">
             ${best.map((d) => `<li class="picks-wide">${pick(d, `<span class="pick-name">${esc(d.name)}</span> <span class="pick-tag">paling laris</span>`, " pick-best")}</li>`).join("")}
-            ${rest.map((d) => `<li>${pick(d, `${dot(d.id)}<span class="pick-name">${esc(d.name)}</span>`)}</li>`).join("")}
+            ${rest.map((d) => `<li>${pick(d, `<span class="pick-name">${esc(d.name)}</span>`)}</li>`).join("")}
           </ul>
         </section>`;
   }
   return `
         <section class="grp">
-          <div class="grp-head"><h3>${esc(name)}</h3></div>
+          <div class="grp-head">
+            <h3>${esc(name)}</h3>
+            ${sizeSwitch(group)}
+          </div>
           <ul class="rows">
             ${list.map(drinkRow).join("")}
           </ul>
@@ -163,7 +178,8 @@ function menuSection({ name, list }) {
 /** Toppings, snacks and bundles: things with a price that the form doesn't take. */
 function extras() {
   const rows = [];
-  const names = (list) => list.map((x) => esc(x.name)).join(", ");
+  // A two-word name stays whole when the list wraps ("Whipped cream").
+  const names = (list) => list.map((x) => esc(x.name).replace(/ /g, "&nbsp;")).join(", ");
   const plus = (n) => `+${rupiah(n)}`;
   const sameTopping = toppings.every((t) => val(t.price) === val(toppings[0].price));
   if (toppings.length && sameTopping) {
@@ -174,10 +190,10 @@ function extras() {
   if (snacks.length) rows.push([names(snacks).replace(/, ([^,]+)$/, " dan $1"), "", mark(snackPriceRange, range)]);
   for (const b of bundles) rows.push([esc(b.name), esc(b.what), b.priceRange ? mark(b.priceRange, range) : mark(b.price, rupiah)]);
   return `
-        <section class="grp">
+        <section class="grp grp-extras">
           <div class="grp-head"><h3>Teman minum</h3></div>
           <ul class="rows">
-            ${rows.map(([name, what, price]) => `<li class="extra"><span class="row-name"><span>${name}${what ? `<small>${what}</small>` : ""}</span></span><span class="price">${price}</span></li>`).join("")}
+            ${rows.map(([name, what, price]) => `<li class="extra"><span class="row-name">${name}${what ? ` <small>${what}</small>` : ""}</span><span class="price">${price}</span></li>`).join("")}
           </ul>
         </section>`;
 }
@@ -201,21 +217,31 @@ function sharedHours() {
   return notes.length ? tbc(all[0], notes.join(". ")) : all[0];
 }
 
-function shopRow(shop, shared) {
+/**
+ * False while a shop's place is not known (`located: false` in data.mjs). Such a shop
+ * stays in the list, but has no map or GoFood button and can't be picked for pickup.
+ */
+export const isLocated = (shop) => shop.located !== false;
+
+export function shopRow(shop, shared) {
   const h = val(shop.hours);
   // With shared hours a shop only says where it differs. Without, it says its own.
   const own = shared ? oddDays(h) : [`Tiap hari ${span(h.default)}`, oddDays(h)].filter(Boolean).join(", ");
   return `
         <li class="shop">
           <div class="shop-what">
-            <h3>${mark(shop.name, shopLabel, "dot")}</h3>
+            <h3>${mark(shop.name, shopLabel)}</h3>
             <p>${mark(shop.address)}</p>
             ${own ? `<p class="shop-odd">${mark(shop.hours, () => own)}</p>` : ""}
-          </div>
+          </div>${
+            isLocated(shop)
+              ? `
           <div class="shop-go">
-            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta", "dot")}</a>
-            ${shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood", "dot")}</a>` : ""}
-          </div>
+            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta")}</a>
+            ${shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood")}</a>` : ""}
+          </div>`
+              : ""
+          }
         </li>`;
 }
 
@@ -230,10 +256,18 @@ function shopList() {
 
 // --- Pre-order form -------------------------------------------------------------
 
+/** The drinks to pick from. A size a drink isn't sold in is switched off beside it, so the name says nothing about sizes. */
 function drinkOptions() {
-  const label = (d) => esc(d.name) + (onlySizes(d) ? ` (${esc(onlySizes(d))})` : "");
   return menuSections()
-    .map((g) => `<optgroup label="${esc(g.name)}">${g.list.map((d) => `<option value="${esc(d.id)}">${label(d)}</option>`).join("")}</optgroup>`)
+    .map((g) => `<optgroup label="${esc(g.name)}">${g.list.map((d) => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join("")}</optgroup>`)
+    .join("");
+}
+
+/** The shops an order can be picked up at, as the form's choices. */
+export function pickupChoices(list = shops) {
+  return list
+    .filter(isLocated)
+    .map((s) => `<label><input type="radio" name="shop" value="${esc(s.id)}"><span>${mark(s.name, shopLabel)}</span></label>`)
     .join("");
 }
 
@@ -249,7 +283,7 @@ function orderForm() {
 
           <div class="field">
             <label for="notes">Catatan <span class="optional">kalau ada</span></label>
-            <textarea id="notes" name="notes" rows="2" placeholder="Misal buat acara himpunan, pakai whipped cream"></textarea>
+            <textarea id="notes" name="notes" rows="2" placeholder="Misal pakai whipped cream"></textarea>
           </div>
         </div>
 
@@ -257,7 +291,7 @@ function orderForm() {
           <div class="field">
             <span class="label" id="label-shop">Ambil di</span>
             <div class="seg seg-fill" id="field-shop" role="radiogroup" aria-labelledby="label-shop" aria-describedby="err-shop">
-              ${shops.map((s) => `<label><input type="radio" name="shop" value="${esc(s.id)}"><span>${mark(s.name, shopLabel, "dot")}</span></label>`).join("")}
+              ${pickupChoices()}
             </div>
             <p class="err" id="err-shop" hidden></p>
           </div>
@@ -281,45 +315,44 @@ function orderForm() {
             <input type="text" id="name" name="name" autocomplete="name" autocapitalize="words" enterkeyhint="done" aria-describedby="err-name">
             <p class="err" id="err-name" hidden></p>
           </div>
+        </div>
 
-          <div class="send">
-            <p class="total" id="total" hidden><span class="sr">Total </span><span id="total-cups"></span><span id="total-price"></span></p>
-            <a class="btn btn-send" id="send" href="#pesan">${mark(WHATSAPP_NUMBER, () => "Kirim lewat WhatsApp", "dot")}</a>
-            <p class="sent" id="sent" role="status" hidden>Lanjut di WhatsApp, tinggal tekan kirim.</p>
-            <p class="hint">Harganya masih perkiraan, pastinya dari toko. Bisa bayar ${esc(payWith())}.</p>
-            <details class="preview" id="preview" hidden>
-              <summary>Lihat pesan</summary>
-              <pre class="bubble" id="preview-text" tabindex="0"></pre>
-              <button type="button" class="link" id="copy">Salin pesan</button>
-            </details>
-            <noscript><p class="err">Form ini butuh JavaScript. Sementara, pesan lewat GoFood dulu.</p></noscript>
-          </div>
+        <div class="send">
+          <p class="total" id="total" hidden><span class="sr">Total </span><span id="total-cups"></span><span id="total-price"></span></p>
+          <a class="btn btn-send" id="send" href="#pesan">${mark(WHATSAPP_NUMBER, () => "Kirim lewat WhatsApp")}</a>
+          <p class="sent" id="sent" role="status" hidden>Lanjut di WhatsApp, tinggal tekan kirim.</p>
+          <p class="hint">Harganya masih perkiraan, pastinya dari toko. Bisa bayar ${esc(payWith())}.</p>
+          <details class="preview" id="preview" hidden>
+            <summary>Lihat pesan</summary>
+            <pre class="bubble" id="preview-text" tabindex="0"></pre>
+            <button type="button" class="link" id="copy">Salin pesan</button>
+          </details>
+          <noscript><p class="err">Form ini butuh JavaScript. Sementara, pesan lewat GoFood dulu.</p></noscript>
         </div>
       </form>
 
       <template id="line">
         <li class="line">
-          <div class="line-drink">
+          <div class="line-what">
             <label class="sr">Rasa</label>
             <span class="select"><select><option value="">Pilih rasa</option>${drinkOptions()}</select></span>
-            <button type="button" class="link line-remove">Hapus</button>
-          </div>
-          <p class="err err-drink" hidden></p>
-          <div class="line-row">
-            <span class="label">Ukuran</span>
-            <div class="seg" role="radiogroup">
+            <div class="seg" role="radiogroup" aria-label="Ukuran">
               ${sizes.map((s) => `<label><input type="radio" value="${esc(s.id)}"><span>${esc(s.label)}</span></label>`).join("")}
             </div>
-            <span class="line-price"></span>
           </div>
-          <div class="line-row">
-            <label>Jumlah</label>
+          <p class="err err-drink" hidden></p>
+          <div class="line-count">
             <div class="qty">
+              <label class="sr">Jumlah gelas</label>
               <button type="button" data-step="-1" aria-label="Kurangi satu">&minus;</button>
               <input type="number" inputmode="numeric" min="1" max="${orderRules.maxQtyPerLine}" value="1">
               <button type="button" data-step="1" aria-label="Tambah satu">+</button>
               <button type="button" data-step="10" aria-label="Tambah sepuluh">+10</button>
             </div>
+            <span class="line-end">
+              <span class="line-price"></span>
+              <button type="button" class="link line-remove">Hapus<span class="sr"> minuman ini</span></button>
+            </span>
           </div>
           <p class="err err-qty" hidden></p>
         </li>
@@ -405,7 +438,7 @@ export default function page() {
     <div class="wrap hero">
       <a class="logo" href="#top" aria-label="${esc(brand.title)}">${logo()}<span class="logo-tag">${esc(brand.tagline)}</span></a>
       <h1>Susu segar, diblender bareng buah asli.</h1>
-      <div class="hero-side">
+      <div class="hero-foot">
         <p class="lead">Porsi gede, harga mahasiswa.</p>
         <p class="rating"><strong>${esc(brand.google.rating)}</strong> <span>di Google, dari ${esc(brand.google.reviews)} ulasan</span></p>
       </div>
@@ -416,7 +449,7 @@ export default function page() {
     <div class="wrap">
       <a href="#menu">Menu</a>
       <a href="#toko">Toko</a>
-      <a href="#pesan">Pre-order</a>
+      <a class="jump-go" href="#pesan"><span>Pre-order</span></a>
     </div>
   </nav>
 
@@ -425,10 +458,7 @@ export default function page() {
       <div class="wrap">
         <h2 class="sr">Menu</h2>
         <div class="menu">
-          <div class="menu-drinks">
-            ${sizeHeads()}
-            ${menuSections().map(menuSection).join("")}
-          </div>
+          ${menuSections().map(menuSection).join("")}
           ${extras()}
         </div>
       </div>
@@ -441,7 +471,7 @@ export default function page() {
 
     <section class="band band-banner" id="pesan">
       <div class="wrap">
-        <h2>Pre-order, <span class="keep">buat sendiri</span> <span class="keep">atau sepanitia</span></h2>
+        <h2><span class="keep">Buat sendiri</span> <span class="keep">atau sepanitia</span></h2>
         ${orderForm()}
       </div>
     </section>
@@ -464,7 +494,7 @@ export default function page() {
     <div class="wrap">
       <p class="foot-name">${esc(brand.title)}</p>
       <ul class="foot-links">
-        <li><a href="https://wa.me/${esc(val(WHATSAPP_NUMBER))}" target="_blank" rel="noopener">${mark(WHATSAPP_NUMBER, () => "Chat WhatsApp", "dot")}</a></li>
+        <li><a href="https://wa.me/${esc(val(WHATSAPP_NUMBER))}" target="_blank" rel="noopener">${mark(WHATSAPP_NUMBER, () => "Chat WhatsApp")}</a></li>
         <li><a href="${esc(brand.instagram.url)}" target="_blank" rel="noopener">Instagram @${esc(brand.instagram.handle)}</a></li>
         <li><a href="${esc(brand.tiktok.url)}" target="_blank" rel="noopener">TikTok @${esc(brand.tiktok.handle)}</a></li>
         <li>${mark(brand.siteUrl, (url) => url.replace(/^https?:\/\//, ""))}</li>
@@ -479,9 +509,9 @@ export default function page() {
   </div>`;
 
   // The footer says how many marks are on the page, and wears the mark itself.
-  const marks = (body.match(/class="tbc[ "]/g) || []).length;
+  const marks = (body.match(/class="tbc"/g) || []).length;
   const count = marks
-    ? `<p class="foot-draft"><span class="tbc" title="Yang bergaris putus-putus atau bertitik belum dicek pemilik">${marks} hal di halaman ini belum dicek pemilik</span></p>`
+    ? `<p class="foot-draft"><span class="tbc" title="Yang bertitik kuning belum dicek pemilik">${marks} hal di halaman ini belum dicek pemilik</span></p>`
     : "";
 
   return `<!doctype html>

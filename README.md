@@ -12,7 +12,7 @@ npm install      # only needed for screenshots
 npm run dev      # http://localhost:4321, rebuilt on every page load
 npm run build    # static files into dist/
 npm test         # the order form's logic, and what must stay true of the built page
-npm run shots -- --form --out /tmp/shots   # also the form in use, on a phone
+npm run shots -- --form --out /tmp/shots   # also the form in use, at 390 px and 320 px
 ```
 
 ## Before launch
@@ -25,11 +25,15 @@ grep -n "tbc(" src/data.mjs
 ```
 
 To see the page without the marks (for a demo), set `--tbc-mark: 0` in `src/tokens.css`.
-A plain value gets a dashed underline. The label of a button, link or heading gets a small dot
-instead (`mark(x, show, "dot")`), since an underline there reads as a link. The reason is in the
-tooltip. Both come from one helper, `mark()` in `src/mark.mjs`, and the `.tbc` rules in
-`src/site.css`. The footer counts them. When the owner confirms a value, unwrap it in
-`src/data.mjs` and its mark goes away.
+The mark is one small amber dot after the value: the same dot on a price, an address, a heading
+or a button, and never a line under it (a line reads as a link). The reason is in the tooltip.
+It comes from one helper, `mark()` in `src/mark.mjs`, and the `.tbc` rules in `src/site.css`.
+The footer counts them. When the owner confirms a value, unwrap it in `src/data.mjs` and its
+mark goes away.
+
+A shop with `located: false` in `src/data.mjs` stays in the list with its marked lines, but has
+no map or GoFood button and is not offered for pickup. Set it to `true` (or delete the line)
+once its place is known and all of that turns on.
 
 Two things wait for the real site address (`brand.siteUrl`):
 
@@ -47,9 +51,8 @@ A new logo, colours and fonts are coming. Each has one place:
   `public/favicon.svg` and `public/apple-touch-icon.png` (180 px) are the same wordmark's
   initials. Replace both too.
 - **Colours:** `src/tokens.css`. The names say where a colour comes from in the shop (banner,
-  poster, wall). A fruit has its own colour, `--flavor-<drink id>`, and a drink without one
-  shows no dot. `--order` (the strawberry pink) marks what is in the visitor's order. The
-  browser bar colour follows `--banner`.
+  poster, wall). `--flavor-strawberry` is the best seller's strip on the menu. `--order` (the
+  same pink) marks what is in the visitor's order. The browser bar colour follows `--banner`.
 - **Fonts:** put the `.woff2` files in `public/fonts/`, add an `@font-face` at the top of
   `src/tokens.css` with `src: url("fonts/<file>.woff2")` (no leading slash), and change
   `--font-display` and `--font-body`. The page preloads whatever files are named there. If the
@@ -59,6 +62,13 @@ A new logo, colours and fonts are coming. Each has one place:
 Then run `npm run shots` to remake the pictures and the link-preview image (`public/og.png`,
 drawn by `src/card.mjs`), and `npm run check`. `test/site.test.mjs` fails on gradients, blur,
 shadows, purple, emoji, and any unconfirmed value shown without its mark.
+
+## How the menu adds to the order
+
+Each group of drinks has a size switch in its header (14 oz or 22 oz, with the price when the
+whole group shares one). A tap on a drink adds one cup in the picked size, and the switch is
+the same in every group. The rules are in `src/pick.mjs` (which size, which row of the form)
+and tested in `test/site.test.mjs`.
 
 ## Later: the stamp card
 

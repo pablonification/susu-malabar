@@ -5,6 +5,7 @@
 import { order as rules, isTbc, sizes, tbc } from "./data.mjs";
 import { buildMessage, checkOrder, findDrink, rupiah, todayWib, totals, unitPrice, whatsappLink } from "./order.mjs";
 import { esc, mark } from "./mark.mjs";
+import { rowFor, sizeToAdd, soldSizes } from "./pick.mjs";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -21,30 +22,26 @@ let tried = false; // true once the person pressed send, so every problem shows
 const touched = new Set(); // fields the person has already left
 let formOnScreen = false;
 let lastAdded = ""; // what the last tap on the menu put in, e.g. "Strawberry 14 oz"
+let menuSize = sizes[0].id; // the size picked in the menu's headers: what a tap on a drink adds
+const sizeName = (id) => sizes.find((s) => s.id === id)?.label || "";
 
 // --- Lines ----------------------------------------------------------------------
-
-/** The sizes a drink is sold in. With no drink picked yet, all of them. */
-const soldSizes = (drinkId) => sizes.filter((s) => !drinkId || unitPrice(drinkId, s.id) != null).map((s) => s.id);
 
 function addLine({ drinkId = "", size = "", qty = 1 } = {}) {
   const n = ++lineCount;
   const li = template.content.firstElementChild.cloneNode(true);
   const select = $("select", li);
   const qtyInput = $(".qty input", li);
-  const sizeLabel = $(".line-row .label", li);
 
   select.id = `drink-${n}`;
-  $(".line-drink label", li).htmlFor = select.id;
+  $(".line-what label", li).htmlFor = select.id;
   $(".err-drink", li).id = `err-drink-${n}`;
   select.setAttribute("aria-describedby", `err-drink-${n}`);
 
-  sizeLabel.id = `size-label-${n}`;
-  $(".seg", li).setAttribute("aria-labelledby", sizeLabel.id);
-  for (const radio of $$(".seg input", li)) radio.name = `size-${n}`;
+  for (const radio of $$(".seg input", li)) radio.name = `line-size-${n}`;
 
   qtyInput.id = `qty-${n}`;
-  $(".line-row > label", li).htmlFor = qtyInput.id;
+  $(".qty label", li).htmlFor = qtyInput.id;
   $(".err-qty", li).id = `err-qty-${n}`;
   qtyInput.setAttribute("aria-describedby", `err-qty-${n}`);
 
@@ -77,9 +74,11 @@ function readOrder() {
   };
 }
 
-/** Sizes not sold are switched off, and the picked size's price shows beside the switch. */
+/** Sizes not sold are switched off, and the row says what its cups come to. */
 function fitSizes(li) {
-  const drinkId = $("select", li).value;
+  const select = $("select", li);
+  const drinkId = select.value;
+  select.classList.toggle("is-empty", !drinkId); // "Pilih rasa" reads as a hint, not as a choice made
   const sold = soldSizes(drinkId);
   for (const radio of $$(".seg input", li)) {
     radio.disabled = !sold.includes(radio.value);
@@ -89,8 +88,10 @@ function fitSizes(li) {
     const first = $$(".seg input", li).find((r) => !r.disabled);
     if (first) first.checked = true;
   }
-  const price = findDrink(drinkId)?.prices?.[$(".seg input:checked", li)?.value];
-  $(".line-price", li).innerHTML = price == null ? "" : mark(price, rupiah);
+  const { size, qty } = readLine(li);
+  const price = findDrink(drinkId)?.prices?.[size];
+  const sum = (Math.floor(qty) || 0) * (unitPrice(drinkId, size) || 0);
+  $(".line-price", li).innerHTML = sum > 0 ? `<span class="sr">Subtotal </span>${mark(isTbc(price) ? tbc(sum, price.note) : sum, rupiah)}` : "";
 }
 
 /** One step on the quantity buttons. "+10" makes the first cup ten, then adds ten: 1, 10, 20, 30, 40. */
@@ -101,19 +102,32 @@ function step(li, by) {
   input.value = Math.min(rules.maxQtyPerLine, Math.max(1, next));
 }
 
-/** From the menu: add a cup to the row with that drink, or fill the empty row, or start a new one. */
-function addFromMenu(drinkId) {
+/** From the menu: one more cup in the row with that drink and size, or the empty row, or a new one. */
+function addFromMenu(drinkId, size) {
   const rows = $$(".line", list);
-  const same = rows.find((li) => readLine(li).drinkId === drinkId);
-  if (same) {
-    step(same, 1);
-    return same;
+  const { row, how } = rowFor(rows.map(readLine), drinkId, size);
+  if (how === "new") return addLine({ drinkId, size });
+  const li = rows[row];
+  if (how === "more") {
+    step(li, 1);
+    return li;
   }
-  const empty = rows.find((li) => !readLine(li).drinkId);
-  if (!empty) return addLine({ drinkId });
-  $("select", empty).value = drinkId;
-  $(".qty input", empty).value = 1;
-  return empty;
+  $("select", li).value = drinkId;
+  $(".qty input", li).value = 1;
+  for (const radio of $$(".seg input", li)) {
+    radio.disabled = false;
+    radio.checked = radio.value === size;
+  }
+  return li;
+}
+
+/** The menu's size switch: every group's header shows the same pick, and each drink the price it adds at. */
+function showMenuSize() {
+  for (const radio of $$(".seg-poster input")) radio.checked = radio.value === menuSize;
+  for (const button of $$(".pick")) {
+    const adds = sizeToAdd(button.dataset.drink, menuSize);
+    for (const price of $$(".price[data-size]", button)) price.classList.toggle("price-off", price.dataset.size !== adds);
+  }
 }
 
 // --- Showing the state ------------------------------------------------------------
@@ -137,9 +151,9 @@ function show(el, input, problem) {
 }
 
 function refresh() {
-  const order = readOrder();
   const rows = $$(".line", list);
-  rows.forEach(fitSizes);
+  rows.forEach(fitSizes); // first, so the order is read with sizes the drinks are sold in
+  const order = readOrder();
   $$(".line-remove", list).forEach((b) => (b.hidden = rows.length < 2));
 
   const result = checkOrder(order);
@@ -184,7 +198,7 @@ function refresh() {
   for (const button of $$(".pick")) {
     const n = order.lines.filter((l) => l.drinkId === button.dataset.drink).reduce((sum, l) => sum + (Math.floor(l.qty) || 0), 0);
     $(".pick-n", button).textContent = n || "+";
-    $(".pick-sr", button).textContent = n ? `, ${n} gelas di pesanan` : "";
+    $(".pick-sr", button).textContent = `, ukuran ${sizeName(sizeToAdd(button.dataset.drink, menuSize))}${n ? `, ${n} gelas di pesanan` : ""}`;
     if (n) button.dataset.count = n;
     else delete button.dataset.count;
   }
@@ -194,7 +208,11 @@ function refresh() {
   $("#bar-price").innerHTML = estimate(order, price);
   $("#bar-last").textContent = lastAdded ? `${lastAdded} masuk` : "";
   bar.hidden = cups === 0 || formOnScreen;
-  document.body.style.paddingBottom = bar.hidden ? "" : `${bar.offsetHeight}px`;
+  // Room for the bar at the end of the page, and when the browser scrolls to whatever
+  // has focus, so nothing lands underneath it.
+  const room = bar.hidden ? "" : `${bar.offsetHeight}px`;
+  document.body.style.paddingBottom = room;
+  document.documentElement.style.scrollPaddingBottom = room;
 
   return result;
 }
@@ -274,14 +292,22 @@ $("#copy").addEventListener("click", async (e) => {
   }
 });
 
-// A tap on a flavour in the menu adds one cup of it.
+// A tap on a flavour in the menu adds one cup of it, in the size picked in the header.
 document.addEventListener("click", (e) => {
   const pick = e.target.closest(".pick");
   if (!pick) return;
-  const li = addFromMenu(pick.dataset.drink);
-  fitSizes(li); // settle the row's size before reading it
-  const { drinkId, size } = readLine(li);
-  lastAdded = `${findDrink(drinkId).name} ${sizes.find((s) => s.id === size)?.label || ""}`.trim();
+  const drinkId = pick.dataset.drink;
+  const size = sizeToAdd(drinkId, menuSize);
+  addFromMenu(drinkId, size);
+  lastAdded = `${findDrink(drinkId).name} ${sizeName(size)}`.trim();
+  refresh();
+});
+
+// A size picked in one group's header is the size for the whole menu.
+document.addEventListener("change", (e) => {
+  if (!e.target.closest(".seg-poster")) return;
+  menuSize = e.target.value;
+  showMenuSize();
   refresh();
 });
 
@@ -295,4 +321,5 @@ new IntersectionObserver(([entry]) => {
 fields.date.min = todayWib();
 fields.date.value = todayWib();
 addLine();
+showMenuSize();
 refresh();

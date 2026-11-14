@@ -9,7 +9,8 @@ import { build } from "../build.mjs";
 import * as data from "../src/data.mjs";
 import { checkOrder, clock, rupiah } from "../src/order.mjs";
 import { findTbc } from "../src/mark.mjs";
-import { isLocated, pickupChoices, shopRow } from "../src/page.mjs";
+import { isLocated, pickupChoices, promoBand, shopRow } from "../src/page.mjs";
+import { PHOTO_DIR, drinkPhotos, photos, shopPhotos } from "../src/photos.mjs";
 import { rowFor, sizeToAdd, soldSizes } from "../src/pick.mjs";
 
 const root = join(import.meta.dirname, "..");
@@ -355,6 +356,109 @@ test("the order bar says the total and the way on, and reads out what went in", 
   assert.ok(js.includes(". Sudah ${n} gelas di pesanan"));
 });
 
+// --- The second design: real photos, the real badge ---------------------------------
+
+test("every photo is a real one, cut no bigger than its original, with its three files", async () => {
+  const { stat } = await import("node:fs/promises");
+  for (const [name, photo] of Object.entries(photos)) {
+    await stat(join(root, "public/assets/real", `${photo.from}.jpg`)); // listed in SOURCES.md there
+    const sources = await read("public/assets/real/SOURCES.md");
+    assert.ok(sources.includes(`\`${photo.from}\``), `${photo.from} has no line in SOURCES.md`);
+    assert.ok(sources.includes(`\`${name}\``), `the cut "${name}" is not listed in SOURCES.md`);
+    assert.ok(photo.alt.trim().length > 10, `${name} needs words for a screen reader`);
+    const [, , cropWidth] = photo.crop;
+    for (const width of photo.widths) {
+      assert.ok(width <= cropWidth, `${name}-${width} is wider than its ${cropWidth}px crop: photos are never made bigger`);
+      for (const ext of ["avif", "webp", "jpg"]) await stat(join(root, "dist", PHOTO_DIR, `${name}-${width}.${ext}`));
+    }
+    assert.ok(body.includes(`${PHOTO_DIR}/${name}-`), `${name} is cut but not on the page`);
+  }
+  for (const { photo } of Object.values(drinkPhotos)) assert.ok(photos[photo]);
+  for (const [shopId, photo] of Object.entries(shopPhotos)) {
+    assert.ok(photos[photo] && data.shops.some((s) => s.id === shopId), `shop photo ${shopId}`);
+  }
+  // The untouched originals stay in the repo, not on the site.
+  await assert.rejects(stat(join(root, "dist/assets/real")));
+});
+
+test("photos load light: sized, lazy below the first screen, newest format first", () => {
+  const pictures = [...body.matchAll(/<picture[^>]*>([\s\S]*?)<\/picture>/g)].map((m) => m[1]);
+  assert.equal(pictures.length, Object.keys(photos).length);
+  for (const inner of pictures) {
+    assert.match(inner, /^<source type="image\/avif" srcset="[^"]+" sizes="[^"]+"><source type="image\/webp" srcset="[^"]+" sizes="[^"]+"><img /);
+  }
+  const imgs = [...body.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
+  for (const img of imgs) {
+    assert.match(img, / width="\d+" height="\d+"/, `no size, the page would jump: ${img}`);
+    assert.match(img, / alt="[^"]*"/, `no alt: ${img}`);
+    assert.match(img, / decoding="async"/);
+  }
+  // Only the first photo loads at once, and the page asks for it early.
+  const eager = imgs.filter((img) => !img.includes('loading="lazy"'));
+  assert.equal(eager.length, 1);
+  assert.match(eager[0], /hero-[\s\S]*fetchpriority="high"/);
+  assert.match(head, /<link rel="preload" as="image" type="image\/avif" imagesrcset="[^"]*hero-[^"]+" imagesizes="[^"]+" fetchpriority="high">/);
+  // A photo inside a button says nothing: the button already names the drink.
+  for (const [button] of body.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)) {
+    for (const [img] of button.matchAll(/<img\b[^>]*>/g)) assert.match(img, / alt=""/);
+  }
+  // No slideshow, and nothing typed over a photo.
+  assert.doesNotMatch(js, /setInterval|autoplay/i);
+  assert.doesNotMatch(css + card, /background(-image)?:[^;]*url\(/, "a photo as a background, where words could sit on it");
+});
+
+test("the logo is one file: the real badge, and the icons are drawn from it", async () => {
+  const logo = await read("public/brand/logo.svg");
+  const art = /<path[\s\S]*\/>/.exec(logo)[0];
+  assert.match(logo, /fill="currentColor"/);
+  assert.ok((await read("public/assets/real/logo-badge.svg")).includes(art.slice(0, 400)), "logo.svg is not the shop's badge");
+  assert.ok(head.includes('<link rel="icon" href="favicon.svg" type="image/svg+xml">'));
+  const favicon = await read("dist/favicon.svg");
+  assert.ok(favicon.includes(art), "the tab icon is not drawn from the logo file");
+  assert.ok(html.includes(art) && card.includes(art), "the page and the card wear the logo file");
+  // The preview card shows a real photo at its real size.
+  assert.match(card, new RegExp(`<img class="photo" src="${PHOTO_DIR}/hero-${photos.hero.widths[0]}\\.jpg"`));
+  assert.match(card, new RegExp(`\\.photo \\{[^}]*width: ${photos.hero.widths[0]}px`));
+  const png = await readFile(join(root, "public/apple-touch-icon.png"));
+  assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [180, 180]);
+});
+
+test("three ways to order, each one tap from the real thing, and GoFood said once", () => {
+  const cara = section("cara");
+  const rows = [...cara.matchAll(/<a class="way" ([^>]*)>([\s\S]*?)<\/a>/g)];
+  const gofood = data.shops[0].gofoodUrl;
+  assert.deepEqual(
+    rows.map((m) => /href="([^"]*)"/.exec(m[1])[1]),
+    ["#toko", data.val(gofood), "#pesan"],
+  );
+  // Every shop shares one GoFood link, so it is one row here and not a button on each shop.
+  assert.equal(body.split(`href="${data.val(gofood)}"`).length - 1, 1);
+  assert.ok(!text(section("toko")).includes("GoFood"));
+  // Each shop is one tap from its map.
+  for (const shop of data.shops.filter(isLocated)) assert.ok(section("toko").includes(`href="${data.val(shop.mapUrl)}"`));
+  // The first screen is one tap from the menu and from the order form.
+  const nav = /<nav[\s\S]*?<\/nav>/.exec(body)[0];
+  assert.ok(nav.includes('href="#menu"') && nav.includes('href="#pesan"') && body.includes('id="menu"') && body.includes('id="pesan"'));
+});
+
+test("a promo shows only when the shop has one, with its price", () => {
+  assert.equal(data.brand.promo, null);
+  assert.ok(!html.includes('id="promo"'));
+  assert.equal(promoBand(null), "");
+  const band = promoBand({ title: "Promo Raksu", when: "Rabu–Kamis", price: data.tbc(10000, "contoh"), was: 13000 });
+  assert.ok(band.includes("Promo Raksu") && band.includes("Rabu–Kamis") && band.includes("<s>") && band.includes("Rp13.000"));
+  assert.match(band, /<strong><span class="tbc" title="contoh">Rp10\.000<\/span><\/strong>/);
+});
+
+test("two voices, set in tokens: the poster's heavy face and the quiet serif", () => {
+  assert.match(tokens, /--font-display: "Plus Jakarta Sans"/);
+  assert.match(tokens, /--font-quiet: "Cormorant Garamond"/);
+  assert.equal((tokens.match(/@font-face \{/g) || []).length, 2);
+  assert.doesNotMatch(css + card, /font-family:\s*(?!\s|var\(--font-)/, "a font named outside tokens.css");
+  // The serif is for headings and short lines, never small print.
+  assert.doesNotMatch(css, /\.cap \{[^}]*font-size: var\(--text-small\)/);
+});
+
 // --- Banned looks and words ----------------------------------------------------
 
 const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/u;
@@ -373,7 +477,7 @@ function hueOf(hex) {
 }
 
 test("no AI-made look in the styles or the page", async () => {
-  const favicon = await read("public/favicon.svg");
+  const favicon = await read("dist/favicon.svg");
   const logo = await read("public/brand/logo.svg");
   const styles = { "tokens.css": tokens, "site.css": css, "og-card.html": card, "index.html": html };
   for (const [name, source] of Object.entries({ ...styles, "site.js": js, "favicon.svg": favicon, "logo.svg": logo })) {
@@ -385,8 +489,9 @@ test("no AI-made look in the styles or the page", async () => {
     assert.doesNotMatch(source, /box-shadow|text-shadow|drop-shadow/, `shadow in ${name}`);
     assert.doesNotMatch(source, /transition:\s*all|animation:[^;]*infinite/, `lazy motion in ${name}`);
     assert.doesNotMatch(source, /rgba?\(|hsla?\(|oklch\(/, `a colour outside tokens.css in ${name}`);
-    for (const [, size] of source.matchAll(/letter-spacing:\s*([^;}]+)/g)) {
-      assert.ok(parseFloat(size) <= 0.02, `wide letter spacing (${size.trim()}) in ${name}`);
+    // A size from tokens.css (var(...)) is checked there, where its number is.
+    for (const [, size] of source.matchAll(/(?:letter-spacing|--[\w-]*tracking):\s*([^;}]+)/g)) {
+      assert.ok(size.trim().startsWith("var(--") || parseFloat(size) <= 0.02, `wide letter spacing (${size.trim()}) in ${name}`);
     }
     for (const [hex] of source.matchAll(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi)) {
       const { hue, sat } = hueOf(hex);
@@ -401,7 +506,9 @@ test("no AI-made look in the styles or the page", async () => {
 
 test("nothing unconfirmed about the business, and no machine-written punctuation", () => {
   const words = text(body) + text(card);
-  assert.doesNotMatch(words, /omzet|pendapatan|penghasilan|sumber uang|gunung|peternakan|\bfarm\b|\bsapi\b/i);
+  // Alt texts are words too: a screen reader says them.
+  const alts = [...(body + card).matchAll(/\salt="([^"]*)"/g)].map((m) => m[1]).join(" ");
+  assert.doesNotMatch(`${words} ${alts}`, /omzet|pendapatan|penghasilan|sumber uang|gunung|peternak|pemasok|supplier|\bfarm\b|\bsapi\b/i);
   assert.ok(!words.includes("—"), "an em dash on the page");
   assert.ok(!words.includes("!"), "an exclamation mark on the page");
   assert.ok(!words.includes(";"), "a semicolon on the page");

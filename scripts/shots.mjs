@@ -1,5 +1,6 @@
-// Takes the pictures of the site: whole page at desktop and phone width, and
-// the link-preview image (public/og.png) from dist/og-card.html.
+// Takes the pictures of the site: whole page at desktop and phone width, the
+// link-preview image (public/og.png) from dist/og-card.html, and the home-screen
+// icon (public/apple-touch-icon.png) from dist/favicon.svg.
 //   npm run shots                 -> docs/screenshots/
 //   npm run shots -- --out <dir>  -> another folder (e.g. for a review round)
 //   npm run shots -- --form       -> also pictures of the form in use at 390 px (phone-*) and
@@ -10,6 +11,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { build } from "../build.mjs";
+import { token } from "../src/page.mjs";
 
 const root = join(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -21,7 +23,7 @@ const { createServer } = await import("node:http");
 const { readFile } = await import("node:fs/promises");
 const { extname, normalize } = await import("node:path");
 const dist = join(root, "dist");
-const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".jpg": "image/jpeg", ".webp": "image/webp" };
+const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".jpg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif" };
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (p.endsWith("/")) p += "index.html";
@@ -44,6 +46,25 @@ try {
     await page.goto(base + path, { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
     if (fn) await fn(page);
+    // Photos below the first screen load when they come near: walk the page once for a
+    // whole-page picture, then wait for every photo in view.
+    if (!opts.noFull) {
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.documentElement.scrollHeight; y += innerHeight / 2) {
+          scrollTo(0, y);
+          await new Promise((done) => setTimeout(done, 40));
+        }
+        scrollTo(0, 0);
+      });
+    }
+    await page.waitForFunction(() =>
+      [...document.images].every((img) => {
+        const box = img.getBoundingClientRect();
+        const near = box.bottom > -innerHeight && box.top < innerHeight * 2;
+        return img.complete || !(near || document.documentElement.scrollHeight < 1);
+      }),
+    );
+    if (!opts.noFull) await page.waitForFunction(() => [...document.images].every((img) => img.complete && img.naturalWidth > 0));
     await page.screenshot({ path: join(outDir, name), fullPage: !opts.noFull });
     await ctx.close();
     console.log(join(outDir, name));
@@ -103,6 +124,16 @@ try {
         await toTop(page, "#total");
       });
     }
+  }
+
+  // The home-screen icon (180 px): the tab icon on a full square of its own pink.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 180, height: 180 } });
+    const page = await ctx.newPage();
+    await page.setContent(`<body style="margin:0;background:${token("badge-pink")}"><img src="${base}/favicon.svg" width="180" height="180" style="display:block">`, { waitUntil: "load" });
+    await page.screenshot({ path: join(root, "public/apple-touch-icon.png") });
+    console.log(join(root, "public/apple-touch-icon.png"));
+    await ctx.close();
   }
 
   // Link-preview image, only if the card page exists.

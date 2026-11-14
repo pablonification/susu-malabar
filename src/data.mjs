@@ -49,6 +49,12 @@ export const brand = {
   // A loyalty stamp card may come later (a teammate is planning it).
   // Leave null until its rules are decided. The page shows nothing while null.
   stampCard: null,
+  // A promo that is running now, shown as a black strip right under the first screen (the shop's
+  // promo posters are black with a huge price). Leave null when there is none: the page shows nothing.
+  // Fill it in only from the shop's own post, and set it back to null when the promo ends:
+  //   { title: "Promo Raksu", what: "Semua menu susu", when: "Rabu–Kamis, 3–4 Juni", where: "Di toko depan Griya", price: 10000, was: 13000 }
+  // `what`, `when`, `where` and `was` (the usual price, shown crossed out) can each be left out.
+  promo: null,
 };
 
 export const story = {

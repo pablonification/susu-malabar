@@ -13,7 +13,12 @@ const out = join(root, "dist");
 const pages = [
   ["index.html", "src/page.mjs"],
   ["og-card.html", "src/card.mjs"], // only photographed for public/og.png, never linked
+  ["favicon.svg", "src/favicon.mjs"], // the tab icon, drawn from the logo file
 ];
+// Read while building, not by the browser.
+const buildOnly = new Set(["photos.mjs"]);
+// The untouched originals stay in the repo. The page uses the cuts in public/assets/photos/.
+const originals = join(root, "public/assets/real");
 
 export async function build() {
   await rm(out, { recursive: true, force: true });
@@ -27,9 +32,11 @@ export async function build() {
     await writeFile(join(out, file), await mod.default());
   }
   for (const name of await readdir(join(root, "src"))) {
-    if (!templates.has(name)) await cp(join(root, "src", name), join(out, name), { recursive: true });
+    if (!templates.has(name) && !buildOnly.has(name)) await cp(join(root, "src", name), join(out, name), { recursive: true });
   }
-  if (existsSync(join(root, "public"))) await cp(join(root, "public"), out, { recursive: true });
+  if (existsSync(join(root, "public"))) {
+    await cp(join(root, "public"), out, { recursive: true, filter: (from) => !from.startsWith(originals) });
+  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

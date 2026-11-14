@@ -1,61 +1,85 @@
 /* The brand look. Change colours, fonts, corners and sizes here and nowhere else.
-   site.css only reads these names. The logo is public/brand/logo.svg. */
+   site.css only reads these names. The logo is public/brand/logo.svg, the photos are
+   listed in src/photos.mjs. Where each colour was sampled is in docs/brand-notes.md. */
 
+/* The loud face: heavy, tight, geometric, like "Idul Adha" and "7 tahun" on the shop's
+   posters. Also the reading face. Plus Jakarta Sans, open licence. */
 @font-face {
-  font-family: "Archivo";
-  src: url("fonts/archivo-latin.woff2") format("woff2"); /* the page preloads every file named here */
-  font-weight: 100 900;
-  font-stretch: 62% 125%;
+  font-family: "Plus Jakarta Sans";
+  src: url("fonts/plus-jakarta-sans-latin.woff2") format("woff2"); /* the page preloads every file named here */
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+/* The quiet face: the light serif italic of "Kami ada di mana?" and "Outlet 1" on the
+   shop's location posts. Cormorant Garamond Italic, open licence. */
+@font-face {
+  font-family: "Cormorant Garamond";
+  src: url("fonts/cormorant-garamond-italic-latin.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 300 700;
   font-display: swap;
 }
 
 :root {
-  /* --- Fonts. One family for now: narrow and heavy for headings (the menu-poster
-     look), normal width for reading. To swap: add the new @font-face above and
-     change these. */
-  --font-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
-  --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  --display-stretch: 62%;
+  /* --- Fonts. To swap: add the new @font-face above and change these. */
+  --font-display: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-quiet: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --display-weight: 800;
-  --display-word-gap: 0.1em; /* a narrow font has a narrow space: this keeps words apart */
-  --numeral-stretch: 75%;
+  --display-tracking: -0.03em; /* the posters set their headlines tight */
+  --display-word-gap: 0.14em; /* this face has a narrow space: these keep words apart */
+  --body-word-gap: 0.07em;
+  --quiet-weight: 600;
+  --quiet-style: italic;
 
   /* --- Text sizes */
   --text-small: 0.875rem;
   --text-body: 1.0625rem;
   --text-lead: 1.25rem;
   --text-h3: 1.75rem;
-  --text-h2: 2.75rem;
-  --text-h1: clamp(3.25rem, 15.5vw, 6.5rem); /* wider screens set their own below */
-  --text-figure: 2.25rem;
-  --text-quote: 1.75rem;
+  --text-h2: 2.5rem;
+  --text-h1: clamp(3rem, 15.4vw, 4.5rem); /* wider screens set their own below */
+  --text-figure: 4.5rem; /* the one big number: the Google rating */
   --text-price: 1.375rem;
+  --text-total: 1.625rem; /* the order's total above the send button */
+  --text-promo: 3.25rem; /* a running promo's price */
+  /* The serif runs small for its size, so it gets its own, larger steps. */
+  --text-quiet: 1.3125rem;
+  --text-quiet-h3: 2.25rem;
+  --text-quiet-h2: 2.875rem;
+  --text-quote: 2.125rem;
 
   /* --- Colours, named after where they come from in the shop */
-  --banner: #bfe3cf; /* the mint banner out front */
-  --banner-line: #86b89e;
-  --ink: #14201b; /* the black of the cup badge */
-  --paper: #fbfaf5; /* the white cup */
-  --paper-line: #d6d4c8;
+  --poster: #184a44; /* the dark green of the menu poster and most of the feed */
+  --poster-ink: #ffffff;
+  --poster-muted: #b9d6ce;
+  --poster-line: #356a62;
+  --banner: #0d6867; /* the teal banner over the shop in front of Griya */
+  --banner-ink: #ffffff;
+  --banner-muted: #d3e8e3;
+  --banner-line: #4b8f8c;
+  --ink: #111111; /* the black of the badge on the cups */
+  --ink-line: #3b3b3b;
+  --paper: #fdfcf6; /* the white cup, and the off-white type of the promo posters */
+  --paper-line: #d9d6c8;
+  --paper-muted: #4a5551;
   --field: #ffffff; /* inside of a form field */
   --field-hint: #6b7972; /* the example words in an empty field: lighter than what you type */
-  --paper-muted: #47564e;
-  --poster: #12372b; /* the dark green menu posters */
-  --poster-ink: #f4eedc;
-  --poster-muted: #a9cdb9;
-  --poster-line: #2f5a49;
-  --wall: #0e6f66; /* the teal walls and stools */
-  --wall-ink: #ffffff;
-  --wall-line: #4e9a92;
+  --promo: #e25150; /* the red tag on the promo posters: only crosses out a promo's usual price */
   --danger: #a8261c;
   --notice: #7a4b00;
 
-  /* The best seller's strip on the menu. */
-  --flavor-strawberry: #ff8a9a;
-  --flavor-strawberry-ink: #3a0b14;
+  /* The badge as the shop wears it on TikTok: green drawing, strawberry pink ground. */
+  --badge-pink: #f784c5;
+  --badge-green: #1b612f;
 
-  /* What is in your order: the cups you added, the size and shop you picked, the total.
-     It borrows the strawberry strip's pink. */
+  /* The best seller's strip on the menu. */
+  --flavor-strawberry: var(--badge-pink);
+  --flavor-strawberry-ink: var(--ink);
+
+  /* What is in your order: the cups you added, the size and shop you picked, the total,
+     and every way into the pre-order form. It borrows the strawberry pink. */
   --order: var(--flavor-strawberry);
   --order-ink: var(--flavor-strawberry-ink);
 
@@ -67,9 +91,9 @@
   --tbc-dot: #f2b84b;
   --tbc-size: 0.5rem;
 
-  /* --- Corners and lines */
+  /* --- Corners and lines. Photos have square corners, like tiles in the shop's feed. */
   --radius-control: 6px;
-  --radius-sheet: 10px;
+  --radius-photo: 0;
   --line: 1px;
   --line-strong: 3px;
 
@@ -86,6 +110,7 @@
   --page-width: 68rem;
   --tap: 2.75rem; /* 44px, the smallest thing to tap */
   --tap-big: 3rem;
+  --badge-size: 4rem; /* the logo's disc at the top of the page */
 
   /* --- Motion */
   --press: 80ms;
@@ -94,22 +119,27 @@
 @media (min-width: 48rem) {
   :root {
     --gutter: 2rem;
-    --text-h2: 3.5rem;
-    --text-quote: 2.25rem;
+    --text-h2: 3.25rem;
+    --text-quiet-h2: 3.75rem;
+    --text-quote: 2.5rem;
+    --badge-size: 4.5rem;
   }
 }
 
-/* Wide screens: the headline runs the full width of the page, in two lines. */
+/* Wide screens: the headline sits beside the photo. */
 @media (min-width: 56rem) {
   :root {
-    --text-h1: clamp(6rem, 11.4vw, 8.5rem);
-    --text-quote: 2.75rem;
+    --text-h1: clamp(4rem, 6.1vw, 5.5rem);
+    --text-figure: 6rem;
   }
 }
 
-/* Small phones: the shared price in a menu header gives the drink names more room. */
+/* Small phones: the shared price in the menu's switch gives a little room back. */
 @media (max-width: 23.5rem) {
   :root {
     --text-price: 1.25rem;
+    --text-total: 1.375rem;
+    --text-h2: 2.25rem;
+    --text-quiet-h2: 2.5rem;
   }
 }

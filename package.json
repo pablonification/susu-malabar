@@ -12,7 +12,8 @@
     "build": "node build.mjs",
     "test": "node --test test/*.test.mjs",
     "check": "node build.mjs && node --test test/*.test.mjs",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "photos": "node scripts/photos.mjs"
   },
   "devDependencies": {
     "playwright": "^1.65.1"

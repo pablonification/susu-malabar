@@ -29,6 +29,30 @@ Text the shop had put over a photo was cropped away, never painted out.
 | `promo-10k-2026-03` | Promo poster: "PROMO SPESIAL, SELASA-RABU 16-17 Maret 2026, 10K /SEMUA MENU SUSU" (13K crossed out), "berlaku di kedai depan griya dan sayang No.18a". | 1200×1600, 61 KB | https://www.instagram.com/susumalabar/p/DV8q5_2k-m_/ (same poster: https://www.tiktok.com/@malabar.susu/photo/7617855282252958997) | Susu Malabar, 2026-03-16 |
 | `promo-rasa-baru-2026-02` | Poster: "RASA BARU!", Almond Malabar 15K and Biscof Malabar 15K, two hands holding white cups against a sky. | 1080×1350, 82 KB | https://www.tiktok.com/@malabar.susu/photo/7610417888171691285 | Susu Malabar, 2026-02-24 |
 
+## Cuts on the site
+
+The page does not use the files above as they are. `npm run photos` cuts them into
+`public/assets/photos/` (avif, webp and jpg) from the list in `src/photos.mjs`. A cut is a
+crop and a resize, never bigger than its original. Nothing is retouched, sharpened or
+generated. The only other change is a plain brightness lift ("levels" in that list) for
+pictures that are dark as posted. The two shop fronts were posted under a dark overlay
+with the address written on it, so they get the strongest lift.
+
+| Cut | From | Where on the page |
+| --- | --- | --- |
+| `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card |
+| `lid` | `strawberry-milk-topdown`, the lid as a square | The best seller's strip on the menu |
+| `corndog` | `corndog-fryer`, a wide strip | Over "Teman minum" on the menu |
+| `pickup` | `counter-griya-wide`, left two thirds (the "PICK UP HERE" sign) | "Mau pesan lewat mana?" |
+| `toko-griya` | `shop-front-griya`, whole, lifted | The shop "depan Griya" |
+| `toko-ikopin` | `shop-front-ikopin`, whole, lifted | The shop "depan Ikopin" |
+| `bungkus` | `staff-griya`, whole | Over the pre-order form |
+| `kedai` | `counter-griya`, whole | The story |
+
+Not on the page: `strawberry-milk-1` (too soft to show large), the two promo posters (old
+promos, and one names prices the owner has not confirmed), and a front of the shop "depan
+MST" (the only photo has faces covered with squares, so that shop shows none).
+
 ## Reference only (in `docs/reference/`, not for the site)
 
 | File | What it is | Source |

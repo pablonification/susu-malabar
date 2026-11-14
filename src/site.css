@@ -18,6 +18,7 @@ body {
   font-family: var(--font-body);
   font-size: var(--text-body);
   line-height: 1.5;
+  word-spacing: var(--body-word-gap);
   color: var(--ink);
   background: var(--paper);
 }
@@ -47,27 +48,48 @@ fieldset {
   min-width: 0;
 }
 
-/* The poster type: narrow, heavy, with the word gap from tokens.css. */
+/* The loud voice: the heavy, tight type of the shop's posters. */
 h1,
 h2,
 h3,
+.logo-name,
+.way-name,
 .rating strong,
-.pick-best .pick-name,
-.quotes blockquote,
 .foot-name {
   font-family: var(--font-display);
-  font-stretch: var(--display-stretch);
   font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
   word-spacing: var(--display-word-gap);
-  line-height: 0.95;
+  line-height: 1;
 }
 
 h2 {
   font-size: var(--text-h2);
+  text-wrap: balance;
 }
 
 h3 {
   font-size: var(--text-h3);
+}
+
+/* The quiet voice: the serif italic of the shop's location posts. One band speaks in
+   one voice, the way one post does. */
+.quiet,
+.shop h3,
+.logo-tag,
+.pick-tag,
+.cap {
+  font-family: var(--font-quiet);
+  font-style: var(--quiet-style);
+  font-weight: var(--quiet-weight);
+  font-variant-numeric: lining-nums;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+
+h2.quiet {
+  font-size: var(--text-quiet-h2);
+  line-height: 0.95;
 }
 
 a {
@@ -111,11 +133,6 @@ small {
   top: var(--space-2);
 }
 
-/* Words that stay on one line together. */
-.keep {
-  white-space: nowrap;
-}
-
 /* --- Placeholder mark ---------------------------------------------------------
    Every value still wrapped in tbc() in data.mjs gets one small amber dot after it,
    level with the top of its letters: the same dot on a price, an address, a heading
@@ -147,12 +164,20 @@ small {
   padding-block: var(--space-7);
 }
 
+.band-poster {
+  --bg: var(--poster);
+  --fg: var(--poster-ink);
+  --muted: var(--poster-muted);
+  --rule: var(--poster-line);
+  --tbc-edge: var(--tbc-dot); /* on a dark ground the dot needs no edge */
+}
+
 .band-banner {
   --bg: var(--banner);
-  --fg: var(--ink);
-  --muted: var(--ink);
+  --fg: var(--banner-ink);
+  --muted: var(--banner-muted);
   --rule: var(--banner-line);
-  --tbc-edge: var(--ink);
+  --tbc-edge: var(--tbc-dot);
 }
 
 .band-paper {
@@ -163,19 +188,11 @@ small {
   --tbc-edge: var(--ink);
 }
 
-.band-poster {
-  --bg: var(--poster);
-  --fg: var(--poster-ink);
-  --muted: var(--poster-muted);
-  --rule: var(--poster-line);
-  --tbc-edge: var(--tbc-dot); /* on a dark ground the dot needs no edge */
-}
-
-.band-wall {
-  --bg: var(--wall);
-  --fg: var(--wall-ink);
-  --muted: var(--wall-ink);
-  --rule: var(--wall-line);
+.band-ink {
+  --bg: var(--ink);
+  --fg: var(--paper);
+  --muted: var(--paper-line);
+  --rule: var(--ink-line);
   --tbc-edge: var(--tbc-dot);
 }
 
@@ -191,12 +208,45 @@ small {
   line-height: 1.3;
 }
 
+/* --- Photos: one treatment for all of them --------------------------------------
+   Square corners, like the tiles of the shop's feed. On a phone a photo runs from
+   edge to edge, and a band that opens with one starts at the photo. */
+
+.photo {
+  display: block;
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-photo);
+  background: var(--rule);
+}
+
+.bleed {
+  margin-inline: calc(var(--gutter) * -1);
+}
+
+.band-photo {
+  padding-top: 0;
+}
+
+/* The line under a photo, in the quiet voice. */
+.cap {
+  margin-top: var(--space-2);
+  font-size: var(--text-quiet);
+  line-height: 1.2;
+  color: var(--muted);
+}
+
 /* --- Buttons -------------------------------------------------------------------- */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
   min-height: var(--tap);
   padding: var(--space-1) var(--space-4);
   border: 1.5px solid currentColor;
@@ -238,62 +288,94 @@ small {
   cursor: pointer;
 }
 
-/* --- Top: the banner out front ------------------------------------------------ */
+/* Where a link goes: down this page, or out of it. Drawn at the weight of the words. */
+.arrow {
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
 
-header.band {
-  padding-block: var(--space-4) var(--space-6);
+/* --- Top: the poster ------------------------------------------------------------
+   The badge the way the shop wears it on TikTok, the headline, the best seller in a
+   hand. On a phone the photo takes what is left of the first screen, so the jump
+   links under it are always in reach without scrolling. */
+
+.top {
+  padding-block: var(--space-4) 0;
 }
 
 .logo {
   display: inline-flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--space-3);
   text-decoration: none;
+}
+
+.logo-disc {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--badge-size);
+  height: var(--badge-size);
+  border-radius: 50%;
+  background: var(--badge-pink);
+  color: var(--badge-green);
 }
 
 .logo-mark {
   display: block;
-  height: 1.5rem;
-  width: auto;
+  width: 94%;
+  height: 94%;
+}
+
+.logo-words {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.logo-name {
+  font-size: var(--text-lead);
 }
 
 .logo-tag {
-  font-size: var(--text-small);
-  font-weight: 600;
+  font-size: var(--text-quiet);
+  line-height: 1;
+  color: var(--muted);
 }
 
 h1 {
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   font-size: var(--text-h1);
-  line-height: 0.9;
-  letter-spacing: -0.01em;
+  line-height: 0.92;
   text-wrap: balance;
 }
 
-.hero-foot {
+/* Everything else on the first screen has a known height: the badge, two lines of
+   headline, the hours and the jump links. The photo gets the rest, down to a strip
+   on a short phone and up to its full 4:3 on a tall one. */
+.hero-photo {
+  height: 60vw; /* for a browser that doesn't know the line below */
+  height: clamp(9rem, calc(100svh - 14.5rem - var(--text-h1) * 1.84), 75vw);
   margin-top: var(--space-5);
 }
 
-.rating {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: var(--line) solid var(--rule);
-  line-height: 1.25;
+.hero-photo img {
+  height: 100%;
+  object-fit: cover;
 }
 
-.rating strong {
-  font-size: var(--text-figure);
-  line-height: 1;
+.hero-open {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-big);
+  font-weight: 600;
 }
 
 /* --- Jump links: stay on top while scrolling ------------------------------------ */
 
 .jump {
-  --bg: var(--ink);
-  --fg: var(--paper);
+  --bg: var(--paper);
+  --fg: var(--ink);
   position: sticky;
   top: 0;
   z-index: 2;
@@ -303,7 +385,7 @@ h1 {
 
 .jump .wrap {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr 1.25fr;
   padding-inline: 0;
 }
 
@@ -317,16 +399,73 @@ h1 {
 }
 
 .jump a + a {
-  border-left: var(--line) solid var(--paper-muted);
+  border-left: var(--line) solid var(--paper-line);
 }
 
 .jump a:focus-visible {
   outline-offset: -4px;
 }
 
+/* The way into the order wears the order's pink, here as everywhere. */
+.jump a.jump-go {
+  border-left: 0;
+  background: var(--order);
+  color: var(--order-ink);
+}
+
 .jump-go span {
   display: flex;
   align-items: center;
+}
+
+/* --- A running promo: the shop's black promo poster, as a strip -------------------- */
+
+.promo {
+  padding-block: var(--space-4);
+}
+
+.promo-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-5);
+}
+
+.promo-what {
+  display: grid;
+  line-height: 1.3;
+}
+
+.promo-what strong {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-h3);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  word-spacing: var(--display-word-gap);
+  line-height: 1;
+}
+
+.promo-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  white-space: nowrap;
+}
+
+.promo-price strong {
+  font-size: var(--text-promo);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: 0.9;
+}
+
+.promo-price s {
+  font-size: var(--text-lead);
+  font-weight: 600;
+  text-decoration-color: var(--promo);
+  text-decoration-thickness: var(--line-strong);
 }
 
 /* --- Menu: the poster on the wall ----------------------------------------------- */
@@ -336,8 +475,8 @@ h1 {
 }
 
 .menu {
-  --col-price: 5.75rem;
-  --col-add: 2.25rem;
+  --col-price: 5.4rem;
+  --col-add: 2rem;
   --bleed: var(--gutter);
 }
 
@@ -380,20 +519,20 @@ h1 {
 }
 
 .grp-head .size:not(.price-off) {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .price {
   text-align: right;
-  font-stretch: var(--numeral-stretch);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .price-all {
   font-size: var(--text-price);
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
@@ -452,7 +591,6 @@ h1 {
   font-size: var(--text-lead);
   font-weight: 700;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
   transition: transform var(--press);
 }
 
@@ -464,28 +602,47 @@ h1 {
   font-size: var(--text-small);
 }
 
+/* The best seller: a strip of strawberry pink across the poster, its photo flush to
+   the strip's edge like a tile. */
 .pick-best {
   width: calc(100% + var(--bleed) * 2);
   margin-inline: calc(var(--bleed) * -1);
-  padding-inline: var(--bleed);
+  padding: 0 var(--bleed) 0 0;
+  gap: var(--space-4);
   background: var(--flavor-strawberry);
   color: var(--flavor-strawberry-ink);
   --fg: var(--flavor-strawberry-ink);
+  --rule: var(--flavor-strawberry-ink);
+}
+
+.pick-photo {
+  flex: none;
+  width: 7rem;
+}
+
+.pick-words {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-block: var(--space-3);
+}
+
+.pick-best .pick-name {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: var(--text-h3);
+  letter-spacing: var(--display-tracking);
+  line-height: 1;
+}
+
+.pick-tag {
+  font-size: var(--text-quiet);
+  line-height: 1.05;
 }
 
 .pick-best[data-count] .pick-n {
   background: var(--order-ink);
   color: var(--order);
-}
-
-.pick-best .pick-name {
-  font-size: var(--text-h3);
-  line-height: 1;
-}
-
-.pick-tag {
-  font-size: var(--text-small);
-  font-weight: 600;
 }
 
 .row-name {
@@ -511,14 +668,73 @@ h1 {
   line-height: 1.25;
 }
 
-/* --- Shops ---------------------------------------------------------------------- */
-
-#toko .lead {
-  margin-top: var(--space-3);
+/* The snack, straight out of the fryer, over the list it belongs to. */
+.snack {
+  padding-bottom: var(--space-3);
 }
 
-.busy {
-  margin-top: var(--space-1);
+.snack img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+/* --- Ways to order: by the white cup ---------------------------------------------- */
+
+.ways {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.way-list {
+  margin-top: var(--space-5);
+  border-top: var(--line-strong) solid var(--fg);
+}
+
+/* One way per row, the whole row a link to the real thing. */
+.way {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+  min-height: 4.75rem;
+  padding-block: var(--space-3);
+  border-bottom: var(--line) solid var(--rule);
+  text-decoration: none;
+}
+
+.way:focus-visible {
+  outline-offset: -3px;
+}
+
+.way-name {
+  font-size: var(--text-h3);
+}
+
+.way-what {
+  grid-column: 1;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.way .arrow {
+  grid-area: 1 / 2 / span 2;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* --- Shops: under the teal banner, in the quiet voice ------------------------------- */
+
+.shops-when {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+}
+
+.shops-when span:first-child {
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 /* A shop with no known place wears one dot, on its name. The line under it says the
@@ -528,25 +744,27 @@ h1 {
 }
 
 .shops {
+  display: grid;
+  gap: var(--space-7);
   margin-top: var(--space-5);
-  border-top: var(--line-strong) solid var(--fg);
 }
 
 .shop {
   display: grid;
   gap: var(--space-4);
-  padding-block: var(--space-5);
-  border-bottom: var(--line) solid var(--rule);
+  align-content: start;
+  padding-top: var(--space-4);
+  border-top: var(--line) solid var(--rule);
 }
 
-/* The list ends at its last shop, with no line trailing into the next colour. */
-.shop:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
+.shop:first-child {
+  border-top: var(--line-strong) solid var(--fg);
 }
 
 .shop h3 {
   margin-bottom: var(--space-2);
+  font-size: var(--text-quiet-h3);
+  line-height: 1;
 }
 
 .shop-odd {
@@ -554,12 +772,45 @@ h1 {
 }
 
 .shop-go {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-/* --- Pre-order: on the banner's green, white fields ------------------------------- */
+/* On a phone the shop's front comes first, with its name right under it. */
+.shop-photo {
+  order: -1;
+}
+
+.shop:has(.shop-photo) {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* --- Pre-order: the order's pink on top, the form on the white of the cup ----------- */
+
+/* A jump to the form lands on its pink title, with the photo above it already scrolled
+   past: whoever taps "Pre-order" wants the fields. --head-photo is the photo's height
+   over its width, set on the section by page.mjs. */
+#pesan {
+  scroll-margin-top: calc(var(--head-photo, 0) * -100vw - var(--space-4));
+}
+
+.order-head {
+  --bg: var(--order);
+  --fg: var(--order-ink);
+  --rule: var(--order-ink);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.order-words {
+  padding-block: var(--space-5);
+}
+
+.order-words .lead {
+  margin-top: var(--space-2);
+}
 
 .form,
 .form-col {
@@ -570,7 +821,7 @@ h1 {
 }
 
 .form {
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 legend,
@@ -730,12 +981,11 @@ select[aria-invalid="true"]:focus-visible,
   gap: var(--space-3);
   min-height: var(--tap);
   margin-left: auto;
+  font-size: 1rem;
 }
 
 .line-price {
-  font-stretch: var(--numeral-stretch);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -864,7 +1114,6 @@ select[aria-invalid="true"]:focus-visible,
   border-radius: 0;
   text-align: center;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   appearance: textfield;
   -moz-appearance: textfield;
 }
@@ -908,11 +1157,11 @@ select[aria-invalid="true"]:focus-visible,
   background: var(--order);
   color: var(--order-ink);
   font-family: var(--font-display);
-  font-stretch: var(--numeral-stretch);
   font-weight: var(--display-weight);
-  font-size: var(--text-h3);
+  font-size: var(--text-total);
+  letter-spacing: var(--display-tracking);
   line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .send-go {
@@ -956,47 +1205,87 @@ select[aria-invalid="true"]:focus-visible,
   overflow-wrap: anywhere;
 }
 
-/* --- Story: inside, by the teal wall ------------------------------------------- */
+/* --- Story and reviews: back on the poster green ----------------------------------- */
 
 .story {
   display: grid;
   gap: var(--space-6);
 }
 
-.story p {
+.story-photo .cap {
+  margin-top: var(--space-2);
+}
+
+.story-words p {
   max-width: 34rem;
   margin-top: var(--space-4);
 }
 
-.quotes blockquote {
+/* The one big number on the page, then what reviewers wrote, as they wrote it. */
+.reviews {
+  padding-top: var(--space-5);
+  border-top: var(--line-strong) solid var(--fg);
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  line-height: 1.25;
+}
+
+.rating strong {
+  font-size: var(--text-figure);
+  line-height: 0.85;
+}
+
+.rating span {
+  max-width: 9rem;
+  font-weight: 600;
+}
+
+.reviews blockquote {
   font-size: var(--text-quote);
   line-height: 1;
   text-wrap: balance;
 }
 
-.quotes blockquote + blockquote {
+.rating + blockquote {
+  margin-top: var(--space-5);
+}
+
+.reviews blockquote + blockquote {
   margin-top: var(--space-3);
 }
 
-.quotes figcaption {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: var(--line) solid var(--rule);
-}
-
-/* --- Foot ----------------------------------------------------------------------- */
+/* --- Foot: the black of the badge on the cups --------------------------------------- */
 
 .foot {
   padding-block: var(--space-6) var(--space-8);
 }
 
+.foot-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The badge the way it is printed on the cups: black on white. */
+.foot-badge {
+  flex: none;
+  width: var(--badge-size);
+  height: var(--badge-size);
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--field);
+}
+
 .foot-name {
   font-size: var(--text-h3);
-  line-height: 1;
 }
 
 .foot-links {
-  margin-top: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 .foot-links li,
@@ -1041,7 +1330,6 @@ select[aria-invalid="true"]:focus-visible,
 
 .bar strong {
   display: block;
-  font-stretch: var(--numeral-stretch);
 }
 
 #bar-cups,
@@ -1057,7 +1345,26 @@ select[aria-invalid="true"]:focus-visible,
 
 @media (max-width: 23.5rem) {
   .menu {
-    --col-price: 5.25rem;
+    --col-price: 5.15rem;
+    --col-add: 1.75rem;
+  }
+
+  .rows .price {
+    font-size: 0.875rem;
+  }
+
+  /* The date needs more room than the hour. */
+  .pair {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: var(--space-3);
+  }
+
+  .pair input {
+    padding-inline: var(--space-2);
+  }
+
+  .pick-photo {
+    width: 6rem;
   }
 
   /* A drink in the order keeps to two lines: the amount's parts sit a little closer. */
@@ -1107,32 +1414,77 @@ select[aria-invalid="true"]:focus-visible,
   }
 }
 
-/* --- Wider screens ---------------------------------------------------------------- */
+/* --- Between a phone and a wide screen: photos stop at the size they hold up at ------ */
 
-@media (min-width: 56rem) {
-  header.band {
-    padding-block: var(--space-5) var(--space-6);
+@media (min-width: 36rem) {
+  .bleed {
+    max-width: 34rem;
+    margin-inline: 0;
   }
 
-  .logo-mark {
-    height: 2rem;
+  .band-photo {
+    padding-top: var(--space-7);
   }
 
-  /* One headline across the page. Under it one line: the promise left, the rating right. */
-  .hero-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-6);
-    margin-top: var(--space-6);
+  .hero-photo {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  /* The pink band keeps its photo inside it, and a jump lands on the band's top. */
+  .band-photo#pesan {
+    padding-top: 0;
+    scroll-margin-top: 0;
+  }
+
+  .order-head .wrap {
+    padding-top: var(--space-6);
+  }
+
+  .shop:has(.shop-photo) {
     padding-top: var(--space-4);
     border-top: var(--line) solid var(--rule);
   }
 
-  .rating {
+  .shop-photo {
+    order: 0;
+  }
+}
+
+/* --- Wider screens ---------------------------------------------------------------- */
+
+@media (min-width: 56rem) {
+  /* Photos sit in the page's columns. */
+  .bleed {
+    max-width: none;
+  }
+
+  /* The headline left, the photo right, the hours under the headline. */
+  .top {
+    padding-block: var(--space-6);
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: var(--space-7);
+    align-items: end;
+  }
+
+  h1 {
+    margin-top: var(--space-7);
+    text-wrap: wrap;
+  }
+
+  .hero-photo {
+    grid-area: 1 / 2 / span 2;
     margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
+  }
+
+  .hero-open {
+    grid-area: 2 / 1;
+    margin-top: var(--space-4);
+    font-size: var(--text-lead);
   }
 
   /* Two places to read on the left, the one thing to do on the right. Each link has
@@ -1159,6 +1511,7 @@ select[aria-invalid="true"]:focus-visible,
   .jump a.jump-go {
     margin-left: auto;
     padding-inline: 0;
+    background: none;
   }
 
   /* The pill wears its own ring. */
@@ -1171,25 +1524,34 @@ select[aria-invalid="true"]:focus-visible,
     outline-offset: 2px;
   }
 
-  #menu {
-    padding-top: var(--space-6);
-  }
-
   .jump-go span {
     min-height: 2.25rem;
     padding-inline: var(--space-4);
     border-radius: var(--radius-control);
-    background: var(--fg);
-    color: var(--bg);
+    background: var(--order);
+    color: var(--order-ink);
+  }
+
+  #menu {
+    padding-top: var(--space-6);
   }
 
   /* Two posters side by side: the switch with the drinks it prices, and everything
      with a price of its own. */
   .menu {
     --bleed: var(--space-3);
+    --col-price: 6.25rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
+  }
+
+  .pick-photo {
+    width: 8rem;
+  }
+
+  .price {
+    font-size: 1rem;
   }
 
   .menu-col,
@@ -1227,13 +1589,62 @@ select[aria-invalid="true"]:focus-visible,
     align-items: center;
   }
 
-  .shop {
-    grid-template-columns: minmax(0, 1fr) auto;
+  /* The counter left, the three ways right. */
+  .ways {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
     align-items: center;
   }
 
+  /* A list of shops, one per row: name and street, the map, then the shop's front where
+     there is a photo of it. */
+  .shops {
+    gap: 0;
+  }
+
+  .shop,
+  .shop:has(.shop-photo) {
+    grid-template-columns: minmax(0, 1fr) 11rem 24rem;
+    column-gap: var(--space-6);
+    align-items: center;
+    padding-block: var(--space-5);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .shop:first-child {
+    border-top: var(--line-strong) solid var(--fg);
+  }
+
+  .shop h3 {
+    margin-bottom: var(--space-1);
+  }
+
   .shop-go {
-    grid-template-columns: repeat(2, 8.5rem);
+    grid-column: 2;
+  }
+
+  .shop-photo {
+    order: 0;
+    grid-column: 3;
+  }
+
+  .shops-when {
+    display: flex;
+    gap: var(--space-5);
+    align-items: baseline;
+  }
+
+  /* The pink band: the words left, the photo right, both inside the band. */
+  .order-head .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
+    align-items: center;
+    padding-block: var(--space-6);
+  }
+
+  .order-head .photo {
+    grid-area: 1 / 2;
   }
 
   /* Drinks left, the rest right. The form closes the same way: the small print and
@@ -1242,6 +1653,10 @@ select[aria-invalid="true"]:focus-visible,
   .send {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
+  }
+
+  .form {
+    margin-top: var(--space-7);
   }
 
   .send {
@@ -1264,23 +1679,15 @@ select[aria-invalid="true"]:focus-visible,
     margin-top: 0;
   }
 
-  /* The story and what reviewers say, both as tall as each other. */
+  /* The shop's inside left. Right, the story and under it what reviewers say. */
   .story {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--space-8);
+    align-items: start;
   }
 
-  .quotes {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .quotes figcaption {
-    margin-top: auto;
-  }
-
-  .quotes blockquote:last-of-type {
-    margin-bottom: var(--space-4);
+  .story-photo {
+    grid-row: 1 / span 2;
   }
 
   .bar {

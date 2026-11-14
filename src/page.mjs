@@ -1,7 +1,7 @@
 // The page. Runs at build time (build.mjs) and returns the whole HTML.
 // Every fact comes from data.mjs and goes through mark() so unconfirmed values
 // show their mark. Colours and fonts live in tokens.css, layout in site.css,
-// the form's behaviour in site.js.
+// the photos' list in photos.mjs, the form's behaviour in site.js.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -25,6 +25,7 @@ import {
 } from "./data.mjs";
 import { clock, rupiah } from "./order.mjs";
 import { esc, mark } from "./mark.mjs";
+import { PHOTO_DIR, drinkPhotos, photoSize, photos, shopPhotos } from "./photos.mjs";
 
 const root = join(import.meta.dirname, "..");
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -57,6 +58,27 @@ export function fontFiles() {
   );
   return [...new Set(files)];
 }
+
+// --- Photos and arrows --------------------------------------------------------
+
+const srcset = (name, ext) => photos[name].widths.map((w) => `${PHOTO_DIR}/${name}-${w}.${ext} ${w}w`).join(", ");
+
+/**
+ * A photo from photos.mjs: avif, then webp, then jpg, with its size set so the page
+ * doesn't jump while it loads. `sizes` is how wide it shows. Only the first photo on
+ * the page is `first` (loaded at once, ahead of the rest). `alt: ""` is for a photo
+ * inside a button that already names the thing.
+ */
+export function picture(name, { sizes = "100vw", first = false, cls = "", alt = photos[name].alt } = {}) {
+  const { width, height } = photoSize(name);
+  const load = first ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"';
+  return `<picture class="photo${cls ? ` ${cls}` : ""}"><source type="image/avif" srcset="${srcset(name, "avif")}" sizes="${esc(sizes)}"><source type="image/webp" srcset="${srcset(name, "webp")}" sizes="${esc(sizes)}"><img src="${PHOTO_DIR}/${name}-${photos[name].widths.at(-1)}.jpg" srcset="${srcset(name, "jpg")}" sizes="${esc(sizes)}" width="${width}" height="${height}" alt="${esc(alt)}" ${load}></picture>`;
+}
+
+/** Where a link goes, drawn to sit with the type: `down` is further down this page, `out` leaves it. */
+const ARROWS = { down: "M8 2.5v10M3.5 8.5 8 13l4.5-4.5", out: "M4 12l8-8M5.5 4H12v6.5" };
+const arrow = (kind) =>
+  `<svg class="arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${ARROWS[kind]}" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square"/></svg>`;
 
 // --- Small formatters ---------------------------------------------------------
 
@@ -157,6 +179,17 @@ function drinkRow(drink) {
   return `<li>${pick(drink, name + sizes.slice(lead).map(cell).join(" "), " pick-row cols")}</li>`;
 }
 
+/** The best seller's strip: its photo from above, its name, and the shop's own line about it. */
+function bestPick(drink) {
+  const photo = drinkPhotos[drink.id];
+  const line = ["Paling laris", photo?.line].filter(Boolean).join(". ");
+  return pick(
+    drink,
+    `${photo ? picture(photo.photo, { sizes: "7rem", cls: "pick-photo", alt: "" }) : ""}<span class="pick-words"><span class="pick-name">${esc(drink.name)}</span> <span class="pick-tag">${esc(line)}</span></span>`,
+    " pick-best",
+  );
+}
+
 /** A group under the switch's price: names only, the best seller on its own strip. */
 function flatSection({ name, list }) {
   const best = list.filter((d) => d.bestSeller);
@@ -165,7 +198,7 @@ function flatSection({ name, list }) {
           <section class="grp">
             <div class="grp-head"><h3>${esc(name)}</h3></div>
             <ul class="picks">
-              ${best.map((d) => `<li class="picks-wide">${pick(d, `<span class="pick-name">${esc(d.name)}</span> <span class="pick-tag">paling laris</span>`, " pick-best")}</li>`).join("")}
+              ${best.map((d) => `<li class="picks-wide">${bestPick(d)}</li>`).join("")}
               ${rest.map((d) => `<li>${pick(d, `<span class="pick-name">${esc(d.name)}</span>`)}</li>`).join("")}
             </ul>
           </section>`;
@@ -212,6 +245,10 @@ function menu() {
         </div>`;
 }
 
+/** How wide a photo shows: the whole phone screen, or one column of the page on a wide screen. */
+const WIDE = "(min-width: 56rem) 32rem, 100vw";
+const SHOP = "(min-width: 56rem) 24rem, 100vw";
+
 /** Toppings, snacks and bundles: things with a price that the form doesn't take. */
 function extras() {
   const rows = [];
@@ -229,6 +266,7 @@ function extras() {
   return `
           <section class="grp grp-extras">
             <div class="grp-head"><h3>Teman minum</h3></div>
+            ${snacks.length ? `<figure class="snack">${picture("corndog", { sizes: WIDE, cls: "bleed" })}<figcaption class="cap">Corndog dong, baru diangkat.</figcaption></figure>` : ""}
             <ul class="rows">
               ${rows.map(([name, what, price]) => `<li class="extra"><span class="row-name">${name}${what ? ` <small>${what}</small>` : ""}</span><span class="price">${price}</span></li>`).join("")}
             </ul>
@@ -238,8 +276,8 @@ function extras() {
 // --- Shops --------------------------------------------------------------------
 
 /**
- * A shop's short name: "Susu Malabar Cikeruh" -> "Cikeruh", "Susu Malabar (toko ketiga)"
- * -> "Toko ketiga". The brand name is already at the top of the page.
+ * A shop's short name, the way the shop itself says it: "Susu Malabar depan Griya" ->
+ * "Depan Griya". The brand name is already at the top of the page.
  */
 function shopLabel(name) {
   const short = name.replace(brand.name, "").trim().replace(/^\((.*)\)$/, "$1") || name;
@@ -254,16 +292,32 @@ function sharedHours() {
   return notes.length ? tbc(all[0], notes.join(". ")) : all[0];
 }
 
+/** True when no shop keeps other hours on some day, so the shared hours can be called "every day". */
+const everyDay = () => !shops.some((s) => Object.keys(val(s.hours).byDay || {}).length);
+const openLine = (shared) => mark(shared, (h) => `${everyDay() ? "Buka tiap hari" : "Buka"} ${span(h)}`);
+
 /**
  * False while a shop's place is not known (`located: false` in data.mjs). Such a shop
  * stays in the list, but has no map or GoFood button and can't be picked for pickup.
  */
 export const isLocated = (shop) => shop.located !== false;
 
-export function shopRow(shop, shared) {
+/**
+ * The GoFood link, when every shop that has one has the same one. Then it is one way
+ * to order (the "cara pesan" list), not a button on each shop.
+ */
+function sharedGofood() {
+  const links = shops.filter(isLocated).map((s) => s.gofoodUrl).filter(Boolean);
+  if (!links.length || !links.every((l) => val(l) === val(links[0]))) return null;
+  return links[0];
+}
+
+/** One shop. `gofoodHere: false` leaves its GoFood button out (the link is shown once, elsewhere). */
+export function shopRow(shop, shared, gofoodHere = true) {
   const h = val(shop.hours);
   // With shared hours a shop only says where it differs. Without, it says its own.
   const own = shared ? oddDays(h) : [`Tiap hari ${span(h.default)}`, oddDays(h)].filter(Boolean).join(", ");
+  const photo = shopPhotos[shop.id];
   return `
         <li class="shop">
           <div class="shop-what">
@@ -274,22 +328,52 @@ export function shopRow(shop, shared) {
             isLocated(shop)
               ? `
           <div class="shop-go">
-            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta")}</a>
-            ${shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood")}</a>` : ""}
+            <a class="btn" href="${esc(val(shop.mapUrl))}" target="_blank" rel="noopener">${mark(shop.mapUrl, () => "Buka peta")}${arrow("out")}</a>
+            ${gofoodHere && shop.gofoodUrl ? `<a class="btn" href="${esc(val(shop.gofoodUrl))}" target="_blank" rel="noopener">${mark(shop.gofoodUrl, () => "GoFood")}${arrow("out")}</a>` : ""}
           </div>`
               : ""
           }
+          ${photo ? picture(photo, { sizes: SHOP, cls: "bleed shop-photo" }) : ""}
         </li>`;
 }
 
 function shopList() {
   const shared = sharedHours();
+  const gofoodHere = !sharedGofood();
   return `
-        <h2>${story.shops} toko di Jatinangor</h2>
-        ${shared ? `<p class="lead">Buka ${mark(shared, span)}</p>` : ""}
-        <p class="busy">Paling ramai ${esc(visit.busiest)}</p>
-        <ul class="shops">${shops.map((s) => shopRow(s, shared)).join("")}
+        <h2 class="quiet">${story.shops} toko di Jatinangor</h2>
+        <p class="shops-when">${shared ? `<span>${openLine(shared)}</span> ` : ""}<span>Paling ramai ${esc(visit.busiest)}</span></p>
+        <ul class="shops">${shops.map((s) => shopRow(s, shared, gofoodHere)).join("")}
         </ul>`;
+}
+
+// --- Ways to order ---------------------------------------------------------------
+
+/** Walk in, GoFood, or pre-order on WhatsApp: each row goes to the real thing. */
+function ways() {
+  const gofood = sharedGofood();
+  const anyGofood = shops.some((s) => isLocated(s) && s.gofoodUrl);
+  const treat = bundles.some((b) => b.id === "traktir-drivermu");
+  const row = (attrs, name, what, kind) =>
+    `<li><a class="way" ${attrs}><span class="way-name">${name}</span><span class="way-what">${what}</span>${arrow(kind)}</a></li>`;
+  return `
+        <div class="ways">
+          ${picture("pickup", { sizes: WIDE, cls: "bleed" })}
+          <div>
+            <h2>Mau pesan lewat mana?</h2>
+            <ul class="way-list">
+              ${row('href="#toko"', "Mampir ke toko", `Bayar ${esc(payWith())}`, "down")}
+              ${
+                gofood
+                  ? row(`href="${esc(val(gofood))}" target="_blank" rel="noopener"`, mark(gofood, () => "GoFood"), treat ? "Sekalian traktir drivermu, yuk" : "Diantar ojol", "out")
+                  : anyGofood
+                    ? row('href="#toko"', "GoFood", "Pilih tokonya dulu", "down")
+                    : ""
+              }
+              ${row('href="#pesan"', "Pre-order WhatsApp", "Buat acara atau pesanan banyak", "down")}
+            </ul>
+          </div>
+        </div>`;
 }
 
 // --- Pre-order form -------------------------------------------------------------
@@ -401,6 +485,23 @@ function orderForm() {
       </template>`;
 }
 
+// --- A running promo ---------------------------------------------------------------
+// Nothing shows while brand.promo is null. The shape is described beside it in data.mjs.
+// Laid out like the shop's promo posters: black ground, the price huge, the usual
+// price crossed out.
+
+export function promoBand(promo) {
+  if (!promo) return "";
+  const facts = [promo.what, promo.when, promo.where].filter(Boolean);
+  return `
+    <aside class="band band-ink promo" id="promo" aria-label="Promo">
+      <div class="wrap promo-in">
+        <p class="promo-what"><strong>${mark(promo.title)}</strong>${facts.map((f) => ` <span>${mark(f)}</span>`).join("")}</p>
+        <p class="promo-price">${promo.was != null ? `<s><span class="sr">Biasanya </span>${mark(promo.was, rupiah)}</s> ` : ""}<strong>${mark(promo.price, rupiah)}</strong></p>
+      </div>
+    </aside>`;
+}
+
 // --- Loyalty stamp card ---------------------------------------------------------
 // Nothing shows while brand.stampCard is null. When its rules are decided, put
 // them in data.mjs as { title, lines: ["...", "..."] } and this section appears
@@ -422,6 +523,9 @@ function stampCard(card) {
 const DESCRIPTION =
   "Susu segar diblender bareng buah asli di Jatinangor. Cek menu dan harga, cari toko terdekat, atau pre-order lewat WhatsApp.";
 
+/** How wide the first photo shows: the phone's width, or its column on a wide screen. */
+const HERO_SIZES = "(min-width: 56rem) 30rem, 100vw";
+
 function head() {
   const site = val(brand.siteUrl).replace(/\/$/, "");
   // The page's own address (canonical, og:url) waits until the real one is known:
@@ -431,7 +535,9 @@ function head() {
     : `
   <link rel="canonical" href="${esc(site)}/">
   <meta property="og:url" content="${esc(site)}/">`;
-  // Only confirmed facts go here: no address, hours, prices, or site URL yet.
+  // Only confirmed facts go here: no prices, no site URL yet. The hours go in once
+  // every shop keeps the same ones on every day and none of them is marked.
+  const hours = sharedHours();
   const ld = {
     "@context": "https://schema.org",
     "@type": "FoodEstablishment",
@@ -439,6 +545,7 @@ function head() {
     slogan: brand.tagline,
     description: DESCRIPTION,
     address: { "@type": "PostalAddress", addressLocality: "Jatinangor", addressRegion: "Jawa Barat", addressCountry: "ID" },
+    ...(hours && !isTbc(hours) && everyDay() ? { openingHours: `Mo-Su ${hours[0]}-${hours[1]}` } : {}),
     paymentAccepted: visit.payment.join(", "),
     sameAs: [brand.instagram.url, brand.tiktok.url],
   };
@@ -447,10 +554,11 @@ function head() {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(brand.title)}</title>
   <meta name="description" content="${esc(DESCRIPTION)}">
-  <meta name="theme-color" content="${esc(token("banner"))}">${address}
+  <meta name="theme-color" content="${esc(token("poster"))}">${address}
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   ${fontFiles().map((file) => `<link rel="preload" href="${esc(file)}" as="font" type="font/woff2" crossorigin>`).join("\n  ")}
+  <link rel="preload" as="image" type="image/avif" imagesrcset="${srcset("hero", "avif")}" imagesizes="${HERO_SIZES}" fetchpriority="high">
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="site.css">
   <meta property="og:type" content="website">
@@ -472,18 +580,22 @@ function head() {
 
 // --- Page ---------------------------------------------------------------------
 
+/** The headline, shared with the link-preview card. */
+export const HEADLINE = "Susu segar, buah asli.";
+
 export default function page() {
+  const hours = sharedHours();
   const body = `
   <a class="skip" href="#menu">Langsung ke menu</a>
 
-  <header class="band band-banner">
+  <header class="band band-poster top">
     <div class="wrap hero">
-      <a class="logo" href="#top" aria-label="${esc(brand.title)}">${logo()}<span class="logo-tag">${esc(brand.tagline)}</span></a>
-      <h1>Susu segar, diblender bareng buah asli.</h1>
-      <div class="hero-foot">
-        <p class="lead">Porsi gede, harga mahasiswa.</p>
-        <p class="rating"><strong>${esc(brand.google.rating)}</strong> <span>di Google, dari ${esc(brand.google.reviews)} ulasan</span></p>
+      <div class="hero-words">
+        <a class="logo" href="#top" aria-label="${esc(brand.title)}"><span class="logo-disc">${logo()}</span><span class="logo-words"><span class="logo-name">${esc(brand.name)}</span> <span class="logo-tag">${esc(brand.tagline)}</span></span></a>
+        <h1>${esc(HEADLINE)}</h1>
       </div>
+      ${picture("hero", { sizes: HERO_SIZES, first: true, cls: "bleed hero-photo" })}
+      ${hours ? `<p class="hero-open">${openLine(hours)}</p>` : ""}
     </div>
   </header>
 
@@ -495,42 +607,56 @@ export default function page() {
     </div>
   </nav>
 
-  <main>
+  <main>${promoBand(brand.promo)}
     <section class="band band-poster" id="menu">
       <div class="wrap">
         <h2 class="sr">Menu</h2>${menu()}
       </div>
     </section>
 
-    <section class="band band-paper" id="toko">
+    <section class="band band-paper band-photo" id="cara">
+      <div class="wrap">${ways()}
+      </div>
+    </section>
+
+    <section class="band band-banner" id="toko">
       <div class="wrap">${shopList()}
       </div>
     </section>
 
-    <section class="band band-banner" id="pesan">
+    <section class="band band-paper band-photo" id="pesan" style="--head-photo: ${(photoSize("bungkus").height / photoSize("bungkus").width).toFixed(3)}">
+      <div class="order-head">
+        <div class="wrap">
+          ${picture("bungkus", { sizes: WIDE, cls: "bleed" })}
+          <div class="order-words">
+            <h2>Borong buat sepanitia</h2>
+            <p class="lead">Buat sendiri juga bisa.</p>
+          </div>
+        </div>
+      </div>
       <div class="wrap">
-        <h2><span class="keep">Buat sendiri</span> <span class="keep">atau sepanitia</span></h2>
         ${orderForm()}
       </div>
     </section>
     ${stampCard(brand.stampCard)}
-    <section class="band band-wall" id="cerita">
+    <section class="band band-poster band-photo" id="cerita">
       <div class="wrap story">
-        <div>
-          <h2>${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
-          <p>${esc(story.started)}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
+        <figure class="story-photo">${picture("kedai", { sizes: WIDE, cls: "bleed" })}<figcaption class="cap">Toko depan Griya</figcaption></figure>
+        <div class="story-words">
+          <h2 class="quiet">${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
+          <p>${esc(story.started)}${story.since ? `, tahun ${story.since}` : ""}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
         </div>
-        <figure class="quotes">
-          ${brand.reviewQuotes.map((q) => `<blockquote lang="en">“${esc(q)}”</blockquote>`).join("")}
-          <figcaption>Kata ulasan di Google</figcaption>
+        <figure class="reviews">
+          <figcaption class="rating"><strong>${esc(brand.google.rating)}</strong> <span>di Google, dari ${esc(brand.google.reviews)} ulasan</span></figcaption>
+          ${brand.reviewQuotes.map((q) => `<blockquote class="quiet" lang="en">“${esc(q)}”</blockquote>`).join("")}
         </figure>
       </div>
     </section>
   </main>
 
-  <footer class="band band-poster foot">
+  <footer class="band band-ink foot">
     <div class="wrap">
-      <p class="foot-name">${esc(brand.title)}</p>
+      <p class="foot-brand"><img class="foot-badge" src="brand/logo.svg" width="64" height="64" alt="" loading="lazy" decoding="async"><span class="foot-name">${esc(brand.title)}</span></p>
       <ul class="foot-links">
         <li><a href="https://wa.me/${esc(val(WHATSAPP_NUMBER))}" target="_blank" rel="noopener">${mark(WHATSAPP_NUMBER, () => "Chat WhatsApp")}</a></li>
         <li><a href="${esc(brand.instagram.url)}" target="_blank" rel="noopener">Instagram @${esc(brand.instagram.handle)}</a></li>

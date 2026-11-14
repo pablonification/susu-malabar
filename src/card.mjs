@@ -1,15 +1,17 @@
 // The link-preview picture (1200 x 630). `npm run shots` photographs this page
 // into public/og.png. It is never linked from the site. Confirmed facts only.
 //
-// Chat apps show it small, and some crop it to a square, so everything sits in
-// the middle 630 px and nothing is smaller than the tagline.
+// Chat apps show it small, and some crop it to a square, so the badge, the name and
+// the headline sit in the middle 630 px, under the middle of the photo (the cup in the
+// hand). The photo is shown at its real size, never bigger.
 
-import { brand, drinks } from "./data.mjs";
+import { brand } from "./data.mjs";
 import { esc } from "./mark.mjs";
-import { logo } from "./page.mjs";
+import { HEADLINE, logo } from "./page.mjs";
+import { PHOTO_DIR, photos } from "./photos.mjs";
 
 export default function card() {
-  const best = drinks.find((d) => d.bestSeller);
+  const photo = photos.hero;
   return `<!doctype html>
 <html lang="id">
 <head>
@@ -22,45 +24,53 @@ export default function card() {
     body {
       width: 1200px;
       height: 630px;
-      display: grid;
-      grid-template-rows: 1fr auto;
-      background: var(--banner);
-      color: var(--ink);
+      overflow: hidden;
+      background: var(--poster);
+      color: var(--poster-ink);
       font-family: var(--font-body);
-      text-align: center;
     }
-    main { display: grid; align-content: center; justify-items: center; }
-    .logo-mark { display: block; height: 50px; width: auto; }
-    .tag { margin-top: 10px; font-size: 30px; font-weight: 600; }
-    h1, .best strong {
+    /* The photo is 1080 px wide: it runs the card's width with the poster showing at its sides. */
+    .photo { display: block; width: ${photo.widths[0]}px; height: 350px; margin: 0 auto; object-fit: cover; object-position: 50% 45%; }
+    main { display: flex; align-items: center; justify-content: center; gap: 36px; height: 280px; }
+    .disc {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: var(--badge-pink);
+      color: var(--badge-green);
+    }
+    .logo-mark { display: block; width: 94%; height: 94%; }
+    h1 {
       font-family: var(--font-display);
-      font-stretch: var(--display-stretch);
       font-weight: var(--display-weight);
+      font-size: 82px;
+      line-height: 0.92;
+      letter-spacing: var(--display-tracking);
       word-spacing: var(--display-word-gap);
     }
-    h1 { margin-top: 30px; font-size: 144px; line-height: 0.9; letter-spacing: -0.01em; }
-    .best {
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 24px;
-      padding: 22px 0 30px;
-      background: var(--flavor-strawberry);
-      color: var(--flavor-strawberry-ink);
-      font-size: 40px;
-      font-weight: 600;
+    .tag {
+      margin-top: 14px;
+      font-family: var(--font-quiet);
+      font-style: var(--quiet-style);
+      font-weight: var(--quiet-weight);
+      font-size: 38px;
       line-height: 1;
+      color: var(--poster-muted);
     }
-    .best strong { font-size: 88px; }
   </style>
 </head>
 <body>
+  <img class="photo" src="${PHOTO_DIR}/hero-${photo.widths[0]}.jpg" alt="">
   <main>
-    ${logo()}
-    <p class="tag">${esc(brand.tagline)}</p>
-    <h1>Susu segar,<br>buah asli.</h1>
+    <span class="disc">${logo()}</span>
+    <div>
+      <h1>${esc(HEADLINE).replace(", ", ",<br>")}</h1>
+      <p class="tag">${esc(brand.name)}, ${esc(brand.tagline)}</p>
+    </div>
   </main>
-  ${best ? `<p class="best"><strong>${esc(best.name)}</strong> paling laris</p>` : ""}
 </body>
 </html>
 `;

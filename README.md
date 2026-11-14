@@ -1,7 +1,8 @@
 # Susu Malabar Jatinangor
 
-Website for Susu Malabar, the fresh-milk shop in Jatinangor: the menu, the three shops, and a
-pre-order form that sends the order to the shop on WhatsApp.
+Website for Susu Malabar, the fresh-milk shop in Jatinangor: the menu, three ways to order,
+the three shops, and a pre-order form that sends the order to the shop on WhatsApp. It is
+built around the shop's own photos, badge and poster colours.
 
 ## Run it
 
@@ -13,6 +14,7 @@ npm run dev      # http://localhost:4321, rebuilt on every page load
 npm run build    # static files into dist/
 npm test         # the order form's logic, and what must stay true of the built page
 npm run shots -- --form --out /tmp/shots   # also the form in use, at 390 px and 320 px
+npm run photos   # only after changing a photo or its crop (see "Change the look")
 ```
 
 ## Before launch
@@ -44,24 +46,52 @@ Two things wait for the real site address (`brand.siteUrl`):
 
 ## Change the look
 
-A new logo, colours and fonts are coming. Each has one place:
+The look comes from the shop's own posts: `docs/brand-notes.md` says what they look like and
+where each colour was sampled. Logo, colours, fonts and photos each have one place.
 
-- **Logo:** replace `public/brand/logo.svg`. It is put into the page as it is, so
-  `fill="currentColor"` makes it follow the text colour. Today it is a plain wordmark.
-  `public/favicon.svg` and `public/apple-touch-icon.png` (180 px) are the same wordmark's
-  initials. Replace both too.
-- **Colours:** `src/tokens.css`. The names say where a colour comes from in the shop (banner,
-  poster, wall). `--flavor-strawberry` is the best seller's strip on the menu. `--order` (the
-  same pink) marks what is in the visitor's order. The browser bar colour follows `--banner`.
-- **Fonts:** put the `.woff2` files in `public/fonts/`, add an `@font-face` at the top of
-  `src/tokens.css` with `src: url("fonts/<file>.woff2")` (no leading slash), and change
-  `--font-display` and `--font-body`. The page preloads whatever files are named there. If the
-  new heading font is not a narrow one, set `--display-stretch: 100%` and `--display-word-gap: 0`.
-  The font today is Archivo (open licence, `public/fonts/OFL-Archivo.txt`).
+- **Logo:** replace `public/brand/logo.svg`. Today it is the shop's real badge (the drawn shop
+  front), traced in one colour. It is put into the page as it is, so `fill="currentColor"`
+  makes it take the colour of where it sits: green on a pink disc at the top (the way the shop
+  wears it on TikTok), black on white in the footer (the way it is on the cups). The tab icon
+  (`dist/favicon.svg`) is drawn from the same file at build time by `src/favicon.mjs`.
+  `npm run shots` remakes `public/apple-touch-icon.png` and the link-preview image from it.
+- **Colours:** `src/tokens.css`. The names say where a colour comes from in the shop (poster,
+  banner, badge). `--flavor-strawberry` is the best seller's strip on the menu. `--order` (the
+  same pink) marks what is in the visitor's order and every way into the form. The browser bar
+  colour follows `--poster`.
+- **Fonts:** two voices, like the shop's feed. `--font-display` and `--font-body` are the loud
+  one (Plus Jakarta Sans: headlines, menu, form). `--font-quiet` is the serif italic of the
+  location posts (Cormorant Garamond Italic: shop names, the story, review quotes, captions).
+  To swap one, put the `.woff2` in `public/fonts/`, add an `@font-face` at the top of
+  `src/tokens.css` with `src: url("fonts/<file>.woff2")` (no leading slash), and change the
+  variable. The page preloads whatever files are named there. If the new face has a normal
+  space between words, set `--display-word-gap` and `--body-word-gap` to `0`. Both fonts have
+  an open licence (`public/fonts/OFL-*.txt`), cut down to the letters Indonesian needs.
+- **Photos:** the list is `src/photos.mjs`: which original each photo is cut from, the crop,
+  the sizes, and its words for screen readers. The originals are in `public/assets/real/`
+  (`SOURCES.md` there says where each came from). To change a crop or add a photo, edit the
+  list and run `npm run photos` (needs `ffmpeg`, `cwebp` and `avifenc`:
+  `brew install ffmpeg webp libavif`). It writes avif, webp and jpg into
+  `public/assets/photos/`, which is what the page loads. Rules the tests keep: only photos
+  the shop posted itself, never made bigger than the original, no retouching, no words over
+  a photo. A new original needs a line in `SOURCES.md`. Which photo goes with which shop or
+  drink is at the bottom of the same file (`shopPhotos`, `drinkPhotos`).
 
-Then run `npm run shots` to remake the pictures and the link-preview image (`public/og.png`,
-drawn by `src/card.mjs`), and `npm run check`. `test/site.test.mjs` fails on gradients, blur,
-shadows, purple, emoji, and any unconfirmed value shown without its mark.
+Then run `npm run shots` to remake the pictures in `docs/screenshots/`, the link-preview image
+(`public/og.png`, drawn by `src/card.mjs`) and the home-screen icon, and `npm run check`.
+`test/site.test.mjs` fails on gradients, blur, shadows, purple, emoji, a font named outside
+`tokens.css`, a photo without its size or files, and any unconfirmed value shown without its mark.
+
+## Ways to order, and a promo
+
+"Mau pesan lewat mana?" lists three ways: walk in, GoFood, pre-order on WhatsApp. While every
+shop has the same GoFood link it is one row there. Give the shops different links in
+`src/data.mjs` and each shop gets its own GoFood button instead.
+
+`brand.promo` in `src/data.mjs` is `null`, so nothing shows. When a promo runs, fill it in
+from the shop's own post (the shape is in the comment beside it): a black strip appears under
+the first screen with the price large and the usual price crossed out, like the shop's promo
+posters. Set it back to `null` when the promo ends.
 
 ## How the menu adds to the order
 

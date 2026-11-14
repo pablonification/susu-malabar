@@ -22,7 +22,7 @@ let tried = false; // true once the person pressed send, so every problem shows
 const touched = new Set(); // fields the person has already left
 let formOnScreen = false;
 let lastAdded = ""; // what the last tap on the menu put in, e.g. "Strawberry 14 oz"
-let menuSize = sizes[0].id; // the size picked in the menu's headers: what a tap on a drink adds
+let menuSize = sizes[0].id; // the size picked in the menu's switch: what a tap on a drink adds
 const sizeName = (id) => sizes.find((s) => s.id === id)?.label || "";
 
 // --- Lines ----------------------------------------------------------------------
@@ -74,7 +74,7 @@ function readOrder() {
   };
 }
 
-/** Sizes not sold are switched off, and the row says what its cups come to. */
+/** A size the drink isn't sold in is not offered at all, and the row says what its cups come to. */
 function fitSizes(li) {
   const select = $("select", li);
   const drinkId = select.value;
@@ -82,6 +82,7 @@ function fitSizes(li) {
   const sold = soldSizes(drinkId);
   for (const radio of $$(".seg input", li)) {
     radio.disabled = !sold.includes(radio.value);
+    radio.closest("label").hidden = radio.disabled;
     if (radio.disabled && radio.checked) radio.checked = false;
   }
   if (!$(".seg input:checked", li)) {
@@ -121,9 +122,10 @@ function addFromMenu(drinkId, size) {
   return li;
 }
 
-/** The menu's size switch: every group's header shows the same pick, and each drink the price it adds at. */
+/** The menu's size switch: the price columns light up under the picked size, and each drink shows the price it adds at. */
 function showMenuSize() {
   for (const radio of $$(".seg-poster input")) radio.checked = radio.value === menuSize;
+  for (const head of $$(".grp-head [data-size]")) head.classList.toggle("price-off", head.dataset.size !== menuSize);
   for (const button of $$(".pick")) {
     const adds = sizeToAdd(button.dataset.drink, menuSize);
     for (const price of $$(".price[data-size]", button)) price.classList.toggle("price-off", price.dataset.size !== adds);
@@ -198,15 +200,16 @@ function refresh() {
   for (const button of $$(".pick")) {
     const n = order.lines.filter((l) => l.drinkId === button.dataset.drink).reduce((sum, l) => sum + (Math.floor(l.qty) || 0), 0);
     $(".pick-n", button).textContent = n || "+";
-    $(".pick-sr", button).textContent = `, ukuran ${sizeName(sizeToAdd(button.dataset.drink, menuSize))}${n ? `, ${n} gelas di pesanan` : ""}`;
+    $(".pick-sr", button).textContent = `, ukuran ${sizeName(sizeToAdd(button.dataset.drink, menuSize))}${n ? `. Sudah ${n} gelas di pesanan` : ""}`;
     if (n) button.dataset.count = n;
     else delete button.dataset.count;
   }
 
-  // The bar answers a tap on the menu: what went in, the total so far, the way on.
+  // The bar answers a tap on the menu: the total so far and the way on. What went in
+  // shows on the menu itself (the drink's count), so here it is only read out.
   $("#bar-cups").textContent = `${cups} gelas`;
   $("#bar-price").innerHTML = estimate(order, price);
-  $("#bar-last").textContent = lastAdded ? `${lastAdded} masuk` : "";
+  $("#bar-last").textContent = lastAdded ? `, ${lastAdded} masuk` : "";
   bar.hidden = cups === 0 || formOnScreen;
   // Room for the bar at the end of the page, and when the browser scrolls to whatever
   // has focus, so nothing lands underneath it.
@@ -292,7 +295,7 @@ $("#copy").addEventListener("click", async (e) => {
   }
 });
 
-// A tap on a flavour in the menu adds one cup of it, in the size picked in the header.
+// A tap on a flavour in the menu adds one cup of it, in the size picked in the switch.
 document.addEventListener("click", (e) => {
   const pick = e.target.closest(".pick");
   if (!pick) return;
@@ -303,7 +306,7 @@ document.addEventListener("click", (e) => {
   refresh();
 });
 
-// A size picked in one group's header is the size for the whole menu.
+// The size picked in the menu's switch is the size for the whole menu.
 document.addEventListener("change", (e) => {
   if (!e.target.closest(".seg-poster")) return;
   menuSize = e.target.value;

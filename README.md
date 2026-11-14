@@ -65,9 +65,10 @@ shadows, purple, emoji, and any unconfirmed value shown without its mark.
 
 ## How the menu adds to the order
 
-Each group of drinks has a size switch in its header (14 oz or 22 oz, with the price when the
-whole group shares one). A tap on a drink adds one cup in the picked size, and the switch is
-the same in every group. The rules are in `src/pick.mjs` (which size, which row of the form)
+The menu has one size switch at its top (14 oz or 22 oz). It carries the price of the groups
+that share one (Buah and Rasa), so that price is on the page once. Drinks with their own
+prices show both, and the picked size's column is the bright one. A tap on a drink adds one
+cup in the picked size. The rules are in `src/pick.mjs` (which size, which row of the form)
 and tested in `test/site.test.mjs`.
 
 ## Later: the stamp card

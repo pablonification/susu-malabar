@@ -187,21 +187,25 @@ test("nothing is said twice in the shop list", () => {
   for (const shop of data.shops) assert.ok(!text(pickup.replace(MARK, " ")).includes(data.val(shop.area)));
 });
 
-test("a section's name is not shown twice, and size names once per poster", () => {
+test("a section's name is not shown twice, and the menu has one size switch", () => {
   const nav = [...body.matchAll(/<nav[\s\S]*?<\/nav>/g)].flatMap(([n]) => [...n.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map((m) => m[1]));
   for (const [, attrs, title] of body.matchAll(/<h2([^>]*)>([\s\S]*?)<\/h2>/g)) {
     if (nav.includes(text(title).trim())) assert.match(attrs, /class="sr"/, `"${text(title).trim()}" is both a jump link and a visible title`);
   }
-  // A size is named once per group of drinks, in the header's switch. No strip of size
-  // names floats over rows that have no size columns, and no row repeats them in view.
+  // One switch for the whole menu, each size in it once. Rows with their own prices get
+  // plain column names in their header (not a second switch), and no row repeats them in view.
   const menu = section("menu");
-  const switches = [...menu.matchAll(/<div class="seg seg-poster[^"]*" role="radiogroup" aria-label="Ukuran ([^"]+)">[\s\S]*?<\/div>/g)];
-  assert.ok(switches.length >= 2);
+  const switches = [...menu.matchAll(/<div class="seg seg-poster[^"]*" role="radiogroup" aria-label="Ukuran[^"]*">[\s\S]*?<\/div>/g)];
+  assert.equal(switches.length, 1, "the size switch is drawn once");
+  assert.equal((menu.match(/role="radiogroup"/g) || []).length, 1);
+  const heads = [...menu.matchAll(/<div class="grp-head cols">[\s\S]*?<\/div>/g)].map((m) => m[0]);
+  assert.ok(heads.length >= 1, "rows with their own prices have their columns named");
   for (const size of data.sizes) {
-    assert.equal(menu.split(`<span class="size">${size.label}</span>`).length - 1, switches.length, `${size.label} once per switch`);
-    for (const [sw] of switches) assert.equal(sw.split(`<span class="size">${size.label}</span>`).length - 1, 1);
+    assert.equal(switches[0][0].split(`<span class="size">${size.label}</span>`).length - 1, 1, `${size.label} once in the switch`);
+    for (const head of heads) assert.equal(head.split(`>${size.label}</span>`).length - 1, 1, `${size.label} once over its column`);
   }
-  assert.doesNotMatch(/<section class="grp grp-extras">[\s\S]*?<\/section>/.exec(menu)[0], /class="size"|seg-poster/, "size names over things with no sizes");
+  for (const head of heads) assert.doesNotMatch(head, /<input|<label|<button/, "column names are words, not a control");
+  assert.doesNotMatch(/<section class="grp grp-extras">[\s\S]*?<\/section>/.exec(menu)[0], /class="size|seg-poster/, "size names over things with no sizes");
   assert.doesNotMatch(css, /\.sizes\b/, "the sticky strip of size names is gone");
 });
 
@@ -242,9 +246,12 @@ test("a shop with no known place is listed, but has no buttons and can't be pick
   assert.equal(rows.length, data.shops.length, "every shop is still in the list");
   const row = rows[data.shops.indexOf(lost)];
   assert.doesNotMatch(row, /<a\b|Buka peta|GoFood/, "a map or GoFood button on a shop with no known place");
-  // Its name and its address line still show, both marked.
+  // Its name and its address line still show, both marked. One unknown, so one dot:
+  // the name wears it, and the line under it has its dot switched off.
   assert.equal((row.match(MARK) || []).length, 2);
-  assert.ok(row.includes(`title="${lost.address.note}">${lost.address.value}</span>`));
+  assert.ok(row.includes(`<p class="shop-soon"><span class="tbc" title="${lost.address.note}">${lost.address.value}</span></p>`));
+  assert.match(css, /\.shop-soon \{\s*--tbc-mark: 0;\s*\}/);
+  assert.equal((html.match(/class="shop-soon"/g) || []).length, 1, "only the shop with no known place hides a dot");
   // The form offers only the shops with a place, and the order's check agrees.
   const offered = [...body.matchAll(/<input type="radio" name="shop" value="([^"]+)">/g)].map((m) => m[1]);
   assert.deepEqual(offered, data.shops.filter(isLocated).map((s) => s.id));
@@ -265,15 +272,19 @@ test("the same shop gets its buttons and its place in the form once it is locate
   assert.ok(isLocated({ id: "x" }) && isLocated({ located: true }) && !isLocated({ located: false }));
 });
 
-test("the menu picks the size: a switch per group, and a tap adds that size", () => {
+test("the menu picks the size: one switch, and a tap adds that size", () => {
   const menu = section("menu");
-  // Each group of drinks has a switch of real radio buttons, the first size picked.
-  for (const [sw] of menu.matchAll(/<div class="seg seg-poster[\s\S]*?<\/div>/g)) {
-    assert.deepEqual([...sw.matchAll(/<input type="radio" name="size-[\w-]+" value="(\w+)"( checked)?>/g)].map((m) => m[1] + (m[2] || "")), [`${data.sizes[0].id} checked`, ...data.sizes.slice(1).map((s) => s.id)]);
+  // The switch is real radio buttons, the first size picked.
+  const sw = /<div class="seg seg-poster[\s\S]*?<\/div>/.exec(menu)[0];
+  assert.deepEqual([...sw.matchAll(/<input type="radio" name="menu-size" value="(\w+)"( checked)?>/g)].map((m) => m[1] + (m[2] || "")), [`${data.sizes[0].id} checked`, ...data.sizes.slice(1).map((s) => s.id)]);
+  // The price Buah and Rasa share sits inside the switch, so the price is what you pick,
+  // and it is on the menu once: the groups under it show names only.
+  assert.match(sw, /aria-label="Ukuran dan harga Buah dan Rasa"/);
+  assert.equal((sw.match(MARK) || []).length, data.sizes.length);
+  for (const name of ["Buah", "Rasa"]) {
+    const grp = new RegExp(`<section class="grp">\\s*<div class="grp-head"><h3>${name}</h3></div>[\\s\\S]*?</section>`).exec(menu)[0];
+    assert.doesNotMatch(grp, /class="price|Rp\d/, `${name} repeats the price that is in the switch`);
   }
-  // A shared price sits inside the switch, so the price is what you pick.
-  const shared = /aria-label="Ukuran Buah">([\s\S]*?)<\/div>/.exec(menu)[1];
-  assert.equal((shared.match(MARK) || []).length, data.sizes.length);
   // Every drink's button says which size it adds.
   for (const d of data.drinks) {
     const b = new RegExp(`<button type="button" class="pick[^>]*data-drink="${d.id}">[\\s\\S]*?</button>`).exec(menu)[0];
@@ -332,6 +343,39 @@ test("one headline, one section name, and the link preview shows no price", () =
   assert.ok(!text(section("pesan").match(/<h2[\s\S]*?<\/h2>/)[0]).includes("Pre-order"), "the form's title repeats its jump link");
   assert.doesNotMatch(text(card), /Rp\s?\d|\d\.\d{3}/, "a price on the card, where it can't carry its mark");
   assert.ok(card.includes('class="logo-mark"'), "the card wears the logo file");
+});
+
+// --- What the third review found, kept fixed --------------------------------------
+
+test("a mark never sits between a value and its punctuation, and hours don't contradict", () => {
+  assert.doesNotMatch(body, /class="tbc"[^>]*>[^<]*<\/span>\s*[.,:]/, "a dot before a full stop or comma");
+  // The hours every shop shares are not called "every day" above a shop that opens later on one.
+  const toko = text(section("toko"));
+  const odd = data.shops.some((s) => Object.keys(data.val(s.hours).byDay || {}).length);
+  if (odd) assert.doesNotMatch(toko, /tiap hari/i, '"every day" above a shop with a different day');
+  assert.match(toko, /Jumat baru buka/);
+});
+
+test("the form's parts share one corner, one picked colour, and the page's margins", () => {
+  // Every part of the amount is rounded like the fields around it.
+  assert.match(css, /\.qty button\[data-step="-1"\] \{[^}]*border-radius: var\(--radius-control\) 0 0 var\(--radius-control\)/);
+  assert.doesNotMatch(css, /\.qty button:first-child/, "the first child of .qty is its label, not a button");
+  // One "picked" colour, in the form and on the menu.
+  assert.equal((css.match(/input:checked \+ span \{/g) || []).length, 1);
+  assert.match(css, /\.seg input:checked \+ span \{[^}]*background: var\(--order\)/);
+  // A size a drink isn't sold in is hidden, not drawn as a second kind of "on".
+  assert.match(js, /closest\("label"\)\.hidden = radio\.disabled/);
+  assert.doesNotMatch(css, /input:disabled \+ span/);
+  // The form's columns never grow past the page.
+  assert.match(css, /\.form,\s*\.form-col \{[^}]*grid-template-columns: minmax\(0, 1fr\)/);
+});
+
+test("the order bar says the total and the way on, and reads out what went in", () => {
+  const bar = /<div class="bar"[\s\S]*?<\/div>/.exec(body)[0];
+  assert.match(bar, /<p role="status">[\s\S]*<span class="sr" id="bar-last"><\/span><\/p>/, "what went in is read out, not shown");
+  assert.match(bar, /<a class="btn btn-fill" href="#pesan">Lanjut<span class="sr"> pre-order<\/span><\/a>/);
+  // The menu's count is read apart from the size a tap adds.
+  assert.ok(js.includes(". Sudah ${n} gelas di pesanan"));
 });
 
 // --- Banned looks and words ----------------------------------------------------

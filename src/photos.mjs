@@ -10,8 +10,9 @@
 //   from    file name in public/assets/real/, without ".jpg"
 //   crop    [x, y, width, height] in the original's pixels
 //   widths  the sizes to make. The first is the largest, and never wider than the crop.
-//   soft    true for a still from a video. Those are soft, so they only ever show as a
-//           small square beside a line (5rem), never across the page.
+//   soft    true for a picture that is soft as posted: a still from a video, or a small
+//           dark photo. Those only ever show as a small square beside a line (5rem),
+//           never across the page.
 //   alt     what the picture shows, in Indonesian. Say what is there, nothing more.
 
 export const photos = {
@@ -32,30 +33,32 @@ export const photos = {
     levels: [2, 216, 1.12],
     alt: "Corndog kentang diangkat dari keranjang penggorengan",
   },
-  // The shop's front, as wide and as low as the photo of the shop in front of Ikopin: the
-  // banner with the name, the doorway, the zinc counter. Cut in from both sides, to lose a
-  // passer-by on the left and the neighbour's bright sign on the right, and cut off below
-  // the counter's top, so the picture is the shop and not the scooter parked in front.
+  // The shops' fronts: a small square each, in the shop's row. The one in front of Griya is
+  // soft and dark as posted (lettering smears when it is shown wide), so it is cut close to
+  // what tells the shop apart: the turquoise awning with its name, and the doorway under it.
   // Lifted more than the others: it was posted under a dark overlay, and its doorway is deep.
   "toko-griya": {
     from: "shop-front-griya",
-    crop: [78, 0, 748, 300],
-    widths: [748, 480],
+    crop: [100, 0, 220, 220],
+    widths: [220, 160],
+    soft: true,
     levels: [4, 132, 1.4],
-    alt: "Spanduk hijau toska bertulisan SUSU MALABAR di atas konter seng toko depan Griya",
+    alt: "Awning hijau toska bertulisan SUSU MALABAR di atas pintu toko depan Griya",
   },
+  // The one in front of Ikopin is sharp, and cut to the same square so the shops read as one
+  // list: the photo's whole height, from its left: the menu posters, the counter, the stools.
   "toko-ikopin": {
     from: "shop-front-ikopin",
-    crop: [0, 0, 1080, 433],
-    widths: [1080, 720],
+    crop: [255, 0, 433, 433],
+    widths: [320, 160],
     levels: [12, 112, 1.1],
-    alt: "Poster menu hijau tua, bangku plastik, dan pembeli di atas motor di toko depan Ikopin",
+    alt: "Poster menu hijau tua, konter seng, dan bangku plastik di toko depan Ikopin",
   },
 };
 
 /**
  * The photo of each shop's front, by the shop's id in data.mjs. It sits inside its shop's
- * row. A shop with no photo here is the same row without one.
+ * row as a small square. A shop with no photo here is the same row without one.
  */
 export const shopPhotos = {
   sayang: "toko-griya",

@@ -30,8 +30,9 @@ To see the page without the marks (for a demo), set `--tbc-mark: 0` in `src/toke
 The mark is one small amber dot after the value: the same dot on a price, an address, a heading
 or a button, and never a line under it (a line reads as a link). The reason is in the tooltip.
 The dot hangs after the value, level with the middle of it, and takes no room, so nothing
-moves when a value is confirmed.
-A menu row with two prices wears one dot for the pair, right after the last price (`markAll()`).
+moves when a value is confirmed. On a map button it hangs after the arrow.
+A menu row with a price per size wears one dot for the pair, right after the price it shows
+(`markAll()`), and none while it shows no price.
 It comes from one helper, `mark()` in `src/mark.mjs`, and the `.tbc` rules in `src/site.css`.
 The footer counts them. When the owner confirms a value, unwrap it in `src/data.mjs` and its
 mark goes away.
@@ -86,12 +87,14 @@ where each colour was sampled. Logo, colours, fonts and photos each have one pla
   `public/assets/photos/`, which is what the page loads. Rules the tests keep: only photos
   the shop posted itself, never made bigger than the original, no retouching, no words over
   a photo, no original used for two photos. A new original needs a line in `SOURCES.md`.
-  A still from a video is soft: give it `soft: true` in the list and show it only as a small
-  square beside a line (like the corndog on the menu), never across the page.
+  A still from a video is soft, and so is a small dark photo: give it `soft: true` in the
+  list and show it only as a small square beside a line (like the corndog on the menu), never
+  across the page.
   Which photo is which shop's front is at the bottom of the same file (`shopPhotos`): it shows
-  inside that shop's row, and a shop without one is the same row without a photo. The fronts
-  are cut to one shape (about 5 wide to 2 tall), so they are one size on every screen: cut a
-  new one to that shape too.
+  inside that shop's row as a small square, and a shop without one is the same row without a
+  photo. The fronts are cut to one shape (a square), so they are one size on every screen: cut
+  a new one to that shape too. The one of the shop in front of Griya is soft, so it is cut
+  close to the awning with the shop's name.
   No photo shows a person the page would have to name: nobody knows who is in the shop's
   stills, so the story and the form's title have no photo.
 
@@ -119,15 +122,20 @@ posters. Set it back to `null` when the promo ends.
 The menu has one size switch at its top (14 oz or 22 oz). It carries the price of the groups
 that share one (Buah and Rasa), so that price is on the page once. The switch stays under the
 jump links while those drinks are on screen and leaves with them, so their price and the
-picked size are always in sight. A drink with its own prices shows only the price that is
-not the switch's ("22 oz Rp15.000"), so no price is on the menu twice. The price that is the
-same is still read out by a screen reader. A price is bold and pink while its size is the
-picked one, and white otherwise. On a phone that price is one line under the drink's name.
+picked size are always in sight. A drink with its own prices shows its price in the picked
+size, and only where that is not the switch's: Original Malabar shows "22 oz Rp15.000" while
+22 oz is picked and nothing while 14 oz is, like the drinks under the switch. So a row's
+price is always the price of what its plus adds, and no price is on the menu twice. Both
+prices are always read out by a screen reader. That price is pink, like the picked half of
+the switch. A drink sold in one size keeps its one price as it is, and its note says the size
+("22 oz saja"). Every price is one weight. On a phone a row's price is one line under the
+drink's name.
 
 A tap on a drink adds one cup in the picked size. The count beside a drink ("− 2 +") is its
 cups in the picked size, and the minus takes one of those off: the count, the plus and the
 minus are always about the size the switch shows. Cups in the other size show again when
-that size is picked. The bar at the bottom always says the whole order: the sum, the cups
+that size is picked. Meanwhile the drink's row says them in a small line under its name
+("1 × 14 oz"), so they never look lost. The bar at the bottom always says the whole order: the sum, the cups
 and the sizes they are in ("4 gelas · 3 × 14 oz · 1 × 22 oz"; where the line wraps, the sizes
 go to the next line together and no dot is left at a line's end). The plus and the minus
 are drawn (`sign()` in `src/page.mjs`), so they sit level with the count. Bundles, snacks

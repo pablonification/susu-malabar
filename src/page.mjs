@@ -170,7 +170,11 @@ function sizeSwitch({ price, flat }) {
  * only while the drink is in the order in that size: the row then reads "− 2 +". The count
  * is the cups in the picked size, so the minus takes off what the plus puts in. site.js
  * fills in the count and keeps the size both buttons read out current.
+ * `OTHER` is where site.js says what the order holds of the drink in the size not picked
+ * ("1 × 14 oz"), so those cups never look lost. It is read out with the size, not here.
  */
+const OTHER = '<small class="pick-other" aria-hidden="true" hidden></small>';
+
 function pick(drink, inner, extraClass = "") {
   const add = `<button type="button" class="pick${extraClass}" data-drink="${esc(drink.id)}"><span class="sr">Tambah </span>${inner} <span class="pick-ctl" aria-hidden="true"><span class="pick-n"></span><span class="pick-add">${sign("plus")}</span></span><span class="sr pick-sr">, ukuran ${esc(firstSize(drink)?.label || "")}</span></button>`;
   const less = `<button type="button" class="less" data-less="${esc(drink.id)}" hidden>${sign("minus")}<span class="sr">Kurangi satu ${esc(drink.name)}</span></button>`;
@@ -178,25 +182,29 @@ function pick(drink, inner, extraClass = "") {
 }
 
 /**
- * A drink with its own prices. The switch above the menu already says what a cup costs in
- * each size, so a row shows only the price that is not the switch's: "22 oz Rp15.000". The
- * price that is the same is only read out, so it is on the screen once. `shared` is the
- * switch's price per size.
- * Each price names its size. A drink sold in one size says so in its note, so its price
- * doesn't say it again. The price in the picked size is the bold one, in the pink of the
- * picked half of the switch. The row's prices are one piece with one mark right after it.
+ * A drink with its own prices. A row shows what a cup costs in the picked size, and only
+ * when that is not the switch's price: with 22 oz picked "22 oz Rp15.000", with 14 oz
+ * picked nothing, like the drinks under the switch. So the price on a row is always the
+ * price of what its plus adds, and no price is on the menu twice. site.js shows the one
+ * for the picked size. Both prices are always read out. `shared` is the switch's price
+ * per size.
+ * A drink sold in one size says so in its note, and its one price stays as it is whatever
+ * the switch says. The row's prices are one piece with one mark right after it.
  */
 function drinkRow(drink, shared) {
-  const notes = [drink.kind, onlySizes(drink), drink.note].filter(Boolean).map(esc).join(" · ");
-  const sizeName = onlySizes(drink) ? "sr" : "price-size";
-  const cell = (s) => {
-    if (drink.prices[s.id] == null) return "";
-    const price = esc(rupiah(val(drink.prices[s.id])));
-    if (shared?.[s.id] != null && val(shared[s.id]) === val(drink.prices[s.id])) return `<span class="sr">${esc(s.label)} ${price} </span>`;
-    return `<span class="price${s === sizes[0] ? "" : " price-off"}" data-size="${esc(s.id)}"><span class="${sizeName}">${esc(s.label)} </span>${price}</span>`;
-  };
-  const name = `<span class="row-name"><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}</span> `;
-  const prices = markAll(Object.values(drink.prices), sizes.map(cell).filter(Boolean).join(" "), "prices");
+  const only = onlySizes(drink);
+  const notes = [drink.kind, only, drink.note].filter(Boolean).map(esc).join(" · ");
+  const sold = sizes.filter((s) => drink.prices[s.id] != null);
+  const price = (s) => esc(rupiah(val(drink.prices[s.id])));
+  const own = (s) => shared?.[s.id] == null || val(shared[s.id]) !== val(drink.prices[s.id]);
+  const cells = only
+    ? sold.map((s) => `<span class="price"><span class="sr">${esc(s.label)} </span>${price(s)}</span>`)
+    : [
+        `<span class="sr">${sold.map((s) => `${esc(s.label)} ${price(s)}`).join(", ")} </span>`,
+        ...sold.filter(own).map((s) => `<span class="price" data-size="${esc(s.id)}" aria-hidden="true"${s === sizes[0] ? "" : " hidden"}><span class="price-size">${esc(s.label)} </span>${price(s)}</span>`),
+      ];
+  const name = `<span class="row-name"><span class="pick-name">${esc(drink.name)}</span>${notes ? ` <small>${notes}</small>` : ""}${OTHER}</span> `;
+  const prices = markAll(Object.values(drink.prices), cells.join(""), "prices");
   return `<li>${pick(drink, name + prices, " pick-row cols")}</li>`;
 }
 
@@ -215,7 +223,7 @@ function bestPick(drink) {
   const line = DRINK_LINES[drink.id];
   return pick(
     drink,
-    `<span class="pick-name">${esc(drink.name)}</span><span class="sr">, </span><span class="pick-flag">Paling laris</span>${line ? `<span class="sr">. </span><span class="pick-tag">${esc(line)}</span>` : ""}`,
+    `<span class="pick-name">${esc(drink.name)}</span><span class="sr">, </span><span class="pick-flag">Paling laris</span>${OTHER}${line ? `<span class="sr">. </span><span class="pick-tag">${esc(line)}</span>` : ""}`,
     " pick-best",
   );
 }
@@ -229,12 +237,12 @@ function flatSection({ name, list }) {
             <div class="grp-head"><h3>${esc(name)}</h3></div>
             <ul class="picks">
               ${best.map((d) => `<li class="picks-wide">${bestPick(d)}</li>`).join("")}
-              ${rest.map((d) => `<li>${pick(d, `<span class="pick-name">${esc(d.name)}</span>`)}</li>`).join("")}
+              ${rest.map((d) => `<li>${pick(d, `<span class="row-name"><span class="pick-name">${esc(d.name)}</span>${OTHER}</span>`)}</li>`).join("")}
             </ul>
           </section>`;
 }
 
-/** A group whose drinks have their own prices: a row each, with the price that differs from the switch's. */
+/** A group whose drinks have their own prices: a row each, with its price where that is not the switch's. */
 function ownSection({ name, list }, shared) {
   return `
           <section class="grp">
@@ -266,8 +274,8 @@ function menu() {
         </div>`;
 }
 
-/** How wide a shop's front shows: the whole phone screen, or one column of the page on a wide screen. */
-const SHOP = "(min-width: 56rem) 30rem, (min-width: 36rem) 34rem, 100vw";
+/** How wide a shop's front shows: a small square, on every screen. */
+const SHOP = "5rem";
 
 /** A row with a price that the form doesn't take: a bundle, a topping, the snacks. `what` is the small line under the name. */
 const extraRow = ([name, what, price]) =>
@@ -358,9 +366,9 @@ function sharedGofood() {
 
 /**
  * One shop: its name, its street, its map, and its front when the shop has posted a photo
- * of it (photos.mjs). The photo is the last thing in the row and nothing waits for it, so
- * a shop without one is the same row, only shorter. `gofoodHere: false` leaves its GoFood
- * button out (the link is shown once, elsewhere).
+ * of it (photos.mjs), as a small square. The photo is the last thing in the row and nothing
+ * waits for it, so a shop without one is the same row. `gofoodHere: false` leaves its
+ * GoFood button out (the link is shown once, elsewhere).
  */
 export function shopRow(shop, shared, gofoodHere = true) {
   const h = val(shop.hours);
@@ -384,7 +392,7 @@ export function shopRow(shop, shared, gofoodHere = true) {
                 : ""
             }
           </div>${photo ? `
-          ${picture(photo, { sizes: SHOP, cls: "bleed shop-photo" })}` : ""}
+          ${picture(photo, { sizes: SHOP, cls: "shop-photo" })}` : ""}
         </li>`;
 }
 
@@ -450,6 +458,7 @@ function orderForm() {
           <fieldset class="field">
             <legend>Minuman</legend>
             <ol id="lines" class="lines"></ol>
+            <p class="err err-lines" id="err-lines" hidden></p>
             <button type="button" class="btn" id="add-line">Tambah minuman lain</button>
           </fieldset>
 
@@ -516,7 +525,6 @@ function orderForm() {
               ${sizes.map((s) => `<label><input type="radio" value="${esc(s.id)}"><span>${esc(s.label)}</span></label>`).join("")}
             </div>
           </div>
-          <p class="err err-drink" hidden></p>
           <div class="line-count">
             <div class="qty">
               <label class="sr">Jumlah gelas</label>

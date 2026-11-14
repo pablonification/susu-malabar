@@ -592,10 +592,9 @@ test("a menu row has one dot, and every unconfirmed price sits inside a mark", (
 });
 
 test("both sizes read as for sale, and every menu row is one height", () => {
-  // A price in the size not picked is lighter in weight only: grey would read as sold out.
-  const off = /\.price-off \{([^}]*)\}/.exec(css)[1];
-  assert.match(off, /font-weight: 400/);
-  assert.doesNotMatch(off, /color|opacity/);
+  // No price is greyed or thinned: every price is one weight (fifth review of the second design, below).
+  assert.doesNotMatch(css, /\.price-off/);
+  assert.match(css, /\.price \{[^}]*font-weight: 700;/);
   // Rows take their height from one number, and no column stretches its rows to fill.
   assert.match(css, /\.pick \{[^}]*min-height: var\(--row\)/);
   assert.match(css, /\.extra \{[^}]*min-height: var\(--row\)/);
@@ -607,7 +606,7 @@ test("the best seller is a block of type, and no photo shows twice", () => {
   const best = /<li class="picks-wide">[\s\S]*?<\/li>/.exec(menu)[0];
   // The same cup is on the first screen, so the block has no picture: a tag, the name, the shop's line.
   assert.doesNotMatch(best, /<picture|<img/);
-  assert.match(best, /<span class="pick-name">Strawberry<\/span><span class="sr">, <\/span><span class="pick-flag">Paling laris<\/span><span class="sr">\. <\/span><span class="pick-tag">Nungguin kamu, iya kamu\.<\/span>/);
+  assert.match(best, /<span class="pick-name">Strawberry<\/span><span class="sr">, <\/span><span class="pick-flag">Paling laris<\/span><small class="pick-other" aria-hidden="true" hidden><\/small><span class="sr">\. <\/span><span class="pick-tag">Nungguin kamu, iya kamu\.<\/span>/);
   // No original is cut twice, so no picture is on the page twice.
   const from = Object.values(photos).map((p) => p.from);
   assert.equal(new Set(from).size, from.length, "one original is on the page as two photos");
@@ -632,7 +631,7 @@ test("a shop's photo is inside its own row, and a shop without one is the same r
     if (photo) assert.ok(row.includes(`${PHOTO_DIR}/${photo}-`), `${data.shops[i].id} shows another shop's front`);
     // The words come first and are the same in every row. The photo is the row's last thing.
     assert.match(row, /^<li class="shop">\s*<div class="shop-words">\s*<div class="shop-what">\s*<h3>/);
-    if (photo) assert.match(row, /<\/div>\s*<picture class="photo bleed shop-photo">[\s\S]*<\/picture>\s*<\/li>$/);
+    if (photo) assert.match(row, /<\/div>\s*<picture class="photo shop-photo">[\s\S]*<\/picture>\s*<\/li>$/);
   });
   assert.ok(Object.keys(shopPhotos).length < data.shops.length, "every shop has a photo now: drop this line");
   // No caption repeats a shop's name under its photo, and no set of photos stands apart from the list.
@@ -749,7 +748,7 @@ test("a soft photo is only ever a small square: none runs across the page", asyn
   }
   assert.ok(soft >= 1);
   // No CSS shows a small square wider than 7rem.
-  for (const [, rem] of css.matchAll(/\.snack \.photo \{[^}]*width: ([\d.]+)rem/g)) assert.ok(Number(rem) <= 7);
+  for (const [, rem] of css.matchAll(/\.(?:snack \.photo|shop-photo) \{[^}]*width: ([\d.]+)rem/g)) assert.ok(Number(rem) <= 7);
   // The counter at night (a customer's back over the wall's lettering) is gone, and the
   // ways to order have no photo.
   assert.ok(!("pickup" in photos));
@@ -782,8 +781,8 @@ test("a row's prices: one line on a phone, the dot right after, and pink for the
   assert.match(css, /\.rows \.less \{[^}]*height: calc\(var\(--ctl-add\) \+ var\(--space-2\) \* 2\)/, "the minus beside a two-line row is not 44px around the plus's line");
   assert.match(tokens, /--tap: 2\.75rem;/);
   assert.match(css, /--ctl-add: 1\.75rem;/); // 1.75rem + 2 x 0.5rem = 44px
-  // A price in the picked size is bold and wears the order's pink, like the picked half of the switch.
-  assert.match(css, /\.pick \.price\[data-size\]:not\(\.price-off\) \{\s*color: var\(--order\);/);
+  // A price that goes by the picked size wears the order's pink, like the picked half of the switch.
+  assert.match(css, /\.pick \.price\[data-size\] \{\s*color: var\(--order\);/);
   // On the best seller's block the count sits in a 44px box on the line of the minus.
   assert.match(css, /\.pick-best \.pick-ctl \{[^}]*align-self: end;[^}]*min-height: var\(--tap\)/);
 });
@@ -842,38 +841,56 @@ test("no sentence explains the menu", () => {
   assert.doesNotMatch(css, /\.menu-note/);
 });
 
-test("a price is on the menu once: a row shows only the price that is not the switch's", () => {
+test("a price is on the menu once: a row shows its price in the picked size, where that is not the switch's", () => {
   const menu = section("menu");
   const switched = data.drinks.find((d) => d.group === "buah").prices; // the price in the switch
   const own = data.drinks.filter((d) => !["buah", "rasa"].includes(d.group));
   assert.ok(own.length > 0);
   const rowOf = (d) => new RegExp(`<button type="button" class="pick pick-row cols" data-drink="${d.id}">[\\s\\S]*?</button>`).exec(menu)[0];
+  const picked = data.sizes[0]; // the size the page starts on
   for (const d of own) {
     const row = rowOf(d);
-    for (const size of data.sizes.filter((s) => d.prices[s.id] != null)) {
-      const price = rupiah(data.val(d.prices[size.id]));
+    const sold = data.sizes.filter((s) => d.prices[s.id] != null);
+    const price = (s) => rupiah(data.val(d.prices[s.id]));
+    // Shown or only read out, a price is inside the row's one mark, with its size.
+    for (const size of sold) assert.ok(rowMarks(row)[0].inner.includes(price(size)), `${d.id} lost its ${size.label} price`);
+    if (sold.length < data.sizes.length) {
+      // Sold in one size: one price that the switch never touches (no data-size, so never pink
+      // and never hidden), and the row's note says which size (fifth review, below).
+      assert.ok(row.includes(`<span class="price"><span class="sr">${sold[0].label} </span>${price(sold[0])}</span>`), `${d.id}: its one price is not fixed`);
+      assert.doesNotMatch(row, /data-size=/);
+      assert.ok(row.includes(`${sold[0].label} saja`));
+      continue;
+    }
+    // Both prices are always read out, in one piece.
+    assert.ok(row.includes(`<span class="sr">${sold.map((s) => `${s.label} ${price(s)}`).join(", ")} </span>`), `${d.id}: both prices are not read out`);
+    for (const size of sold) {
       const same = data.val(d.prices[size.id]) === data.val(switched[size.id]);
-      // Shown or only read out, a price is inside the row's one mark, with its size.
-      assert.ok(rowMarks(row)[0].inner.includes(price), `${d.id} lost its ${size.label} price`);
-      assert.equal(shown(row).includes(price), !same, `${d.id} ${size.label}: ${same ? "the switch's price again" : "its own price is hidden"}`);
-      if (same) assert.ok(row.includes(`<span class="sr">${size.label} ${price} </span>`));
-      else assert.match(row, new RegExp(`data-size="${size.id}"><span class="(?:price-size|sr)">${size.label} </span>${price.replace(".", "\\.")}</span>`));
+      // A price that is the switch's is never shown again. One that is the drink's own shows
+      // only while its size is the picked one: the price on a row is the price of what its
+      // plus adds, so a row never reads as "sold in 22 oz only".
+      const cell = `<span class="price" data-size="${size.id}" aria-hidden="true"${size === picked ? "" : " hidden"}><span class="price-size">${size.label} </span>${price(size)}</span>`;
+      assert.equal(row.includes(cell), !same, `${d.id} ${size.label}: ${same ? "the switch's price again" : "its own price is not there, or shows while another size is picked"}`);
+      assert.equal(row.split(`data-size="${size.id}"`).length - 1, same ? 0 : 1);
     }
   }
-  for (const size of data.sizes) assert.equal(shown(menu).split(rupiah(data.val(switched[size.id]))).length - 1, 1, `the ${size.label} price shows more than once`);
-
-  // Pink is the picked size and nothing else: a drink sold in 22 oz alone is not pink while 14 oz is picked.
-  const oneSize = own.find((d) => d.prices[data.sizes[0].id] == null);
-  assert.match(rowOf(oneSize), new RegExp(`<span class="price price-off" data-size="${data.sizes[1].id}">`));
-  assert.ok(js.includes('price.classList.toggle("price-off", price.dataset.size !== menuSize)'));
+  // What shows before anyone touches the switch: nothing that is hidden or only read out.
+  const atStart = shown(menu.replace(/<span class="price" data-size="\d+" aria-hidden="true" hidden>[\s\S]*?<\/span>[^<]*<\/span>/g, " "));
+  for (const size of data.sizes) assert.equal(atStart.split(rupiah(data.val(switched[size.id]))).length - 1, 1, `the ${size.label} price shows more than once`);
+  for (const d of own.filter((x) => data.sizes.every((s) => x.prices[s.id] != null))) {
+    const other = data.sizes.find((s) => s !== picked);
+    if (data.val(d.prices[other.id]) !== data.val(switched[other.id])) assert.ok(!atStart.includes(rupiah(data.val(d.prices[other.id]))), `${d.name}: its ${other.label} price shows while ${picked.label} is picked`);
+  }
+  // The switch shows the row price of the picked size and hides the other.
+  assert.ok(js.includes("price.hidden = price.dataset.size !== menuSize"));
+  // A row with no price to show wears no dot: the mark has nothing to hang on.
+  assert.match(css, /\.prices:not\(:has\(\.price:not\(\[hidden\]\)\)\) \{\s*--tbc-mark: 0;/);
 
   // The dot hangs right after the number: the row's price is as wide as its words, at the
   // row's end, and no price sits in a column wider than itself.
   const wide = /@media \(min-width: 30rem\) \{[\s\S]*?\n\}\n/.exec(css)[0];
   assert.match(wide, /\.pick\.cols \.prices \{[^}]*justify-self: end;[^}]*margin-right: var\(--space-3\)/);
   assert.doesNotMatch(css, /--col-price|grid-auto-columns|\.prices > \*/);
-  // On a map button the dot has room before the arrow.
-  assert.match(css, /\.shop-go \.btn \{[^}]*gap: 1\.25rem/);
 });
 
 test("no photo of a person nobody can name, and the shop fronts are one shape", async () => {
@@ -886,13 +903,9 @@ test("no photo of a person nobody can name, and the shop fronts are one shape", 
   const cuts = Object.entries(photos).flatMap(([name, p]) => p.widths.flatMap((w) => ["avif", "jpg", "webp"].map((ext) => `${name}-${w}.${ext}`)));
   assert.deepEqual((await readdir(join(root, "public", PHOTO_DIR))).sort(), cuts.sort(), "a photo file no cut uses");
 
-  // The fronts are cut to one shape, so they are one size on every screen, and the row
-  // without a photo runs the page's width.
+  // The fronts are cut to one shape, so they are one size on every screen.
   const shapes = Object.values(shopPhotos).map((name) => photos[name].crop[2] / photos[name].crop[3]);
   for (const shape of shapes) assert.ok(Math.abs(shape / shapes[0] - 1) < 0.005, "shop fronts of different shapes");
-  const wide = css.slice(css.indexOf("@media (min-width: 56rem)"));
-  assert.match(wide, /\.shop-words \{\s*flex: 1;/);
-  assert.match(wide, /\.shop-photo \{[^}]*width: calc\(\(100% - var\(--space-8\)\) \/ 2\)/);
   assert.doesNotMatch(css, /\.shop-photo img|max-height: 12rem/);
 });
 
@@ -909,6 +922,70 @@ test("the order bar goes by where the form is now, not by the first of several r
   // the first one left the bar missing on the menu (found in a real browser, round 4).
   assert.match(js, /formOnScreen = entries\[entries\.length - 1\]\.isIntersecting;/);
   assert.doesNotMatch(js, /IntersectionObserver\(\(\[/);
+});
+
+// --- What the fifth review of the second design found, kept fixed --------------------
+
+test("a shop's front is a small square in its row, and the map buttons are one column", () => {
+  // Shown wide, the front of the shop in front of Griya smeared. Both fronts are small squares
+  // now, the size of the snack's, and the soft one is marked soft so it can never run wide again.
+  assert.equal(photos["toko-griya"].soft, true);
+  for (const name of Object.values(shopPhotos)) {
+    const [, , w, h] = photos[name].crop;
+    assert.equal(w, h, `${name} is not a square`);
+    assert.ok(photos[name].widths[0] <= 448, `${name} is cut large`);
+  }
+  const toko = section("toko");
+  const fronts = [...toko.matchAll(/<picture class="photo shop-photo">[\s\S]*?<\/picture>/g)].map((m) => m[0]);
+  assert.equal(fronts.length, Object.keys(shopPhotos).length);
+  for (const front of fronts) assert.equal(front.split('sizes="5rem"').length - 1, 3);
+  assert.doesNotMatch(toko, /bleed/);
+  assert.match(css, /\.shop-photo \{\s*width: 5rem;/);
+  assert.match(css, /\.snack \.photo \{[^}]*width: 5rem/);
+  // On a wide screen the button sits at the row's far end in every row, photo or not.
+  const wide = css.slice(css.indexOf("@media (min-width: 56rem)"));
+  assert.match(wide, /\.shop-go \{\s*grid-area: 1 \/ 2;\s*justify-self: end;/);
+  assert.match(wide, /\.shop-photo \{\s*grid-area: 1 \/ 2;\s*justify-self: start;/);
+  assert.doesNotMatch(css, /@media \(min-width: 30rem\) \{\s*\.shop-words/);
+});
+
+test("cups in the size not picked show as a small line on the drink's row", () => {
+  // With 22 oz picked, a drink with cups in 14 oz only showed a bare plus: the order looked lost.
+  const picks = [...body.matchAll(/<button type="button" class="pick[^>]*>[\s\S]*?<\/button>/g)].map((m) => m[0]);
+  for (const b of picks) assert.equal(b.split('<small class="pick-other" aria-hidden="true" hidden></small>').length - 1, 1);
+  // Words, not a control: no button of its own, and no colour of its own.
+  assert.doesNotMatch(/\.pick-other \{([^}]*)\}/.exec(css)[1], /color|background|border|cursor/);
+  assert.ok(js.includes("s.id === adds ? 0 : cupsOf(order.lines, drinkId, s.id)"), "the line does not count with the tested rule");
+  assert.ok(js.includes("`${s.cups} × ${s.label}`") && js.includes("`. Sudah ${s.cups} gelas ${s.label} di pesanan`"), "shown, and read out with the size");
+});
+
+test("small things line up: the form's title, the order bar, the missing-drink line, the rules, the dot on a button", () => {
+  const wide = css.slice(css.indexOf("@media (min-width: 56rem)"));
+  // "Buat sendiri juga bisa." is under the title on every screen.
+  assert.doesNotMatch(wide, /\.order-top \{[^}]*grid-template-columns/);
+  // The order bar's sum and button keep to the page's column.
+  assert.match(css, /\.bar \{[^}]*padding: var\(--space-3\) max\(var\(--gutter\), calc\(\(100% - var\(--page-width\)\) \/ 2 \+ var\(--gutter\)\)\);/);
+  assert.doesNotMatch(wide, /\.bar \{/);
+  // "Pilih minimal satu minuman" comes after all the drinks, not between a drink and its amount.
+  assert.match(body, /<ol id="lines" class="lines"><\/ol>\s*<p class="err err-lines" id="err-lines" hidden><\/p>\s*<button type="button" class="btn" id="add-line">/);
+  assert.doesNotMatch(/<template id="line">([\s\S]*?)<\/template>/.exec(body)[1], /err-drink/);
+  assert.ok(js.includes('select.setAttribute("aria-describedby", "err-lines")'));
+  // Two drinks per row: no rule under the last drink of either column.
+  assert.match(css, /\.picks li:nth-last-child\(2\) \{\s*border-bottom: 0;/);
+  // On a map button the dot hangs after the arrow, at the usual distance, and the label and
+  // the arrow keep every button's usual gap.
+  assert.match(css, /\.tbc::after \{[^}]*right: calc\(var\(--tbc-size\) \* -1\.3 - var\(--past-arrow, 0px\)\);/);
+  assert.match(css, /\.shop-go \.btn \{\s*--past-arrow: calc\(var\(--space-2\) \+ 1em\);\s*\}/);
+  assert.match(css, /\.arrow \{[^}]*width: 1em;/);
+});
+
+test("the link preview keeps the hand and the cup whole", () => {
+  // In the first photo (600 px tall) the fingertips over the lid are at about 137 px and the
+  // cup's base at about 462 px: the card's window shows both, with room to spare.
+  const height = Number(/\.photo \{[^}]*height: (\d+)px/.exec(card)[1]);
+  const at = Number(/object-position: 50% (\d+)%/.exec(card)[1]) / 100;
+  const top = (photos.hero.crop[3] - height) * at;
+  assert.ok(top <= 137 - 10 && top + height >= 462 + 10, `the card shows the photo from ${top} to ${top + height} px`);
 });
 
 // --- Banned looks and words ----------------------------------------------------

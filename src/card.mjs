@@ -8,8 +8,8 @@
 // Chat apps show the card small, and some crop it to a square, so those sit in
 // the middle 567 px, under the middle of the photo (the cup in the hand). The name is
 // the big bold line: it is what has to be readable at thumbnail size.
-// The photo's window is tall enough for the whole cup, from its lid to its base, with a
-// little of the ground under it: the green band never cuts the cup.
+// The photo's window is tall enough for the whole cup, from the fingertips over its lid to
+// its base, with a little room above and under it: no edge cuts the hand or the cup.
 
 import { brand } from "./data.mjs";
 import { esc } from "./mark.mjs";
@@ -38,7 +38,7 @@ export default function card() {
       color: var(--poster-ink);
       font-family: var(--font-body);
     }
-    .photo { display: block; width: ${photo.widths[0]}px; height: ${PHOTO_HEIGHT}px; object-fit: cover; object-position: 50% 54%; }
+    .photo { display: block; width: ${photo.widths[0]}px; height: ${PHOTO_HEIGHT}px; object-fit: cover; object-position: 50% 50%; }
     main { display: flex; align-items: center; justify-content: center; gap: 22px; height: ${OG_SIZE.height - PHOTO_HEIGHT}px; }
     .disc {
       flex: none;

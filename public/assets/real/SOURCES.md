@@ -37,15 +37,15 @@ crop and a resize, never bigger than its original. Nothing is retouched, sharpen
 generated. The only other change is a plain brightness lift ("levels" in that list) for
 pictures that are dark as posted. The two shop fronts were posted under a dark overlay
 with the address written on it, so they get the strongest lift. A still from a video is
-soft, so it is marked `soft` in that list and only ever shows as a small square (a test
-keeps that).
+soft, and so is the dark photo of the shop in front of Griya: each is marked `soft` in that
+list and only ever shows as a small square (a test keeps that).
 
 | Cut | From | Where on the page |
 | --- | --- | --- |
 | `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card (full width there, at its real 1080 px) |
 | `corndog` | `corndog-fryer`, a square close on the corndog | A small square under "Teman minum" on the menu |
-| `toko-griya` | `shop-front-griya`, a strip 748 px wide and 300 px tall from its top (78 px in from the left), lifted: the banner with the name, the doorway, the zinc counter. The same shape as `toko-ikopin`, so the two fronts are one size on the page. Left out on the left: a passer-by. Left out on the right: a flag and the neighbour's bright "AYAM KA..." sign. Left out below: the scooter parked in front (its mirror still shows) and the kerb. Its shadows get the strongest lift on the page (levels only), because the doorway is deep. | Inside the row of the shop "depan Griya" |
-| `toko-ikopin` | `shop-front-ikopin`, whole, lifted | Inside the row of the shop "depan Ikopin" |
+| `toko-griya` | `shop-front-griya`, a square of 220 px from its top (100 px in from the left), lifted: the turquoise awning with "SUSU MALABAR" on it, and the doorway under it. Cut this close because the photo is soft: shown wide, the lettering smeared (review round 5). Left out: the passer-by, the zinc counter, the scooter parked in front, the neighbour's sign. Its shadows get the strongest lift on the page (levels only), because the doorway is deep. | A small square inside the row of the shop "depan Griya" |
+| `toko-ikopin` | `shop-front-ikopin`, a square of its whole height (433 px) from 255 px in from the left, lifted: the menu posters, the zinc counter, the plastic stools, a customer at the counter. The same shape as `toko-griya`, so the two fronts are one size on the page. Left out on the right: the rider waiting on a motorbike (its tail still shows). | A small square inside the row of the shop "depan Ikopin" |
 
 Not on the page: `staff-griya` (was `bungkus`, a small square beside the pre-order title: a
 soft video still whose frame ends in the person's hair, so the head was always clipped.

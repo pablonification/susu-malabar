@@ -30,9 +30,9 @@ Commands: `npm run dev` (http://localhost:4321), `npm run build` (into `dist/`),
   bigger than the original, never retouched or generated, no words over a photo, one treatment
   for all (square corners, edge to edge on a phone, or a small square beside a line). A soft
   photo (a video still) is shown small, never full width. No photo twice, no photo grid of
-  equal squares, no slideshow. A shop's photo sits inside that shop's row, and the shop fronts
-  are cut to one shape. Never caption anyone as the owner or by name: nobody knows who is in
-  the shop's photos.
+  equal squares, no slideshow. A shop's photo sits inside that shop's row as a small square,
+  and the shop fronts are cut to one shape. Never caption anyone as the owner or by name:
+  nobody knows who is in the shop's photos.
 - One voice: the heavy sans, for everything the site says (titles, shop names, menu, form). The
   upright serif is only for words that are the shop's own or its customers': its line about the
   best seller, its line about the corndog, review quotes. No italics.

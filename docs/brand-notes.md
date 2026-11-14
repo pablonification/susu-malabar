@@ -114,7 +114,7 @@ The dark green field. Teal walls and stools. Chalk doodles on the menu.
   total above the send button (a small line, the sum huge under it: the form's one loud line).
 - The real badge in one colour (`logo-badge.svg`, PNG when it is small), black on white like
   the cups.
-- Real photos: strawberry milk first, each shop's front inside its own row, cut to one shape.
+- Real photos: strawberry milk first, each shop's front a small square inside its own row.
   No photo of a person at work: they are soft video stills, and nobody knows who is in them.
 - Their framing: from above, a hand and a cup, the real street around it.
 - Their words: "Kemurnian dari Jatinangor", "<flavour> Malabar" names, "kamu/kalian".

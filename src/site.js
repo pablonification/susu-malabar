@@ -35,8 +35,7 @@ function addLine({ drinkId = "", size = "", qty = 1 } = {}) {
 
   select.id = `drink-${n}`;
   $(".line-what label", li).htmlFor = select.id;
-  $(".err-drink", li).id = `err-drink-${n}`;
-  select.setAttribute("aria-describedby", `err-drink-${n}`);
+  select.setAttribute("aria-describedby", "err-lines");
 
   for (const radio of $$(".seg input", li)) radio.name = `line-size-${n}`;
 
@@ -142,10 +141,10 @@ function takeFromMenu(drinkId) {
   return size;
 }
 
-/** The menu's size switch: a drink's own price lights up while it is the price of the picked size. */
+/** The menu's size switch: a drink with its own prices shows the one for the picked size, the size its plus adds. */
 function showMenuSize() {
   for (const radio of $$(".seg-poster input")) radio.checked = radio.value === menuSize;
-  for (const price of $$(".pick .price[data-size]")) price.classList.toggle("price-off", price.dataset.size !== menuSize);
+  for (const price of $$(".pick .price[data-size]")) price.hidden = price.dataset.size !== menuSize;
 }
 
 // --- Showing the state ------------------------------------------------------------
@@ -178,13 +177,11 @@ function refresh() {
   const first = (kind, field) => result[kind].find((p) => p.field === field);
 
   // A problem with a row's amount shows right away, under the amount. "Pick a
-  // drink" shows under the first drink field, once the person has pressed send.
-  // The rest wait until the person has left that field or pressed send.
+  // drink" shows under the drinks, and frames the first drink field, once the person
+  // has pressed send. The rest wait until the person has left that field or pressed send.
   const nothingPicked = !order.lines.some((l) => l.drinkId);
-  rows.forEach((li, i) => {
-    show($(".err-qty", li), $(".qty input", li), first("errors", `line-${i}`));
-    show($(".err-drink", li), $("select", li), tried && nothingPicked && i === 0 ? first("errors", "lines") : null);
-  });
+  rows.forEach((li, i) => show($(".err-qty", li), $(".qty input", li), first("errors", `line-${i}`)));
+  show($("#err-lines"), rows[0] && $("select", rows[0]), tried && nothingPicked ? first("errors", "lines") : null);
   for (const field of ["shop", "date", "time", "name"]) {
     const waiting = !(tried || touched.has(field));
     show($(`#err-${field}`), fields[field], waiting ? null : first("errors", field));
@@ -215,13 +212,17 @@ function refresh() {
   // On the menu, a drink shows how many cups of it the order holds in the picked size (the
   // size a tap adds), with a minus before the count that takes one of those off. So the
   // count, the plus and the minus are about one size, the one the switch shows. Cups in
-  // the other size show again when that size is picked, and stay in the bar meanwhile.
+  // the other size show again when that size is picked. Meanwhile they stay in the bar, and
+  // the drink's row says them in a small line ("1 × 14 oz"), so they never look lost.
   for (const button of $$(".pick")) {
     const drinkId = button.dataset.drink;
     const adds = sizeToAdd(drinkId, menuSize);
     const n = cupsOf(order.lines, drinkId, adds);
+    const others = sizes.map((s) => ({ label: s.label, cups: s.id === adds ? 0 : cupsOf(order.lines, drinkId, s.id) })).filter((s) => s.cups);
     $(".pick-n", button).textContent = n || "";
-    $(".pick-sr", button).textContent = `, ukuran ${sizeName(adds)}${n ? `. Sudah ${n} gelas ukuran ini di pesanan` : ""}`;
+    $(".pick-other", button).textContent = others.map((s) => `${s.cups} × ${s.label}`).join(", ");
+    $(".pick-other", button).hidden = !others.length;
+    $(".pick-sr", button).textContent = `, ukuran ${sizeName(adds)}${n ? `. Sudah ${n} gelas ukuran ini di pesanan` : ""}${others.map((s) => `. Sudah ${s.cups} gelas ${s.label} di pesanan`).join("")}`;
     if (n) button.dataset.count = n;
     else delete button.dataset.count;
 

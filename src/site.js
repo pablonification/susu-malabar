@@ -364,7 +364,6 @@ new IntersectionObserver((entries) => {
 // --- Start ------------------------------------------------------------------------
 
 fields.date.min = todayWib();
-fields.date.value = todayWib();
 addLine();
 showMenuSize();
 refresh();

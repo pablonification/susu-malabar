@@ -27,21 +27,41 @@ Commands: `npm run dev` (http://localhost:4321), `npm run build` (into `dist/`),
 - Never put on the site: revenue, the "Malabar means source of money" story, Mount Malabar, cows, a
   dairy farm, the milk supplier or any farm name. The shop's feed has such posts: leave them out.
 - Photos: only ones the shop posted itself (listed in `public/assets/real/SOURCES.md`), never made
-  bigger than the original, never retouched or generated, no words over a photo, one treatment
-  for all (square corners, edge to edge on a phone, or a small square beside a line). A soft
-  photo (a video still) is shown small, never full width. No photo twice, no photo grid of
-  equal squares, no slideshow. A shop's photo sits inside that shop's row as a small square,
-  and the shop fronts are cut to one shape. Never caption anyone as the owner or by name:
-  nobody knows who is in the shop's photos.
+  bigger than the original, never retouched or generated, no words over a photo. One treatment
+  for all: a sticker (a white rim, a black keyline, set a little crooked). The first photo is a
+  square window on the cup, cut to a soft blob (at most 26rem wide: the photo is 600px tall).
+  A soft photo (a video still) is shown small (5rem), never full width. No photo twice, no
+  photo grid of equal squares, no slideshow. A shop's photo sits inside that shop's row as a
+  small taped snapshot, and the shop fronts are cut to one shape. Never caption anyone as the
+  owner or by name: nobody knows who is in the shop's photos.
 - One voice: the heavy sans, for everything the site says (titles, shop names, menu, form). The
   upright serif is only for words that are the shop's own or its customers': its line about the
   best seller, its line about the corndog, review quotes. No italics.
-- Colours: dark poster green (menu, story), the awning's turquoise with black type (shops), black
-  (pre-order, footer), off-white. Pink means strawberry and the visitor's order, nothing else: it
-  is an accent, never a whole band, and never a way in (those buttons are black).
+- Colours, all flat and all from the shop: the awning's turquoise with black type (first screen),
+  dark poster green (menu, story), the sticker's yellow `--sun` with black type (ticker, shops,
+  tape, the loud word of a title), black (pre-order title, footer), off-white (ways to order,
+  form). Pink means strawberry and the visitor's order, nothing else: it is an accent, never a
+  whole band, and never a way in (those buttons are black).
+- The look (third design): the shop's own stickers and promo posters, as if put together by
+  hand. Big heavy type, solid colour blocks, a black keyline with a thick foot (`--edge`,
+  `--drop`) where a soft shadow would be, tape labels with torn ends, a scalloped awning hem
+  and torn zigzag edges between bands, things set a degree or three crooked (`rotate`), some
+  overlap, layouts that lean left or right instead of sitting centred. New pieces follow
+  that, and take their colours and sizes from `src/tokens.css`.
+- Motion is wanted, short and springy (`--spring`), transform and opacity only, and every
+  piece has a job. Three things loop, all on the first screen: the menu ticker, the cup
+  bobbing, the burst turning behind it (a test names them: add no fourth). Arriving: site.js
+  (`ARRIVALS`) lets what is below the screen land as it scrolls in, each kind its own way (a
+  title is stamped, tape is stuck down, the ways to order drop in one by one, a shop slides in
+  from its side). Never one fade-up for everything. Answering: a button squashes, a drink's
+  plus bounces and its count hops, the picked size tips forward and its cup fills with milk,
+  the order's sum hops when it changes, the order bar springs up. With
+  `prefers-reduced-motion: reduce` none of it runs and everything is simply there.
 - No AI-made look: no gradient hero, glassy pills, purple or indigo, emoji as icons, stock marketing
   lines, three identical cards in a row, tiny all-caps labels with wide spacing, a badge on
   everything, decoration with no job, a grey box around everything, a sentence explaining the
-  screen, pale rounded icon tiles. The look comes from the shop itself.
+  screen, pale rounded icon tiles, centred-everything sections, blurred shadows (no shadow
+  property at all: a test keeps that), the same fade-up on every block. The look comes from
+  the shop itself.
 - Words follow the `ui-copywriting` skill (casual student Indonesian, short, no em dash).
 - Do not deploy anywhere. Push only to github.com/pablonification/susu-malabar.

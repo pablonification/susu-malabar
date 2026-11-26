@@ -38,7 +38,7 @@
   --text-body: 1.0625rem;
   --text-lead: 1.25rem;
   --text-h3: 1.75rem;
-  --text-h2: 2.5rem;
+  --text-h2: clamp(2.5rem, 11.5vw, 3.25rem); /* section titles shout, like a promo headline */
   --text-h1: clamp(3rem, 15.4vw, 4.5rem); /* wider screens set their own below */
   --h1-leading: 1.04; /* tight, but the g of "segar," clears the l of "asli" under it */
   --text-price: 1.375rem;
@@ -56,8 +56,9 @@
   --poster-muted: #b9d6ce;
   --poster-line: #356a62;
   /* The turquoise awning over the shop in front of Griya, as it shows in the shop's own
-     photo on this page (#07c6c0 there), a step deeper so black type reads on it and the
-     awning in the photo still stands out. */
+     photo on this page (#07c6c0 there), a step deeper so black type reads on it. It is the
+     ground of the first screen (the page opens under the awning), and small pieces after:
+     the stripes of the awning's hem, a tape label, the coin of the way that leads to a shop. */
   --banner: #14b3ab;
   --banner-ink: var(--ink);
   --banner-muted: #0a312e;
@@ -69,6 +70,12 @@
   --paper-muted: #4a5551;
   --field: #ffffff; /* inside of a form field */
   --field-hint: #6b7972; /* the example words in an empty field: lighter than what you type */
+  /* The yellow dot behind the banana on the shop's round "real milk.real fruit" sticker.
+     The page's happy colour: the burst behind the cup, the ticker, tape labels, the
+     highlighted word of a title, and the whole band of the shops. Always with black type. */
+  --sun: #fae045;
+  --sun-ink: var(--ink);
+  --sun-muted: #4a4410;
   --promo: #e25150; /* the red tag on the promo posters: only crosses out a promo's usual price */
   --danger: #a8261c;
   --notice: #7a4b00;
@@ -103,10 +110,15 @@
   --tbc-size: 0.5rem;
 
   /* --- Corners and lines. Photos have square corners, like tiles in the shop's feed. */
-  --radius-control: 6px;
+  --radius-control: 12px;
   --radius-photo: 0;
   --line: 1px;
   --line-strong: 3px;
+  /* Sticker edges: a black keyline, and a thicker foot that reads as a hard shadow (no
+     blurred shadows anywhere). A photo cut out as a sticker wears a white rim like a real one. */
+  --edge: 2.5px;
+  --drop: 5px;
+  --rim: 5px;
 
   /* --- Space */
   --space-1: 0.25rem;
@@ -123,14 +135,17 @@
   --tap-big: 3rem;
   --badge-size: 4rem; /* the logo's disc at the top of the page */
 
-  /* --- Motion */
+  /* --- Motion. Springy, short, and only transform and opacity. */
   --press: 80ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* overshoots a little, then settles */
+  --glide: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --pop: 520ms;
 }
 
 @media (min-width: 48rem) {
   :root {
     --gutter: 2rem;
-    --text-h2: 3.25rem;
+    --text-h2: 3.5rem;
     --text-quote: 2.5rem;
     --badge-size: 4.5rem;
   }
@@ -141,6 +156,7 @@
 @media (min-width: 56rem) {
   :root {
     --text-h1: clamp(4rem, 6.1vw, 5.5rem);
+    --text-h2: 4rem;
     --text-quote: 2.75rem;
   }
 }

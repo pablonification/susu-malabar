@@ -63,12 +63,14 @@ where each colour was sampled. Logo, colours, fonts and photos each have one pla
   `npm run shots` remakes `public/apple-touch-icon.png` and the link-preview image from it.
 - **Colours:** `src/tokens.css`. The names say where a colour comes from in the shop (poster,
   banner, badge). `--poster` is the dark green of the menu and the story. `--banner` is the
-  turquoise awning over the shop in front of Griya, for the shops' band, with black type on it.
+  turquoise awning over the shop in front of Griya, for the first screen, with black type on it.
+  `--sun` is the yellow of the shop's round sticker: the ticker, the shops' band, tape labels.
   `--petal` is the one pink on the page, the soft pink of the petals in the shop's
   feed. It means two things and nothing else: strawberry (`--flavor-strawberry`, the best
   seller's block) and what is in the visitor's order (`--order`: the cups added, the size and
   shop picked, the total). Buttons that move the order on are black. The browser bar colour
-  follows `--poster`.
+  follows `--banner`. Sticker edges (`--edge`, `--drop`, `--rim`) and motion (`--spring`,
+  `--pop`) are set there too. What moves and why is in `AGENTS.md`.
 - **Fonts:** `--font-display` and `--font-body` are the site's own voice (Plus Jakarta Sans:
   headlines, shop names, menu, form). `--font-quiet` is the upright serif of the shop's
   "Kami ada di mana?" post (Cormorant Garamond), used only for words that are the shop's own or

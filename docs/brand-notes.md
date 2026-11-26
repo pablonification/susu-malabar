@@ -102,6 +102,12 @@ The dark green field. Teal walls and stools. Chalk doodles on the menu.
 
 ## Use on the site:
 
+The third design (2026-11-26) leans on the loud family: the promo posters and the round
+sticker. Their yellow (`#FAE045`) is the page's happy colour, the awning's turquoise is the
+first screen, and the page is built from sticker and poster pieces (keylines, tape, a
+scalloped awning hem, things set crooked), with motion. `AGENTS.md` has the rules. Where a
+line below says otherwise (a turquoise band for the shops, square photos), the newer rule wins.
+
 - Dark poster green `#184A44` as the main dark. The awning's turquoise for the shops' band,
   a step deeper than in the photo (`#14B3AB`) so black type reads on it and the awning in the
   photo still stands out. One pink, as an accent: the petal coral `#F39E8D` of the

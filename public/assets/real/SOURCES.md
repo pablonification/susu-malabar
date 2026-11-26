@@ -42,7 +42,7 @@ list and only ever shows as a small square (a test keeps that).
 
 | Cut | From | Where on the page |
 | --- | --- | --- |
-| `hero` | `strawberry-milk-2`, whole | First screen, the link-preview card (full width there, at its real 1080 px) |
+| `hero` | `strawberry-milk-2`, whole | First screen: seen through a square window on the cup and the hand (a sticker with a white rim, at most 416 px wide on a photo 600 px tall, so never bigger than it is). The link-preview card (full width there, at its real 1080 px) |
 | `corndog` | `corndog-fryer`, a square close on the corndog | A small square under "Teman minum" on the menu |
 | `toko-griya` | `shop-front-griya`, a square of 220 px from its top (100 px in from the left), lifted: the turquoise awning with "SUSU MALABAR" on it, and the doorway under it. Cut this close because the photo is soft: shown wide, the lettering smeared (review round 5). Left out: the passer-by, the zinc counter, the scooter parked in front, the neighbour's sign. Its shadows get the strongest lift on the page (levels only), because the doorway is deep. | A small square inside the row of the shop "depan Griya" |
 | `toko-ikopin` | `shop-front-ikopin`, a square of its whole height (433 px) from 255 px in from the left, lifted: the menu posters, the zinc counter, the plastic stools, a customer at the counter. The same shape as `toko-griya`, so the two fronts are one size on the page. Left out on the right: the rider waiting on a motorbike (its tail still shows). | A small square inside the row of the shop "depan Ikopin" |

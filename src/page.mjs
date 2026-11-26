@@ -78,7 +78,7 @@ export function picture(name, { sizes = "100vw", first = false, cls = "", alt = 
 /** Where a link goes, drawn to sit with the type: `down` is further down this page, `out` leaves it. */
 const ARROWS = { down: "M8 2.5v10M3.5 8.5 8 13l4.5-4.5", out: "M4 12l8-8M5.5 4H12v6.5" };
 const arrow = (kind) =>
-  `<svg class="arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${ARROWS[kind]}" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square"/></svg>`;
+  `<svg class="arrow arrow-${kind}" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${ARROWS[kind]}" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square"/></svg>`;
 
 /**
  * The plus and the minus of the count buttons, drawn like the arrows: one stroke, in the
@@ -87,6 +87,56 @@ const arrow = (kind) =>
 const SIGNS = { plus: "M8 1.5v13M1.5 8h13", minus: "M1.5 8h13" };
 const sign = (kind) =>
   `<svg class="sign" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="${SIGNS[kind]}" fill="none" stroke="currentColor" stroke-width="3"/></svg>`;
+
+// --- Drawn pieces ---------------------------------------------------------------
+// The v3 look is the shop's own stickers and posters. Everything decorative is drawn here or
+// in site.css from flat colour: no pictures made up, nothing typed over a photo.
+
+/**
+ * A cut edge between two bands, tiled across the page at one size (never stretched):
+ *   scallop  the hem of the shop's striped awning, hanging under the first screen
+ *   teeth    a torn-receipt zigzag, pointing down from the band above
+ *   peaks    the same, pointing up into the band above
+ * site.css colours it and puts it on its band's edge.
+ */
+const EDGES = {
+  scallop: [48, 17, '<path class="edge-a" d="M0 0h24v3a12 12 0 0 1-24 0z"/><path class="edge-b" d="M24 0h24v3a12 12 0 0 1-24 0z"/><path class="edge-ink" d="M24 3a12 12 0 0 1-24 0M48 3a12 12 0 0 1-24 0"/>'],
+  teeth: [24, 12, '<path d="M0 0h24L12 12z"/>'],
+  peaks: [24, 12, '<path d="M0 12 12 0l12 12z"/>'],
+};
+let edges = 0; // only for unique ids
+function edge(kind) {
+  const [w, h, art] = EDGES[kind];
+  const id = `edge-${++edges}`;
+  return `<svg class="edge edge-${kind}" width="100%" height="${h}" aria-hidden="true" focusable="false"><defs><pattern id="${id}" width="${w}" height="${h}" patternUnits="userSpaceOnUse">${art}</pattern></defs><rect width="100%" height="${h}" fill="url(#${id})"/></svg>`;
+}
+
+/**
+ * The cup in the menu's size switch: a short one for the small size, a tall one for the big.
+ * It is empty until its size is picked, then milk rises in it (site.css), so the switch shows
+ * which size a tap adds without a word. Drawn in the colour of the type around it.
+ */
+function cup(index) {
+  const tall = index > 0;
+  const top = tall ? 0 : 6; // the short cup starts lower in the same box
+  const body = `M3 ${top + 6}h14l-2 ${21 - top}H5z`;
+  return `<svg class="cup" viewBox="0 -4 20 32" width="20" height="32" aria-hidden="true" focusable="false"><clipPath id="cup-${index}"><path d="${body}"/></clipPath><g clip-path="url(#cup-${index})"><rect class="cup-milk" x="0" y="${top + 9}" width="20" height="${19 - top}"/></g><path class="cup-line" d="${body}M1.5 ${top + 4.5}h17M11 ${top + 4.5}l3-8"/></svg>`;
+}
+
+/** A word of a title on a block of colour, like a strip of tape under it. */
+const hl = (words) => `<span class="hl">${esc(words)}</span>`;
+
+/**
+ * The ticker under the first screen: the menu's names running past, like the strip at the
+ * foot of the shop's promo posters. Names only, so no price is shown away from its mark.
+ * Decoration for the eye: the menu itself is right below, so a screen reader skips it.
+ */
+function ticker() {
+  const names = [...drinks.map((d) => d.name), ...snacks.map((s) => s.name)];
+  const run = `<ul class="ticker-run">${names.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
+  return `
+  <div class="ticker" aria-hidden="true">${run}${run}</div>`;
+}
 
 // --- Small formatters ---------------------------------------------------------
 
@@ -160,7 +210,7 @@ function sizeSwitch({ price, flat }) {
   const sold = sizes.filter((s) => drinks.some((d) => d.prices[s.id] != null));
   const what = flat.length ? ` dan harga ${flat.map((g) => g.name).join(" dan ")}` : "";
   const part = (s, i) =>
-    `<label><input type="radio" name="menu-size" value="${esc(s.id)}"${i === 0 ? " checked" : ""}><span><span class="size">${esc(s.label)}</span>${price?.[s.id] != null ? ` <span class="price price-all">${mark(price[s.id], rupiah)}</span>` : ""}</span></label>`;
+    `<label><input type="radio" name="menu-size" value="${esc(s.id)}"${i === 0 ? " checked" : ""}><span>${cup(sizes.indexOf(s))}<span class="seg-words"><span class="size">${esc(s.label)}</span>${price?.[s.id] != null ? ` <span class="price price-all">${mark(price[s.id], rupiah)}</span>` : ""}</span></span></label>`;
   return `<div class="seg seg-poster" role="radiogroup" aria-label="Ukuran${esc(what)}">${sold.map(part).join("")}</div>`;
 }
 
@@ -400,7 +450,7 @@ function shopList() {
   const shared = sharedHours();
   const gofoodHere = !sharedGofood();
   return `
-        <h2>${story.shops} toko di Jatinangor</h2>
+        <h2>${hl(`${story.shops} toko`)} di Jatinangor</h2>
         <p class="shops-when">${shared ? `<span>${openLine(shared)}</span> ` : ""}<span>Paling ramai ${esc(visit.busiest)}</span></p>
         <ul class="shops">${shops.map((s) => shopRow(s, shared, gofoodHere)).join("")}
         </ul>`;
@@ -419,7 +469,7 @@ function ways() {
     `<li><a class="way" ${attrs}><span class="way-name">${name}</span><span class="way-what">${what}</span>${arrow(kind)}</a></li>`;
   return `
         <div class="ways">
-          <h2>Mau pesan lewat mana?</h2>
+          <h2>Mau pesan lewat ${hl("mana?")}</h2>
           <ul class="way-list">
             ${row('href="#toko"', "Mampir ke toko", `Bayar ${esc(payWith())}`, "down")}
             ${
@@ -501,7 +551,7 @@ function orderForm() {
         <div class="send">
           <div class="send-go">
             <p class="total" id="total" hidden><span class="sr">Total </span><span id="total-cups"></span><span id="total-price"></span></p>
-            <a class="btn btn-send" id="send" href="#pesan">${mark(WHATSAPP_NUMBER, () => "Kirim lewat WhatsApp")}</a>
+            <a class="btn btn-send" id="send" href="#pesan">${mark(WHATSAPP_NUMBER, () => "Kirim lewat WhatsApp")}${arrow("out")}</a>
             <p class="sent" id="sent" role="status" hidden>Lanjut di WhatsApp, tinggal tekan kirim.</p>
           </div>
           <div class="send-more">
@@ -593,8 +643,12 @@ export const OG_IMAGE = "og.jpg";
  */
 export const OG_SIZE = { width: photos.hero.widths[0], height: Math.round((photos.hero.widths[0] * 630) / 1200) };
 
-/** How wide the first photo shows: the phone's width, or its column on a wide screen. */
-const HERO_SIZES = "(min-width: 56rem) 30rem, 100vw";
+/**
+ * How wide the first photo is drawn. It shows through a square window (a sticker, see
+ * .hero-photo in site.css), and the photo is 1.8 times as wide as it is tall, so the picture
+ * behind the window is 1.8 times the window's width.
+ */
+const HERO_SIZES = "(min-width: 56rem) 47rem, (min-width: 36rem) 34rem, 122vw";
 
 function head() {
   const site = val(brand.siteUrl).replace(/\/$/, "");
@@ -624,7 +678,7 @@ function head() {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(brand.title)}</title>
   <meta name="description" content="${esc(DESCRIPTION)}">
-  <meta name="theme-color" content="${esc(token("poster"))}">${address}
+  <meta name="theme-color" content="${esc(token("banner"))}">${address}
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   ${fontFiles().map((file) => `<link rel="preload" href="${esc(file)}" as="font" type="font/woff2" crossorigin>`).join("\n  ")}
@@ -653,21 +707,35 @@ function head() {
 /** The page's headline. */
 export const HEADLINE = "Susu segar, buah asli.";
 
+/**
+ * The headline on the page: two lines, the second on a block of the sticker's yellow, and
+ * every word a piece of its own so the words can land one after another (site.css).
+ */
+function headline() {
+  let n = 0;
+  const words = (line) => line.split(" ").map((w) => `<span class="w" style="--i:${n++}">${esc(w)}</span>`).join(" ");
+  const [first, ...rest] = HEADLINE.split(/(?<=,) /);
+  return `<span class="h1-line">${words(first)}</span>${rest.length ? ` <span class="h1-line h1-hl">${words(rest.join(" "))}</span>` : ""}`;
+}
+
 export default function page() {
   const hours = sharedHours();
+  edges = 0;
   const body = `
   <a class="skip" href="#menu">Langsung ke menu</a>
 
-  <header class="band band-poster top">
+  <header class="band band-banner top">
     <div class="wrap hero">
       <div class="hero-words">
         <a class="logo" href="#top" aria-label="${esc(brand.title)}"><span class="logo-disc">${logo()}</span><span class="logo-words"><span class="logo-name">${esc(brand.name)}</span> <span class="logo-tag">${esc(brand.tagline)}</span></span></a>
-        <h1>${esc(HEADLINE)}</h1>
+        <h1>${headline()}</h1>
       </div>
-      ${picture("hero", { sizes: HERO_SIZES, first: true, cls: "bleed hero-photo" })}
+      <div class="hero-pic"><span class="burst" aria-hidden="true"></span><div class="hero-float">${picture("hero", { sizes: HERO_SIZES, first: true, cls: "hero-photo" })}</div></div>
       ${hours ? `<p class="hero-open">${openLine(hours)}</p>` : ""}
     </div>
+    ${edge("scallop")}
   </header>
+${ticker()}
 
   <nav class="jump" aria-label="Bagian halaman">
     <div class="wrap">
@@ -682,6 +750,7 @@ export default function page() {
       <div class="wrap">
         <h2 class="sr">Menu</h2>${menu()}
       </div>
+      ${edge("teeth")}
     </section>
 
     <section class="band band-paper" id="cara">
@@ -689,7 +758,8 @@ export default function page() {
       </div>
     </section>
 
-    <section class="band band-banner" id="toko">
+    <section class="band band-sun" id="toko">
+      ${edge("peaks")}
       <div class="wrap">${shopList()}
       </div>
     </section>
@@ -697,9 +767,10 @@ export default function page() {
     <section class="band band-paper" id="pesan">
       <div class="order-head">
         <div class="wrap order-top">
-          <h2>Borong buat sepanitia</h2>
+          <h2>Borong buat ${hl("sepanitia")}</h2>
           <p class="lead">Buat sendiri juga bisa.</p>
         </div>
+        ${edge("teeth")}
       </div>
       <div class="wrap">
         ${orderForm()}
@@ -709,7 +780,7 @@ export default function page() {
     <section class="band band-poster" id="cerita">
       <div class="wrap story">
         <div class="story-words">
-          <h2>${story.ownerAtCounter ? "Pemiliknya masih ikut jaga toko" : "Cerita"}</h2>
+          <h2>${story.ownerAtCounter ? `Pemiliknya masih ikut ${hl("jaga toko")}` : "Cerita"}</h2>
           <p>${esc(story.started)}${story.since ? `, tahun ${story.since}` : ""}. Toko pertama buka tahun ${story.firstShopYear}, dan sekarang ${story.staff} orang kerja di sini.${story.growsSlowly ? " Tumbuhnya pelan-pelan, memang sengaja." : ""}</p>
         </div>
         <figure class="reviews">
@@ -721,6 +792,7 @@ export default function page() {
   </main>
 
   <footer class="band band-ink foot">
+    ${edge("peaks")}
     <div class="wrap">
       <p class="foot-brand"><img class="foot-badge" src="brand/logo.svg" width="64" height="64" alt="" loading="lazy" decoding="async"><span class="foot-name">${esc(brand.title)}</span></p>
       <ul class="foot-links">

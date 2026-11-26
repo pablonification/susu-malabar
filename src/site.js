@@ -25,6 +25,73 @@ let lastTap = ""; // what the last tap on the menu did, e.g. "Strawberry 14 oz m
 let menuSize = sizes[0].id; // the size picked in the menu's switch: what a tap on a drink adds
 const sizeName = (id) => sizes.find((s) => s.id === id)?.label || "";
 
+// --- Motion -----------------------------------------------------------------------
+// Small moves that answer a tap or greet a section as it scrolls in. The moves themselves
+// are in site.css. Someone who asked their phone for less motion gets none of them: every
+// part is then simply there.
+
+const calm = matchMedia("(prefers-reduced-motion: reduce)");
+
+/** Plays a short move on one element (a class in site.css), again from the start if it is still playing. */
+function play(el, move = "bump") {
+  if (!el || calm.matches) return;
+  el.classList.remove(move);
+  void el.offsetWidth; // the browser forgets the last run
+  el.classList.add(move);
+}
+
+/**
+ * What lands as it scrolls into view, and how: each kind of thing has its own move. A title
+ * is stamped on, a tape label is stuck down, the ways to order drop in one after another, a
+ * shop slides in from its side.
+ */
+const ARRIVALS = [
+  ["main h2:not(.sr)", "stamp"],
+  [".grp-head", "tape"],
+  [".picks-wide", "boing"],
+  [".snack", "rise"],
+  [".way-list li", "drop"],
+  [".shops-when", "rise"],
+  [".shop", "side"],
+  [".story-words p", "rise"],
+  [".rating", "rise"],
+  [".reviews blockquote", "stamp"],
+  [".foot-brand", "rise"],
+];
+
+function greet() {
+  if (calm.matches || !("IntersectionObserver" in window)) return;
+  const seen = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        seen.unobserve(entry.target);
+        entry.target.classList.add("in");
+      }
+    },
+    { rootMargin: "0px 0px -10% 0px" },
+  );
+  for (const [what, move] of ARRIVALS) {
+    for (const el of $$(what)) {
+      // Only what is still below the screen waits: nothing in view ever blinks out.
+      if (el.getBoundingClientRect().top < innerHeight) continue;
+      const nth = [...el.parentElement.children].filter((c) => c.matches(what)).indexOf(el);
+      el.dataset.pop = move;
+      el.style.setProperty("--i", nth);
+      el.classList.add("wait");
+      // Once landed it is an ordinary part of the page again, free to answer a hover or a tap.
+      el.addEventListener("animationend", (e) => {
+        if (e.target !== el) return;
+        el.classList.remove("wait", "in");
+        delete el.dataset.pop;
+      });
+      seen.observe(el);
+    }
+  }
+}
+
+let lastSum = ""; // the total as last shown, so the sum only hops when it changes
+
 // --- Lines ----------------------------------------------------------------------
 
 function addLine({ drinkId = "", size = "", qty = 1 } = {}) {
@@ -194,6 +261,10 @@ function refresh() {
   $("#total").hidden = cups === 0;
   $("#total-cups").textContent = `${cups} gelas`;
   $("#total-price").innerHTML = estimate(order, price);
+  const sum = `${cups}/${price}`;
+  const sumChanged = sum !== lastSum;
+  lastSum = sum;
+  if (sumChanged && cups) play($("#total-price"));
 
   $("#preview").hidden = !result.ok;
   if (result.ok) {
@@ -219,7 +290,9 @@ function refresh() {
     const adds = sizeToAdd(drinkId, menuSize);
     const n = cupsOf(order.lines, drinkId, adds);
     const others = sizes.map((s) => ({ label: s.label, cups: s.id === adds ? 0 : cupsOf(order.lines, drinkId, s.id) })).filter((s) => s.cups);
-    $(".pick-n", button).textContent = n || "";
+    const count = $(".pick-n", button);
+    if (n && count.textContent !== String(n)) play(count); // the count hops when it changes
+    count.textContent = n || "";
     $(".pick-other", button).textContent = others.map((s) => `${s.cups} × ${s.label}`).join(", ");
     $(".pick-other", button).hidden = !others.length;
     $(".pick-sr", button).textContent = `, ukuran ${sizeName(adds)}${n ? `. Sudah ${n} gelas ukuran ini di pesanan` : ""}${others.map((s) => `. Sudah ${s.cups} gelas ${s.label} di pesanan`).join("")}`;
@@ -238,6 +311,7 @@ function refresh() {
   // (the drink's count), so here it is only read out.
   const bySize = cupsBySize(order.lines);
   $("#bar-price").innerHTML = estimate(order, price);
+  if (sumChanged && cups) play($("#bar-price"));
   // Two parts that never break inside: the cups ("4 gelas") and the sizes they are in
   // ("3 × 14 oz", "1 × 22 oz"), so where the bar is narrow the sizes share a line. The dots
   // between pieces are drawn by site.css, which hides the one where the line wraps, so no
@@ -342,6 +416,7 @@ document.addEventListener("click", (e) => {
   const drinkId = pick ? pick.dataset.drink : less.dataset.less;
   const size = pick ? sizeToAdd(drinkId, menuSize) : takeFromMenu(drinkId);
   if (pick) addFromMenu(drinkId, size);
+  play(pick ? $(".pick-add", pick) : less, "boing");
   lastTap = `${findDrink(drinkId).name} ${sizeName(size)} ${pick ? "masuk" : "dikurangi satu"}`.replace(/ +/g, " ");
   refresh();
 });
@@ -367,3 +442,4 @@ fields.date.min = todayWib();
 addLine();
 showMenuSize();
 refresh();
+greet();

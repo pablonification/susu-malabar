@@ -818,9 +818,20 @@ test("narrow phones: no line of the bar ends in a dot, and the shops stack", () 
 });
 
 test("the first photo lines up with the words beside it, and the link preview shows the whole cup", () => {
+  // In the third design the first photo is a sticker beside the words: a square window on the
+  // cup, bobbing as one piece with its black foot. On a wide screen it sits in the right column
+  // beside both rows of words. The window is never wider than the photo is tall, so the photo
+  // is never drawn bigger than it is, and the words beside it are never on it.
   const wide = css.slice(css.indexOf("@media (min-width: 56rem)"));
-  assert.match(wide, /\.hero-photo \{[^}]*align-self: stretch;/);
-  assert.match(wide, /\.hero-open \{[^}]*min-height: 0;/);
+  assert.match(wide, /\.hero-pic \{[^}]*grid-area: 1 \/ 2 \/ span 2;/);
+  assert.match(css, /\.hero-photo \{[^}]*aspect-ratio: 1;[^}]*overflow: hidden;/);
+  const windows = [...css.matchAll(/\.hero-pic \{[^}]*?[\s;]width: ([^;]+);/g)].map((m) => m[1]);
+  assert.equal(windows.length, 3, "the window's width is set for a phone, a tablet and a wide screen");
+  for (const width of windows) {
+    const rems = [...width.matchAll(/([\d.]+)rem/g)].map((m) => Number(m[1]));
+    assert.ok(rems.length > 0 && Math.max(...rems) * 16 <= photos.hero.crop[3], `the first photo's window (${width}) can be wider than the photo is tall`);
+  }
+  assert.match(/<header[\s\S]*?<\/header>/.exec(body)[0], /<div class="hero-pic"><span class="burst" aria-hidden="true"><\/span><div class="hero-float"><picture class="photo hero-photo">[\s\S]*?<\/picture><\/div><\/div>/, "something besides the photo is in the photo's sticker");
   // The cup in the first photo is about 307 px tall at the card's size: the photo's window is taller.
   const window = Number(/\.photo \{[^}]*height: (\d+)px/.exec(card)[1]);
   assert.ok(window >= 340 && OG_SIZE.height - window >= 200, `the card's photo is ${window}px tall`);
@@ -1016,7 +1027,12 @@ test("no AI-made look in the styles or the page", async () => {
     assert.doesNotMatch(source, /text-transform:\s*uppercase/, `uppercase in ${name}`);
     assert.doesNotMatch(source, /\b(purple|indigo|violet|fuchsia|magenta|lavender)\b/i, `purple in ${name}`);
     assert.doesNotMatch(source, /box-shadow|text-shadow|drop-shadow/, `shadow in ${name}`);
-    assert.doesNotMatch(source, /transition:\s*all|animation:[^;]*infinite/, `lazy motion in ${name}`);
+    assert.doesNotMatch(source, /transition:\s*all/, `lazy motion in ${name}`);
+    // The third design asks for motion, so three things may loop, and only these three, all on
+    // the first screen: the ticker of menu names, the cup bobbing, the burst turning behind it.
+    // Everything else moves once (when it arrives, or when it is touched) or not at all.
+    for (const [, loop] of source.matchAll(/animation:\s*([^;]*infinite[^;]*);/g)) assert.match(loop, /^(ticker|bob|spin) /, `a loop that is not one of the three in ${name}: ${loop}`);
+    assert.doesNotMatch(source, /animation-iteration-count/, `a loop set outside the animation line in ${name}`);
     assert.doesNotMatch(source, /rgba?\(|hsla?\(|oklch\(/, `a colour outside tokens.css in ${name}`);
     // A size from tokens.css (var(...)) is checked there, where its number is.
     for (const [, size] of source.matchAll(/(?:letter-spacing|--[\w-]*tracking):\s*([^;}]+)/g)) {
@@ -1029,8 +1045,15 @@ test("no AI-made look in the styles or the page", async () => {
   }
   // Colours live in tokens.css only.
   assert.doesNotMatch(css, /#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})(?=\s*[;,)}!])/i, "a raw colour in site.css");
-  // Motion never makes people wait, and steps aside when asked.
-  assert.match(css, /prefers-reduced-motion: reduce/);
+  // Motion never makes people wait, and steps aside when asked: with "reduce" nothing loops,
+  // springs or slides, nothing waits below the screen to arrive, and the script plays no move.
+  const calm = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.match(calm, /animation: none !important;/);
+  assert.match(calm, /transition: none !important;/);
+  assert.match(calm, /\.wait \{\s*opacity: 1;/);
+  assert.match(js, /matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
+  assert.match(js, /if \(!el \|\| calm\.matches\) return;/);
+  assert.match(js, /if \(calm\.matches \|\| !\("IntersectionObserver" in window\)\) return;/);
 });
 
 test("nothing unconfirmed about the business, and no machine-written punctuation", () => {

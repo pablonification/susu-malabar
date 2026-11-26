@@ -1,0 +1,171 @@
+/* The brand look. Change colours, fonts, corners and sizes here and nowhere else.
+   site.css only reads these names. The logo is public/brand/logo.svg, the photos are
+   listed in src/photos.mjs. Where each colour was sampled is in docs/brand-notes.md. */
+
+/* The loud face: heavy, tight, geometric, like "Idul Adha" and "7 tahun" on the shop's
+   posters. Also the reading face. Plus Jakarta Sans, open licence. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("fonts/plus-jakarta-sans-latin.woff2") format("woff2"); /* the page preloads every file named here */
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+/* The quiet face: the upright serif of "Kami ada di mana?" on the shop's location post.
+   Only for words that are the shop's or its customers' own: a line from a caption, a
+   review. Cormorant Garamond, open licence. */
+@font-face {
+  font-family: "Cormorant Garamond";
+  src: url("fonts/cormorant-garamond-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  /* --- Fonts. To swap: add the new @font-face above and change these. */
+  --font-display: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-quiet: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --display-weight: 800;
+  --display-tracking: -0.03em; /* the posters set their headlines tight */
+  --display-word-gap: 0.14em; /* this face has a narrow space: these keep words apart */
+  --body-word-gap: 0.07em;
+  --quiet-weight: 600;
+
+  /* --- Text sizes */
+  --text-small: 0.875rem;
+  --text-body: 1.0625rem;
+  --text-lead: 1.25rem;
+  --text-h3: 1.75rem;
+  --text-h2: clamp(2.5rem, 11.5vw, 3.25rem); /* section titles shout, like a promo headline */
+  --text-h1: clamp(3rem, 15.4vw, 4.5rem); /* wider screens set their own below */
+  --h1-leading: 1.04; /* tight, but the g of "segar," clears the l of "asli" under it */
+  --text-price: 1.375rem;
+  --text-total: 1.625rem; /* the sum in the order bar */
+  --text-sum: clamp(2rem, 10.5vw, 3.25rem); /* the order's total above the send button: the form's one loud line */
+  --text-promo: 3.25rem; /* a running promo's price */
+  --text-best: clamp(2.5rem, 12.5vw, 3.5rem); /* the best seller's name: the menu's one loud line */
+  /* The serif runs small for its size, so it gets its own, larger steps. */
+  --text-quiet: 1.375rem;
+  --text-quote: 2.125rem;
+
+  /* --- Colours, named after where they come from in the shop */
+  --poster: #184a44; /* the dark green of the menu poster and most of the feed */
+  --poster-ink: #ffffff;
+  --poster-muted: #b9d6ce;
+  --poster-line: #356a62;
+  /* The turquoise awning over the shop in front of Griya, as it shows in the shop's own
+     photo on this page (#07c6c0 there), a step deeper so black type reads on it. It is the
+     ground of the first screen (the page opens under the awning), and small pieces after:
+     the stripes of the awning's hem, a tape label, the coin of the way that leads to a shop. */
+  --banner: #14b3ab;
+  --banner-ink: var(--ink);
+  --banner-muted: #0a312e;
+  --banner-line: #0d7f79;
+  --ink: #111111; /* the black of the badge on the cups */
+  --ink-line: #3b3b3b;
+  --paper: #fdfcf6; /* the white cup, and the off-white type of the promo posters */
+  --paper-line: #d9d6c8;
+  --paper-muted: #4a5551;
+  --field: #ffffff; /* inside of a form field */
+  --field-hint: #6b7972; /* the example words in an empty field: lighter than what you type */
+  /* The yellow dot behind the banana on the shop's round "real milk.real fruit" sticker.
+     The page's happy colour: the burst behind the cup, the ticker, tape labels, the
+     highlighted word of a title, and the whole band of the shops. Always with black type. */
+  --sun: #fae045;
+  --sun-ink: var(--ink);
+  --sun-muted: #4a4410;
+  --promo: #e25150; /* the red tag on the promo posters: only crosses out a promo's usual price */
+  --danger: #a8261c;
+  --notice: #7a4b00;
+
+  /* The badge on the page: black on white, as printed on the cups and worn on Instagram. */
+  --badge-ground: var(--field);
+  --badge-ink: var(--ink);
+  /* The badge as the shop wears it on TikTok: green drawing, hot pink ground. Only the
+     tab icon and the home-screen icon use these. On the page that pink is too loud. */
+  --badge-pink: #f784c5;
+  --badge-green: #1b612f;
+
+  /* The soft pink of the petals on the shop's "Kami ada di mana?" post: the pink its
+     Instagram feed really uses, on this same dark green. On the page it is an accent
+     with two meanings and no others. */
+  --petal: #f39e8d;
+
+  /* Strawberry: the best seller's block on the menu. */
+  --flavor-strawberry: var(--petal);
+  --flavor-strawberry-ink: var(--ink);
+
+  /* What is in your order: the cups you added, the size and shop you picked, the total. */
+  --order: var(--flavor-strawberry);
+  --order-ink: var(--flavor-strawberry-ink);
+
+  /* --- Placeholder mark (values the owner has not confirmed, tbc() in data.mjs).
+     One amber dot with a dark edge after the value: the same size, colour and edge
+     everywhere. It takes no room, so nothing moves when a value is confirmed.
+     Set --tbc-mark to 0 to hide every mark at once. */
+  --tbc-mark: 1;
+  --tbc-dot: #f2b84b;
+  --tbc-size: 0.5rem;
+
+  /* --- Corners and lines. Photos have square corners, like tiles in the shop's feed. */
+  --radius-control: 12px;
+  --radius-photo: 0;
+  --line: 1px;
+  --line-strong: 3px;
+  /* Sticker edges: a black keyline, and a thicker foot that reads as a hard shadow (no
+     blurred shadows anywhere). A photo cut out as a sticker wears a white rim like a real one. */
+  --edge: 2.5px;
+  --drop: 5px;
+  --rim: 5px;
+
+  /* --- Space */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --gutter: 1rem;
+  --page-width: 68rem;
+  --tap: 2.75rem; /* 44px, the smallest thing to tap */
+  --tap-big: 3rem;
+  --badge-size: 4rem; /* the logo's disc at the top of the page */
+
+  /* --- Motion. Springy, short, and only transform and opacity. */
+  --press: 80ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* overshoots a little, then settles */
+  --glide: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --pop: 520ms;
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --gutter: 2rem;
+    --text-h2: 3.5rem;
+    --text-quote: 2.5rem;
+    --badge-size: 4.5rem;
+  }
+}
+
+/* Wide screens: the headline sits beside the photo, and the reviews stand beside the story,
+   a step larger so the two columns end together. */
+@media (min-width: 56rem) {
+  :root {
+    --text-h1: clamp(4rem, 6.1vw, 5.5rem);
+    --text-h2: 4rem;
+    --text-quote: 2.75rem;
+  }
+}
+
+/* Small phones: the shared price in the menu's switch gives a little room back. */
+@media (max-width: 23.5rem) {
+  :root {
+    --text-price: 1.25rem;
+    --text-total: 1.375rem;
+    --text-h2: 2.25rem;
+  }
+}

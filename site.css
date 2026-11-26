@@ -1,0 +1,2605 @@
+/* Layout and parts. Every colour, font, corner and size comes from tokens.css.
+
+   The third design: the page is put together like the shop's own stickers and promo
+   posters. Flat colour, a black keyline with a thick foot instead of any soft shadow, tape
+   labels, torn and scalloped edges, things set a little crooked as if placed by hand, and
+   photos cut out as stickers with a white rim. Motion is short and springy, and each piece
+   has a job: it shows a choice was made, answers a tap, or leads the eye to the order. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden; /* crooked stickers and the turning burst may poke past the edge: the page never scrolls sideways */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--tap-big) + var(--space-4));
+}
+
+body {
+  margin: 0;
+  overflow-x: clip;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  word-spacing: var(--body-word-gap);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd,
+figure,
+blockquote,
+fieldset {
+  margin: 0;
+  padding: 0;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+fieldset {
+  border: 0;
+  min-width: 0;
+}
+
+/* The loud voice: the heavy, tight type of the shop's posters. */
+h1,
+h2,
+h3,
+.logo-name,
+.way-name,
+.foot-name {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  word-spacing: var(--display-word-gap);
+  line-height: 1;
+}
+
+h2 {
+  font-size: var(--text-h2);
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+h3 {
+  font-size: var(--text-h3);
+}
+
+/* The quiet voice: the upright serif of the shop's location post. Only for words that
+   are the shop's own or its customers': its line about the best seller, its line about
+   the corndog, what reviewers wrote. Everything the site says itself is in the sans. */
+.quiet,
+.pick-tag {
+  font-family: var(--font-quiet);
+  font-weight: var(--quiet-weight);
+  font-variant-numeric: lining-nums;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+
+a {
+  color: inherit;
+}
+
+small {
+  font-size: var(--text-small);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: var(--line-strong) solid var(--fg, currentColor);
+  outline-offset: 2px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: -10rem;
+  z-index: 5;
+  padding: var(--space-3) var(--space-4);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+}
+
+.skip:focus {
+  top: var(--space-2);
+}
+
+/* --- Placeholder mark ---------------------------------------------------------
+   Every value still wrapped in tbc() in data.mjs gets one small amber dot after it,
+   level with the middle of its letters whatever their size: the same dot, at the same
+   height, with the same dark edge, on a price, an address, a heading or a button, on
+   every ground. It hangs after the value and
+   takes no room, so a button is as wide with it as without, and nothing moves on the
+   day a value is confirmed. No line under anything, so nothing marked reads as a link.
+   The dot is drawn, not typed, so a screen reader says nothing for it. Hide all of them
+   by setting --tbc-mark to 0 in tokens.css. On a button with an arrow the dot hangs after
+   the arrow, at the same distance: the button says how far that is (--past-arrow). */
+.tbc {
+  position: relative;
+}
+
+.tbc::after {
+  content: "";
+  position: absolute;
+  right: calc(var(--tbc-size) * -1.3 - var(--past-arrow, 0px));
+  top: calc(50% + 0.06em - var(--tbc-size) / 2);
+  width: calc(var(--tbc-size) * var(--tbc-mark));
+  height: calc(var(--tbc-size) * var(--tbc-mark));
+  border: calc(1.5px * var(--tbc-mark)) solid var(--ink);
+  border-radius: 50%;
+  background: var(--tbc-dot);
+}
+
+/* --- Bands: the page is a stack of full-width grounds ----------------------------
+   Each ground is a flat colour from the shop. --hl is the block under a title's loud word. */
+
+.band {
+  position: relative; /* a cut edge hangs from it or stands on it */
+  background: var(--bg);
+  color: var(--fg);
+  padding-block: var(--space-7);
+}
+
+.band-poster {
+  --bg: var(--poster);
+  --fg: var(--poster-ink);
+  --muted: var(--poster-muted);
+  --rule: var(--poster-line);
+  --hl: var(--sun);
+}
+
+/* The awning: the first screen. */
+.band-banner {
+  --bg: var(--banner);
+  --fg: var(--banner-ink);
+  --muted: var(--banner-muted);
+  --rule: var(--banner-line);
+  --hl: var(--sun);
+}
+
+/* The sticker's yellow: where the shops are. */
+.band-sun {
+  --bg: var(--sun);
+  --fg: var(--sun-ink);
+  --muted: var(--sun-muted);
+  --rule: var(--sun-ink);
+  --hl: var(--banner);
+}
+
+.band-paper {
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --muted: var(--paper-muted);
+  --rule: var(--paper-line);
+  --hl: var(--sun);
+}
+
+.band-ink {
+  --bg: var(--ink);
+  --fg: var(--paper);
+  --muted: var(--paper-line);
+  --rule: var(--ink-line);
+  --hl: var(--sun);
+}
+
+.wrap {
+  max-width: var(--page-width);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.lead {
+  font-size: var(--text-lead);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* The loud word of a title sits on a block of colour set a little crooked, like a strip of
+   tape someone stuck under it. Always black type on it. */
+.hl {
+  display: inline-block;
+  margin-block: 0.06em;
+  padding: 0.02em 0.22em 0.08em;
+  border-radius: 0.14em;
+  background: var(--hl);
+  color: var(--ink);
+  rotate: -2deg;
+}
+
+/* --- Cut edges between bands -----------------------------------------------------
+   Drawn in page.mjs, tiled at one size. Each takes its band's colour and sits just
+   outside it, over the band next door. */
+
+.edge {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  display: block;
+  color: var(--bg);
+  fill: currentColor;
+  pointer-events: none;
+}
+
+.edge-teeth,
+.edge-scallop {
+  top: calc(100% - 1px);
+}
+
+.edge-peaks {
+  bottom: calc(100% - 1px);
+}
+
+/* The awning's hem: its stripes are the awning's turquoise and the cup's white. */
+.edge-a {
+  fill: var(--banner);
+}
+
+.edge-b {
+  fill: var(--paper);
+}
+
+.edge-ink {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: var(--edge);
+}
+
+/* --- Photos -------------------------------------------------------------------
+   Real photos only, never drawn bigger than they are. Each is cut out like a sticker: a
+   white rim, a black keyline, set a little crooked. Nothing is ever written on one. A soft
+   photo (a video still) stays a small one. */
+
+.photo {
+  display: block;
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-photo);
+  background: var(--rule);
+}
+
+/* The plus and the minus of the count buttons: drawn, so each sits in the middle of its
+   button, level with the number between them. */
+.sign {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* --- Buttons --------------------------------------------------------------------
+   A button is a key: white, a black keyline, a thick foot. It squashes when pressed. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-1) var(--space-4);
+  border: var(--edge) solid var(--ink);
+  border-bottom-width: var(--drop);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms var(--spring);
+}
+
+.btn:active,
+.qty button:active {
+  transform: translateY(2px) scale(1.03, 0.92);
+  transition-duration: var(--press);
+}
+
+/* The button that takes the order one step on: black with the cup's white, the same
+   wherever it sits (the jump links, the order bar, the end of the form). */
+.btn-fill,
+.btn-send,
+.jump-go span {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.link {
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+/* Where a link goes: down this page, or out of it. Drawn at the weight of the words. It
+   leans the way it points when its link is under the pointer. */
+.arrow {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  transition: transform 220ms var(--spring);
+}
+
+/* --- Top: the awning ------------------------------------------------------------
+   The first screen is the shop's awning: its turquoise, with the scalloped hem hanging
+   under it. The badge as a sticker, the headline landing word by word, and the best
+   seller in a hand, cut out and bobbing in front of the sticker's yellow burst. */
+
+.top {
+  padding-block: var(--space-4) var(--space-5);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+/* The badge is a sticker too: black on the cup's white, keyline, crooked. */
+.logo-disc {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--badge-size);
+  height: var(--badge-size);
+  border: var(--edge) solid var(--ink);
+  border-radius: 50%;
+  background: var(--badge-ground);
+  color: var(--badge-ink);
+  rotate: -8deg;
+  transition: rotate 400ms var(--spring);
+}
+
+.logo-mark {
+  display: block;
+  width: 94%;
+  height: 94%;
+}
+
+.logo-words {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.logo-name {
+  font-size: var(--text-lead);
+}
+
+.logo-tag {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--muted);
+}
+
+h1 {
+  position: relative; /* over the burst, where its points reach up */
+  z-index: 1;
+  margin-top: var(--space-5);
+  font-size: var(--text-h1);
+  line-height: var(--h1-leading);
+}
+
+.h1-line {
+  display: block;
+  width: fit-content;
+  white-space: nowrap;
+}
+
+/* The second line sits on the sticker's yellow, tipped the other way from the cup. */
+.h1-hl {
+  margin: 0.06em 0 0 -0.12em;
+  padding: 0 0.16em 0.08em 0.12em;
+  border: var(--edge) solid var(--ink);
+  border-bottom-width: var(--drop);
+  border-radius: 0.16em;
+  background: var(--hl);
+  rotate: -2.5deg;
+}
+
+/* Each word lands on its own, one after the other. */
+.w {
+  display: inline-block;
+  animation: word-in var(--pop) var(--spring) both;
+  animation-delay: calc(var(--i) * 90ms + 80ms);
+}
+
+/* The photo's place: to the right, a little past the page's edge, so the first screen is
+   not a centred stack. Behind it turns the yellow burst of a promo poster. */
+.hero-pic {
+  position: relative;
+  justify-self: end;
+  width: clamp(12.5rem, 62vw, 19rem); /* a square window on a photo 600px tall: never drawn bigger than it is */
+  margin: var(--space-5) -0.25rem 0 0;
+}
+
+.burst {
+  position: absolute;
+  inset: -10%;
+  background: var(--sun);
+  clip-path: polygon(50% 0%, 57.5% 7.7%, 67.1% 3%, 71.5% 12.8%, 82.1% 11.7%, 82.9% 22.4%, 93.3% 25%, 90.4% 35.3%, 99.2% 41.3%, 93% 50%, 99.2% 58.7%, 90.4% 64.7%, 93.3% 75%, 82.9% 77.6%, 82.1% 88.3%, 71.5% 87.2%, 67.1% 97%, 57.5% 92.3%, 50% 100%, 42.5% 92.3%, 32.9% 97%, 28.5% 87.2%, 17.9% 88.3%, 17.1% 77.6%, 6.7% 75%, 9.6% 64.7%, 0.8% 58.7%, 7% 50%, 0.8% 41.3%, 9.6% 35.3%, 6.7% 25%, 17.1% 22.4%, 17.9% 11.7%, 28.5% 12.8%, 32.9% 3%, 42.5% 7.7%);
+  animation: spin 70s linear infinite;
+}
+
+/* The cup bobs, like a hand holding it out. Its black foot moves with it. */
+.hero-float {
+  --blob: 47% 53% 44% 56% / 55% 46% 54% 45%;
+  position: relative;
+  rotate: 4deg;
+  animation: bob 5.5s ease-in-out infinite;
+}
+
+.hero-float::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--blob);
+  background: var(--ink);
+  translate: 7px 9px;
+}
+
+.hero-photo {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: var(--rim) solid var(--paper);
+  border-radius: var(--blob);
+  outline: var(--edge) solid var(--ink);
+  background: var(--paper);
+}
+
+/* The window is on the cup and the hand that holds it. */
+.hero-photo img {
+  height: 100%;
+  object-fit: cover;
+  object-position: 57% 50%;
+}
+
+/* The hours, on a label stuck under the cup: beside the photo, never on it. */
+.hero-open {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  border: var(--edge) solid var(--ink);
+  border-bottom-width: var(--drop);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+  rotate: -3deg;
+  animation: stamp var(--pop) var(--spring) 520ms both;
+}
+
+/* --- The ticker: the menu's names running past, like a poster's foot strip ---------- */
+
+.ticker {
+  display: flex;
+  overflow: hidden;
+  padding: calc(var(--space-3) + 0.75rem) 0 var(--space-3); /* the awning's hem hangs into it */
+  border-bottom: var(--line-strong) solid var(--ink);
+  background: var(--sun);
+  color: var(--sun-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lead);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ticker-run {
+  flex: none;
+  display: flex;
+  animation: ticker 36s linear infinite;
+}
+
+.ticker li {
+  display: flex;
+  align-items: center;
+}
+
+/* A drawn spark between two names. */
+.ticker li::after {
+  content: "";
+  width: 0.62em;
+  height: 0.62em;
+  margin-inline: 0.7em;
+  background: var(--poster);
+  clip-path: polygon(50% 0, 63% 37%, 100% 50%, 63% 63%, 50% 100%, 37% 63%, 0 50%, 37% 37%);
+}
+
+/* --- Jump links: stay on top while scrolling ------------------------------------ */
+
+.jump {
+  --bg: var(--paper);
+  --fg: var(--ink);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: var(--line-strong) solid var(--ink);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.jump .wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  padding-inline: 0;
+}
+
+/* With its line under it the strip is as tall as before, so the menu's switch tucks in right under it. */
+.jump a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--tap-big) - var(--line-strong));
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.jump a:focus-visible {
+  outline-offset: -4px;
+}
+
+/* The way into the order is a button, black like the one that sends it. Not the order's
+   pink: right above the size switch, pink would read as "this tab is picked". */
+.jump a.jump-go {
+  padding: 0 var(--gutter) 0 var(--space-2);
+}
+
+.jump-go span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  border-radius: var(--radius-control);
+  transition: transform 160ms var(--spring);
+}
+
+.jump-go:active span {
+  transform: scale(1.04, 0.9);
+}
+
+/* The button wears its own ring. */
+.jump a.jump-go:focus-visible {
+  outline: 0;
+}
+
+.jump-go:focus-visible span {
+  outline: var(--line-strong) solid var(--fg);
+  outline-offset: 2px;
+}
+
+/* --- A running promo: the shop's black promo poster, as a strip -------------------- */
+
+.promo {
+  padding-block: var(--space-4);
+}
+
+.promo-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-5);
+}
+
+.promo-what {
+  display: grid;
+  line-height: 1.3;
+}
+
+.promo-what strong {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-h3);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  word-spacing: var(--display-word-gap);
+  line-height: 1;
+}
+
+.promo-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  white-space: nowrap;
+}
+
+.promo-price strong {
+  font-size: var(--text-promo);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: 0.9;
+}
+
+.promo-price s {
+  font-size: var(--text-lead);
+  font-weight: 600;
+  text-decoration-color: var(--promo);
+  text-decoration-thickness: var(--line-strong);
+}
+
+/* --- Menu: the poster on the wall ----------------------------------------------- */
+
+/* The menu ends on its small print, so the band closes a little sooner after it. */
+#menu {
+  padding-block: var(--space-5) var(--space-7);
+}
+
+.menu {
+  --ctl-add: 1.75rem; /* the plus at a row's end */
+  --ctl-n: 2rem; /* how many cups, before the plus */
+  --row: 3.5rem; /* the least height of every row of the menu */
+  --switch: 5.25rem; /* the room the size switch takes while it stays on top */
+  --bleed: var(--gutter); /* the switch's ground runs to the screen's edges on a phone */
+  --best-inset: var(--space-3); /* the best seller's words, in from its sticker's edge */
+}
+
+.grp {
+  padding-bottom: var(--space-6);
+}
+
+.menu-col:last-child > .grp:last-of-type {
+  padding-bottom: 0;
+}
+
+/* The menu's one size switch, with the price of every drink that has no price of its own.
+   It stays under the jump links for as long as those drinks are on screen, and leaves
+   with their column: so their price and the picked size are always in sight. It wears the
+   poster's ground, from edge to edge on a phone, so no row shows through beside it. */
+.seg-poster {
+  position: sticky;
+  top: calc(var(--tap-big) - 1px);
+  z-index: 1;
+  gap: var(--space-2);
+  margin: calc(var(--space-2) * -1) calc(var(--bleed) * -1) var(--space-4);
+  padding: var(--space-3) var(--bleed) var(--space-2);
+  background: var(--bg);
+}
+
+/* A drink reached with the keyboard stops below the switch, not under it. */
+.pick,
+.less {
+  scroll-margin-top: var(--switch);
+}
+
+/* On a screen too short for it (a phone on its side), the switch scrolls with the page. */
+@media (max-height: 30rem) {
+  .seg-poster {
+    position: static;
+  }
+}
+
+/* A group's name, on a strip of tape with torn ends, stuck on a little crooked. Each
+   group's strip is its own colour and leans its own way. */
+.grp-head {
+  padding-bottom: var(--space-2);
+}
+
+.grp-head h3 {
+  --tape: var(--sun);
+  display: inline-block;
+  margin-left: calc(var(--space-2) * -1);
+  padding: 0.14em 0.6em 0.2em;
+  background: var(--tape);
+  color: var(--ink);
+  clip-path: polygon(0 0, 100% 0, 97.5% 17%, 100% 34%, 97.5% 50%, 100% 67%, 97.5% 84%, 100% 100%, 0 100%, 2.5% 84%, 0 67%, 2.5% 50%, 0 34%, 2.5% 17%);
+  rotate: -2deg;
+}
+
+.grp:nth-of-type(even) .grp-head h3 {
+  --tape: var(--paper);
+  rotate: 1.5deg;
+}
+
+.grp-extras .grp-head h3 {
+  --tape: var(--banner);
+  rotate: -1.5deg;
+}
+
+.size {
+  font-size: var(--text-small);
+  font-weight: 700;
+}
+
+.price {
+  text-align: right;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Every price is one weight. A drink with a price per size shows the one for the picked
+   size, in the pink of the picked half of the switch. A drink sold in one size has one
+   price, and it stays as it is whatever is picked. */
+.pick .price[data-size] {
+  color: var(--order);
+}
+
+/* A row whose price is the switch's shows none, so its mark has nothing to hang on. */
+.prices:not(:has(.price:not([hidden]))) {
+  --tbc-mark: 0;
+}
+
+.price-all {
+  font-size: var(--text-price);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* One drink per row on a phone, so every row has room for its "− 2 +". */
+.picks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--space-5);
+}
+
+/* Rows are parted by a dashed line, like chalk on the shop's menu board. */
+.picks li,
+.rows li {
+  position: relative; /* the button that takes a cup off sits over the row's end */
+  border-bottom: 2px dashed var(--rule);
+}
+
+/* The best seller's sticker is its own edge: no rule under it. It is stuck on crooked,
+   and the button that takes a cup off turns with it. */
+.picks li.picks-wide {
+  grid-column: 1 / -1;
+  margin-block: var(--space-2) var(--space-3);
+  border-bottom: 0;
+  rotate: -1.2deg;
+}
+
+/* A list's last row has no rule under it: there it would part the row from nothing. */
+.picks li:last-child,
+.rows li:last-child {
+  border-bottom: 0;
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--row);
+  padding: var(--space-2) 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The name leans toward its plus under the pointer, and the plus turns: the row says "tap me". */
+.pick-name {
+  display: inline-block;
+  transition: transform 220ms var(--spring);
+}
+
+/* The end of a drink's row: how many cups of it are in the order, then the plus. The
+   whole row adds a cup. While the drink is in the order, the room kept before the count
+   holds the button that takes one off (.less), so the row's end reads "− 2 +". */
+.pick-ctl {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.pick[data-count] .pick-ctl {
+  padding-left: var(--tap);
+}
+
+/* The plus: a white coin with a black sign. It squashes under a finger and bounces back
+   once the cup is in (site.js plays "boing"). */
+.pick-add {
+  display: grid;
+  place-items: center;
+  width: var(--ctl-add);
+  height: var(--ctl-add);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  transition: transform 220ms var(--spring);
+}
+
+.pick:active .pick-add,
+.less:active {
+  transform: scale(0.8);
+  transition-duration: var(--press);
+}
+
+/* The cups of this drink in the order, in the order's pink. It hops when it changes. */
+.pick-n {
+  display: none;
+  place-items: center;
+  min-width: calc(var(--ctl-n) - 0.25rem);
+  height: calc(var(--ctl-n) - 0.25rem);
+  margin-inline: 0.125rem;
+  padding-inline: 0.125rem;
+  border-radius: 1rem;
+  background: var(--order);
+  color: var(--order-ink);
+  font-size: var(--text-small);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pick[data-count] .pick-n {
+  display: grid;
+}
+
+/* One cup less: 44px wide and as tall as its row, right before the count. */
+.less {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(var(--ctl-add) + var(--ctl-n));
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 220ms var(--spring);
+}
+
+/* Its sign sits in a ring, the plus's coin in outline. */
+.less .sign {
+  box-sizing: content-box;
+  padding: 0.3125rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.less:focus-visible {
+  outline-offset: -4px;
+}
+
+/* A drink with its own prices. On a phone: its name with the count and the plus at the
+   line's end, and under them the price that differs from the switch's, with its size. */
+.pick.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name ctl" "prices prices";
+  gap: var(--space-1) 0;
+}
+
+.pick.cols .row-name {
+  grid-area: name;
+}
+
+.pick.cols .prices {
+  grid-area: prices;
+  justify-self: start;
+}
+
+/* The count and the plus keep to the name's line. The minus is 44px tall around that
+   line (the plus's height and the row's room above and below it), so the three are level. */
+.pick.cols .pick-ctl {
+  grid-area: ctl;
+  align-self: start;
+}
+
+.rows .less {
+  bottom: auto;
+  height: calc(var(--ctl-add) + var(--space-2) * 2);
+}
+
+/* A row with no price to show is one line, like a drink under the switch: its count, its
+   plus and its minus sit in the row's middle. */
+.rows li:not(:has(.price:not([hidden]))) .pick.cols {
+  align-content: center;
+  row-gap: 0;
+}
+
+.rows li:not(:has(.price:not([hidden]))) .pick-ctl {
+  align-self: center;
+}
+
+.rows li:not(:has(.price:not([hidden]))) .less {
+  bottom: 0;
+  height: auto;
+}
+
+/* The prices of one row are one piece on one line, as wide as its words, and the row's one
+   dot hangs right after the last number, like after any other price: never afloat in a
+   column of its own. */
+.prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+}
+
+/* The size a price is for, said before it at the weight of a note. */
+.price-size {
+  font-weight: 400;
+}
+
+/* The best seller: a strawberry-pink sticker across the poster, set the way the shop
+   sets a promo: a small black tag, the name huge, and the shop's own line about it. The
+   line and the row's "− 2 +" share the last line, so the name has the sticker's width. */
+.pick-best {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "flag other" "name name" "tag ctl";
+  justify-items: start;
+  gap: 0 var(--space-3);
+  padding: var(--space-4) var(--best-inset) var(--space-2);
+  border: var(--edge) solid var(--ink);
+  border-width: var(--edge) var(--drop) var(--drop) var(--edge);
+  border-radius: 1.125rem;
+  background: var(--flavor-strawberry);
+  color: var(--flavor-strawberry-ink);
+  font-size: var(--text-body);
+  font-weight: 600;
+  --fg: var(--flavor-strawberry-ink);
+  --rule: var(--flavor-strawberry-ink);
+}
+
+/* The tag is tape too: black, torn at its ends, leaning. */
+.pick-flag {
+  grid-area: flag;
+  padding: 0.25rem 0.75rem;
+  background: var(--flavor-strawberry-ink);
+  color: var(--flavor-strawberry);
+  clip-path: polygon(0 0, 100% 0, 96% 25%, 100% 50%, 96% 75%, 100% 100%, 0 100%, 4% 75%, 0 50%, 4% 25%);
+  font-size: var(--text-small);
+  font-weight: 700;
+  line-height: 1.2;
+  rotate: -3deg;
+}
+
+.pick-best .pick-name {
+  grid-area: name;
+  margin-top: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: var(--text-best);
+  letter-spacing: var(--display-tracking);
+  line-height: 1;
+}
+
+/* On the narrowest phone the line takes two lines: they keep clear of each other and of
+   the name above. On one line the room is already there, and nothing grows. */
+.pick-tag {
+  grid-area: tag;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-top: var(--space-2);
+  padding-block: var(--space-1);
+  font-size: var(--text-quiet);
+  line-height: 1.2;
+}
+
+/* The count and the plus sit in a 44px box on the sticker's last line, where the minus is. */
+.pick-best .pick-ctl {
+  grid-area: ctl;
+  justify-self: end;
+  align-self: end;
+  min-height: var(--tap);
+}
+
+/* On the pink the coin is black. */
+.pick-best .pick-add {
+  background: var(--flavor-strawberry-ink);
+  color: var(--flavor-strawberry);
+}
+
+.pick-best[data-count] .pick-n {
+  background: var(--order-ink);
+  color: var(--order);
+}
+
+/* On the sticker, the button that takes a cup off is on the line of the count. */
+.picks-wide .less {
+  --fg: var(--flavor-strawberry-ink);
+  top: auto;
+  bottom: calc(var(--space-2) + var(--drop));
+  right: calc(var(--best-inset) + var(--drop) + var(--ctl-add) + var(--ctl-n));
+  height: var(--tap);
+  color: var(--flavor-strawberry-ink);
+}
+
+.row-name {
+  min-width: 0;
+}
+
+/* The line under a name. Its lines come out even, so no word ends up alone. */
+.row-name small {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  text-wrap: balance;
+}
+
+/* The cups of a drink in the size not picked ("1 × 14 oz"): a small line under its name,
+   so they never look lost. On the best seller's sticker it is on the tag's line, over the count. */
+.pick-other {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.pick-best .pick-other {
+  grid-area: other;
+  justify-self: end;
+  align-self: center;
+}
+
+.extra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--row);
+  padding-block: var(--space-2);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* The room after a price where its dot hangs. */
+.extra .price {
+  margin-right: var(--space-3);
+}
+
+/* The snack, straight out of the fryer: a small round sticker beside the shop's line about
+   it, so the menu's big picture stays a drink. */
+.snack {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-3) var(--space-2);
+}
+
+.snack .photo {
+  flex: none;
+  width: 5rem;
+  overflow: hidden;
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  rotate: -8deg;
+  transition: rotate 400ms var(--spring);
+}
+
+.snack figcaption {
+  font-size: var(--text-quiet);
+  line-height: 1.15;
+}
+
+/* Wide enough for columns: two drinks per row under the switch, and a drink with its own
+   price is one line: its name, its price, then the count and the plus. */
+@media (min-width: 30rem) {
+  .menu {
+    --col-ctl: calc(var(--tap) + var(--ctl-n) + var(--ctl-add));
+  }
+
+  .picks {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .pick.cols {
+    grid-template-columns: minmax(0, 1fr) auto var(--col-ctl);
+    grid-template-areas: none;
+    gap: 0;
+    align-items: center;
+  }
+
+  .pick.cols .row-name,
+  .pick.cols .prices,
+  .pick.cols .pick-ctl {
+    grid-area: auto;
+  }
+
+  /* The room after the price is where its dot hangs, clear of the minus. */
+  .pick.cols .prices {
+    justify-self: end;
+    margin-right: var(--space-3);
+  }
+
+  /* Here the row is one line, and the minus is as tall as the row again. */
+  .pick.cols .pick-ctl {
+    align-self: auto;
+  }
+
+  .rows .less {
+    bottom: 0;
+    height: auto;
+  }
+
+  /* Two drinks per row: the last drink of each column has no rule under it. The one before
+     the list's last is either beside it or the last of the other column. */
+  .picks li:nth-last-child(2) {
+    border-bottom: 0;
+  }
+}
+
+/* --- Ways to order: on the white of the cup ---------------------------------------- */
+
+.ways {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.way-list {
+  margin-inline: calc(var(--space-3) * -1);
+  border-top: var(--line-strong) solid var(--fg);
+}
+
+.way-list li:last-child .way {
+  border-bottom: 0;
+}
+
+/* One way per row, the whole row a link to the real thing. Under the pointer or a finger
+   the sticker's yellow wipes in behind the row, and its arrow leans the way it goes. */
+.way {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+  min-height: 5.25rem;
+  padding: var(--space-3);
+  border-bottom: var(--line-strong) solid var(--fg);
+  text-decoration: none;
+}
+
+.way::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--sun);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 260ms var(--glide);
+}
+
+.way:active::before,
+.way:focus-visible::before {
+  transform: scaleX(1);
+}
+
+.way:focus-visible {
+  outline-offset: -3px;
+}
+
+.way-name {
+  font-size: clamp(1.5rem, 7vw, 2.25rem); /* "Pre-order WhatsApp" keeps to one line on a phone */
+}
+
+.way-what {
+  grid-column: 1;
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* The arrow rides in a coin. Each way has its own colour: the awning for the shop itself,
+   the poster's green for the ride, black for the order, like every button that takes the
+   order on. */
+.way .arrow {
+  box-sizing: content-box;
+  grid-area: 1 / 2 / span 2;
+  width: 1.375rem;
+  height: 1.375rem;
+  padding: 0.75rem;
+  border: var(--edge) solid var(--ink);
+  border-radius: 50%;
+  background: var(--banner);
+  color: var(--ink);
+}
+
+.way-list li:nth-child(2) .arrow {
+  background: var(--poster);
+  color: var(--poster-ink);
+}
+
+.way-list li:last-child .arrow {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* --- Shops: on the sticker's yellow ------------------------------------------------- */
+
+/* The hours every shop keeps, on a white label stuck on crooked. Then when it is busiest. */
+.shops-when {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  font-weight: 600;
+}
+
+.shops-when span:first-child {
+  padding: var(--space-2) var(--space-4);
+  border: var(--edge) solid var(--ink);
+  border-bottom-width: var(--drop);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  font-size: var(--text-lead);
+  font-weight: 800;
+  line-height: 1.3;
+  rotate: -1.5deg;
+}
+
+/* A shop with no known place wears one dot, on its name. The line under it says the
+   same unknown in words, so its own dot is switched off. */
+.shop-soon {
+  --tbc-mark: 0;
+}
+
+/* Every shop is one row: its name, its street, its map, and its front as a small sticker
+   beside them if the shop has posted a photo of it. Nothing in the row waits for the
+   photo, so a shop without one is the same row. */
+.shops {
+  margin-top: var(--space-5);
+  border-top: var(--line-strong) solid var(--fg);
+}
+
+.shop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--space-4);
+  padding-block: var(--space-5);
+  border-bottom: 2px dashed var(--rule);
+}
+
+/* The last shop ends the band: no rule under it, and the band's own room after it. */
+.shop:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.shop-words {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.shop-words:only-child {
+  grid-column: 1 / -1;
+}
+
+/* A shop's front: a small snapshot, the size of the snack's on the menu, with a white rim
+   and a strip of tape over its top, each stuck on at its own angle. */
+.shop-photo {
+  width: 5rem;
+  position: relative;
+  margin: var(--space-2) var(--space-2) 0 0;
+  border: 3px solid var(--paper);
+  outline: 2px solid var(--ink);
+  rotate: 5deg;
+  transition: rotate 400ms var(--spring);
+}
+
+.shop:nth-child(odd) .shop-photo {
+  rotate: -4deg;
+}
+
+.shop-photo::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  left: 50%;
+  width: 2.25rem;
+  height: 0.8rem;
+  margin-left: -1.125rem;
+  background: var(--banner);
+  rotate: -7deg;
+}
+
+.shop h3 {
+  margin-bottom: var(--space-2);
+  font-size: clamp(1.75rem, 8.5vw, 2.25rem);
+}
+
+/* A street that takes two lines beside the photo breaks evenly: no number alone on a line. */
+.shop-what p {
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.shop-odd {
+  font-weight: 600;
+}
+
+.shop-go {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* The mark on a map button hangs after its arrow, in the button's own room. */
+.shop-go .btn {
+  --past-arrow: calc(var(--space-2) + 1em);
+}
+
+/* --- Pre-order: the black of the shop's promo posters on top, the form on the white of
+   the cup, torn off under the title like a receipt. Pink here is only what is in the
+   order: the size and shop picked, the total. */
+
+/* A jump to the form lands on its title, right under the sticky links, with the first
+   field in view. */
+#pesan {
+  padding-top: 0;
+  scroll-margin-top: calc(var(--space-4) * -1);
+}
+
+.order-head {
+  --bg: var(--ink);
+  --fg: var(--paper);
+  --muted: var(--paper-line);
+  --rule: var(--ink-line);
+  --hl: var(--sun);
+  position: relative;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* The title, and a second line under it. No photo: the only ones of a big order being
+   packed are soft video stills. */
+.order-top {
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-6) var(--space-5);
+}
+
+.form,
+.form-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* never wider than the page, whatever a field would like */
+  gap: var(--space-5);
+  align-content: start;
+}
+
+.form {
+  margin-top: var(--space-7);
+}
+
+legend,
+label,
+.label {
+  padding: 0;
+  font-weight: 800;
+}
+
+.field > label,
+.field > legend,
+.field > .label {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+select,
+textarea {
+  display: block;
+  width: 100%;
+  min-height: var(--tap-big);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--fg);
+  border-radius: var(--radius-control);
+  background: var(--field);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 500;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* Example words in an empty field are lighter than anything typed, and fit one line. */
+::placeholder {
+  color: var(--field-hint);
+  opacity: 1;
+}
+
+.select select.is-empty {
+  color: var(--field-hint);
+}
+
+.select option {
+  color: var(--ink);
+}
+
+/* A select with its own arrow, so the arrow sits in from the edge like the text does. */
+.select {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--space-6);
+  text-overflow: ellipsis;
+}
+
+.select::after,
+.preview summary::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border: solid currentColor;
+  border-width: 0 2.5px 2.5px 0;
+  transform: translateY(-70%) rotate(45deg);
+}
+
+.select::after {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  pointer-events: none;
+}
+
+/* A field with a problem: one red frame of one weight, on a field and on a switch
+   alike, with focus or without. So there is never a black ring around a red one, and
+   no field looks more wrong than another. */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+.seg[aria-invalid="true"] label > span {
+  border-color: var(--danger);
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+.seg[aria-invalid="true"] {
+  outline: 1.5px solid var(--danger);
+  outline-offset: 0;
+}
+
+.seg[aria-invalid="true"] {
+  border-radius: var(--radius-control);
+}
+
+.seg[aria-invalid="true"] input:focus-visible + span {
+  outline-color: var(--danger);
+}
+
+/* Focus still shows on a field with a problem: the same red, drawn as the focus ring. */
+input[aria-invalid="true"]:focus-visible,
+select[aria-invalid="true"]:focus-visible {
+  outline-width: var(--line-strong);
+  outline-offset: 2px;
+}
+
+.err,
+.warn {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.err {
+  color: var(--danger);
+}
+
+.warn {
+  color: var(--notice);
+}
+
+/* A drink in the order takes two lines: what and which size, then how many and
+   what that comes to. Only a sum too long for its line drops to a third. */
+.line {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-4);
+}
+
+.line:first-child {
+  padding-top: 0;
+}
+
+.line + .line {
+  border-top: 2px dashed var(--rule);
+}
+
+.line .err {
+  margin-top: 0;
+}
+
+/* "Pick a drink" sits under the drinks, before the button that adds another. */
+.err-lines {
+  margin: 0 0 var(--space-4);
+}
+
+.line-what {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.line-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+}
+
+.line-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5); /* the sum's dot hangs in this gap */
+  min-height: var(--tap);
+  margin-left: auto;
+  font-size: 1rem;
+}
+
+.line-price {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.line-remove {
+  flex: none;
+}
+
+/* A switch between a few choices: the size of a drink, the shop to pick it up at. */
+.seg {
+  display: flex;
+}
+
+.seg label {
+  position: relative;
+}
+
+/* Fills its row. A longer name gets a wider part. */
+.seg-fill label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.seg-fill label > span {
+  min-width: 0;
+}
+
+.seg input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.seg label > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.75rem;
+  height: 100%;
+  min-height: var(--tap-big);
+  padding: var(--space-1) var(--space-2);
+  border: 2px solid var(--fg);
+  background: var(--field);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.seg label + label > span {
+  margin-left: -2px;
+}
+
+/* The switch's outer corners are round like every other field's. A choice that is not
+   offered (a size the drink isn't sold in) is hidden, so the corners go by what shows. */
+.seg label:nth-child(1 of :not([hidden])) > span {
+  margin-left: 0;
+  border-top-left-radius: var(--radius-control);
+  border-bottom-left-radius: var(--radius-control);
+}
+
+.seg label:nth-last-child(1 of :not([hidden])) > span {
+  border-top-right-radius: var(--radius-control);
+  border-bottom-right-radius: var(--radius-control);
+}
+
+/* The picked one wears the order's pink, in the form and on the menu alike. */
+.seg input:checked + span {
+  position: relative;
+  background: var(--order);
+  color: var(--order-ink);
+}
+
+.seg input:focus-visible + span {
+  position: relative;
+  outline: var(--line-strong) solid var(--fg);
+  outline-offset: 2px;
+}
+
+/* On the menu the switch is two stickers side by side, each a cup with its size and price.
+   The one not picked is the poster itself, its cup empty. The picked one is the order's
+   pink, tips forward a little, and its cup fills with milk: so the choice shows without
+   a word. */
+.seg-poster label {
+  flex: 1 1 0;
+  transition: rotate 320ms var(--spring), scale 320ms var(--spring);
+}
+
+.seg-poster label:has(input:checked) {
+  z-index: 1;
+  rotate: -1.5deg;
+  scale: 1.03;
+}
+
+.seg-poster label > span {
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  background: transparent;
+  line-height: 1.1;
+}
+
+.seg-poster label + label > span {
+  margin-left: 0;
+}
+
+.seg-words {
+  display: grid;
+  justify-items: start;
+}
+
+.cup {
+  flex: none;
+  overflow: visible;
+}
+
+.cup-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* The milk: flat at the cup's foot until its size is picked, then it rises and settles. */
+.cup-milk {
+  fill: var(--paper);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+  transition: transform 520ms var(--spring);
+}
+
+.seg-poster input:checked + span .cup-milk {
+  transform: scaleY(1);
+}
+
+.qty {
+  display: flex;
+}
+
+.qty button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  min-height: var(--tap-big);
+  padding: 0;
+  border: 2px solid var(--fg);
+  background: var(--field);
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms var(--spring);
+}
+
+.qty button[data-step="-1"] {
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+}
+
+.qty input {
+  width: 2.75rem;
+  padding-inline: 0;
+  border-inline: 0;
+  border-radius: 0;
+  text-align: center;
+  font-weight: 700;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.qty input::-webkit-inner-spin-button,
+.qty input::-webkit-outer-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty button[data-step="1"] {
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+.qty button[data-step="10"] {
+  margin-left: var(--space-2);
+  border-radius: var(--radius-control);
+  font-size: var(--text-body);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.pair input {
+  min-width: 0;
+}
+
+/* The order's total, right above the button that sends it, set the way the shop sets a
+   price on a promo poster: what it is for in a small line, the sum huge under it. It is
+   the form's one loud line: a pink sticker, stuck on crooked, that pops in with the first
+   cup. Its sum hops whenever it changes. */
+.total {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-3);
+  border: var(--edge) solid var(--ink);
+  border-width: var(--edge) var(--drop) var(--drop) var(--edge);
+  border-radius: 1.125rem;
+  background: var(--order);
+  color: var(--order-ink);
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  rotate: -1deg;
+  animation: stamp var(--pop) var(--spring);
+}
+
+/* The room after the sum where its dot hangs, clear of the sticker's edge. */
+#total-price {
+  margin-right: var(--space-3);
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: var(--text-sum);
+  letter-spacing: var(--display-tracking);
+  line-height: 1;
+  transform-origin: 0 60%;
+}
+
+.send-go {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+/* The page's biggest button. Its arrow leaves for WhatsApp ahead of you. */
+.btn-send {
+  width: 100%;
+  min-height: 3.75rem;
+  border-radius: 1rem;
+  font-size: var(--text-lead);
+  font-weight: 800;
+}
+
+.btn-send .arrow {
+  width: 1.125em;
+  height: 1.125em;
+}
+
+.sent {
+  margin-top: var(--space-1);
+  font-weight: 600;
+}
+
+.hint {
+  margin-top: var(--space-3);
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+/* "Lihat pesan" opens like the drink list does: the same small arrow, turned up once open. */
+.preview summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: fit-content;
+  min-height: var(--tap);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.preview summary::-webkit-details-marker {
+  display: none;
+}
+
+.preview[open] summary::after {
+  transform: translateY(20%) rotate(225deg);
+}
+
+/* The message as it will arrive: a note with a dashed edge. */
+.bubble {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 2px dashed var(--fg);
+  border-radius: var(--radius-control);
+  background: var(--field);
+  font: inherit;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --- Story and reviews: back on the poster green ----------------------------------- */
+
+.story {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.story-words p {
+  max-width: 34rem;
+  margin-top: var(--space-5);
+  font-weight: 500;
+}
+
+/* What Google says, as one plain line, then what reviewers wrote, as they wrote it: each
+   on a note of its own, stuck on at its own angle, the second lapping over the first. */
+.reviews {
+  display: grid;
+  justify-items: start;
+}
+
+.rating {
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.reviews blockquote {
+  max-width: 88%;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: var(--edge) solid var(--ink);
+  border-width: var(--edge) var(--drop) var(--drop) var(--edge);
+  border-radius: 1.125rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--text-quote);
+  line-height: 1.05;
+  text-wrap: balance;
+  rotate: -2deg;
+  transition: rotate 400ms var(--spring);
+}
+
+.rating + blockquote {
+  margin-top: var(--space-5);
+}
+
+.reviews blockquote + blockquote {
+  position: relative;
+  justify-self: end;
+  margin-top: calc(var(--space-3) * -1);
+  background: var(--sun);
+  rotate: 3deg;
+}
+
+/* --- Foot: the black of the badge on the cups --------------------------------------- */
+
+.foot {
+  padding-block: var(--space-6) var(--space-5);
+}
+
+.foot-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The badge the way it is printed on the cups: black on white. */
+.foot-badge {
+  flex: none;
+  width: var(--badge-size);
+  height: var(--badge-size);
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--field);
+  rotate: 8deg;
+  transition: rotate 400ms var(--spring);
+}
+
+.foot-name {
+  font-size: var(--text-h3);
+}
+
+.foot-links {
+  margin-top: var(--space-4);
+}
+
+.foot-links li,
+.foot-links a {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  font-weight: 600;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.foot-draft {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 2px dashed var(--rule);
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+/* --- Order bar: answers a tap on the menu, while the form is off screen -------------
+   It springs up from the foot of the screen with the first cup, and its sum hops with
+   every cup after that. */
+
+.bar {
+  --bg: var(--order);
+  --fg: var(--order-ink);
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  /* Its sum starts and its button ends on the page's column, on a screen of any width. */
+  padding: var(--space-3) max(var(--gutter), calc((100% - var(--page-width)) / 2 + var(--gutter)));
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  border-top: var(--line-strong) solid var(--ink);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.25;
+  animation: bar-in 420ms var(--spring);
+}
+
+.bar p {
+  flex: 1;
+  display: grid;
+  justify-items: start;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+/* The sum, as big as the shop prints a price on a promo poster. Under it, what it is the
+   sum of: how many cups, and in which sizes. */
+#bar-price {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: var(--text-total);
+  letter-spacing: var(--display-tracking);
+  line-height: 1.1;
+  white-space: nowrap;
+  transform-origin: 0 60%;
+}
+
+/* "4 gelas · 3 × 14 oz · 1 × 22 oz": two parts, the cups and the sizes they are in, each
+   whole, with a dot drawn in the gap before it. Where the line wraps, the sizes go to the
+   next line together, and their dot is outside the box, where it is cut off: no line ends
+   or starts with a dot, and no size is left alone on a line. */
+.bar-what,
+.bar-sizes {
+  display: flex;
+  column-gap: 1em;
+}
+
+.bar-what {
+  flex-wrap: wrap;
+  overflow: hidden;
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+
+.bar-what span {
+  position: relative;
+  white-space: nowrap;
+}
+
+.bar-what span + span::before {
+  content: "·";
+  position: absolute;
+  left: -0.65em;
+}
+
+.bar .btn {
+  flex: none;
+}
+
+/* --- Motion -----------------------------------------------------------------------
+   Short, springy, transform and opacity only. Three things loop, all on the first
+   screen: the ticker, the cup bobbing, the burst turning behind it. Everything else
+   moves once, when it arrives or when it is touched.
+
+   Arriving: site.js marks what is still below the screen (.wait) and lets it land as it
+   scrolls into view (.in). Each kind of thing lands its own way: a title is stamped on, a
+   tape label is stuck down from one end, the ways to order drop in one after another, a
+   shop slides in from the side its photo leans to. */
+
+.wait {
+  opacity: 0;
+}
+
+.wait.in {
+  animation: rise var(--pop) var(--spring) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.wait.in[data-pop="stamp"] {
+  animation-name: stamp;
+}
+
+.wait.in[data-pop="boing"] {
+  animation-name: boing;
+  animation-duration: 640ms;
+}
+
+.wait.in[data-pop="drop"] {
+  animation-name: drop;
+}
+
+.wait.in[data-pop="tape"] {
+  animation-name: tape;
+  animation-delay: 0ms;
+  transform-origin: 0 50%;
+}
+
+.wait.in[data-pop="side"] {
+  animation-name: from-right;
+  animation-timing-function: var(--glide);
+}
+
+.wait.in[data-pop="side"]:nth-child(odd) {
+  animation-name: from-left;
+}
+
+/* Answering a tap: the sum and a drink's count hop, the plus bounces back. */
+.bump {
+  animation: bump 380ms var(--spring);
+}
+
+.boing {
+  animation: boing 460ms var(--spring);
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) rotate(-7deg) scale(0.7);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.75rem);
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-1.5rem) rotate(-2.5deg);
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.35) rotate(5deg);
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tape {
+  from {
+    opacity: 0;
+    transform: scaleX(0.3) rotate(-6deg);
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-2.5rem) rotate(-1.5deg);
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes from-right {
+  from {
+    opacity: 0;
+    transform: translateX(2.5rem) rotate(1.5deg);
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes boing {
+  0% {
+    opacity: 1;
+    transform: scale(0.82, 1.12);
+  }
+
+  45% {
+    transform: scale(1.1, 0.92);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bump {
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.22) rotate(-3deg);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bar-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-0.6rem) rotate(2.5deg);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ticker {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Under a pointer (not a finger, where "hover" sticks after a tap): things wiggle, lean
+   or straighten up, so the page feels like it can be played with. */
+@media (hover: hover) {
+  .btn:hover {
+    transform: translateY(-2px) rotate(-1.5deg);
+  }
+
+  .btn:hover .arrow-out,
+  .way:hover .arrow-out {
+    transform: translate(3px, -3px);
+  }
+
+  .way:hover .arrow-down {
+    transform: translateY(4px);
+  }
+
+  .way:hover::before {
+    transform: scaleX(1);
+  }
+
+  .logo:hover .logo-disc {
+    rotate: 10deg;
+  }
+
+  .jump-go:hover span {
+    transform: rotate(-2deg) scale(1.04);
+  }
+
+  .pick:hover .pick-name {
+    transform: translateX(0.375rem);
+  }
+
+  .pick:hover .pick-add {
+    transform: rotate(90deg) scale(1.15);
+  }
+
+  .less:hover {
+    transform: scale(1.15);
+  }
+
+  .snack:hover .photo,
+  .shop:hover .shop-photo {
+    rotate: 0deg;
+  }
+
+  .reviews blockquote:hover {
+    rotate: 0deg;
+  }
+
+  .foot-brand:hover .foot-badge {
+    rotate: -10deg;
+  }
+}
+
+@media print {
+  .wait {
+    opacity: 1;
+  }
+}
+
+/* --- Small phones ------------------------------------------------------------------ */
+
+@media (max-width: 23.5rem) {
+  /* The date needs more room than the hour. */
+  .pair {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: var(--space-3);
+  }
+
+  .pair input {
+    padding-inline: var(--space-2);
+  }
+
+  /* A drink takes a third line here: what that row comes to, and "Hapus", under the
+     amount. So every part of the amount keeps its full 44px, the number too. A row with
+     neither (one empty row) has no third line. */
+  .qty input {
+    width: var(--tap);
+  }
+
+  .line-end {
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+
+  .line-end:not(:has(.line-price:not(:empty), .line-remove:not([hidden]))) {
+    display: none;
+  }
+
+  /* The three shops to pick up at don't fit one line here, and a name on two lines reads
+     badly: one shop under the other, each on one line. */
+  .seg-fill {
+    flex-direction: column;
+  }
+
+  .seg-fill label + label > span {
+    margin-top: -2px;
+    margin-left: 0;
+  }
+
+  .seg-fill label:nth-child(1 of :not([hidden])) > span {
+    border-radius: var(--radius-control) var(--radius-control) 0 0;
+  }
+
+  .seg-fill label:nth-last-child(1 of :not([hidden])) > span {
+    border-radius: 0 0 var(--radius-control) var(--radius-control);
+  }
+
+  /* The cups in the menu's switch step down, so each price keeps its room. */
+  .cup {
+    width: 1rem;
+    height: 1.6rem;
+  }
+
+  .seg-poster label > span {
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
+  }
+}
+
+/* --- Narrowest phones ---------------------------------------------------------------- */
+
+@media (max-width: 21rem) {
+  /* The size names step down a little, so they keep clear of their frames. */
+  .line .seg label > span {
+    min-width: 3.25rem;
+    padding-inline: var(--space-1);
+    font-size: 0.9375rem;
+  }
+
+  /* The arrow moves in a little, so the longest drink name still fits its field. */
+  .select select {
+    padding-right: var(--space-5);
+  }
+
+  .select::after {
+    right: var(--space-2);
+  }
+}
+
+/* --- Between a phone and a wide screen ------------------------------------------------ */
+
+@media (min-width: 36rem) {
+  .hero-pic {
+    width: 19rem;
+    margin-right: 6%;
+  }
+}
+
+/* --- Wider screens ---------------------------------------------------------------- */
+
+@media (min-width: 56rem) {
+  /* The headline left, the cup right and larger, the hours under the headline. */
+  .top {
+    padding-block: var(--space-6) var(--space-7);
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: var(--space-7);
+    align-items: center;
+  }
+
+  h1 {
+    margin-top: var(--space-7);
+  }
+
+  /* Still a square window on a photo 600px tall: 26rem is 416px. */
+  .hero-pic {
+    grid-area: 1 / 2 / span 2;
+    justify-self: center;
+    width: min(26rem, 100%);
+    margin: var(--space-5) 0;
+  }
+
+  .hero-open {
+    grid-area: 2 / 1;
+    align-self: start;
+    margin-top: var(--space-6);
+    font-size: var(--text-lead);
+  }
+
+  .ticker {
+    font-size: var(--text-h3);
+  }
+
+  /* Two places to read on the left, the one thing to do on the right. Each link has
+     room at its sides, so it is wide enough to tap and its focus ring clears the word.
+     The first is pulled back by that room, so "Menu" still starts on the page's edge. */
+  .jump .wrap {
+    display: flex;
+    gap: var(--space-2);
+    padding-inline: var(--gutter);
+  }
+
+  .jump a {
+    padding-inline: var(--space-3);
+  }
+
+  .jump a:first-child {
+    margin-left: calc(var(--space-3) * -1);
+  }
+
+  .jump a.jump-go {
+    margin-left: auto;
+    padding-inline: 0;
+  }
+
+  .jump-go span {
+    padding-inline: var(--space-4);
+  }
+
+  #menu {
+    padding-block: var(--space-6) var(--space-8);
+  }
+
+  /* Two posters side by side: the switch with the drinks it prices, and everything
+     with a price of its own. */
+  /* The best seller's sticker lines up with the column and its rules. */
+  .menu {
+    --bleed: 0px;
+    --best-inset: var(--space-4);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
+    align-items: start;
+  }
+
+  .price {
+    font-size: 1rem;
+  }
+
+  .menu-col > .grp:last-of-type {
+    padding-bottom: 0;
+  }
+
+  /* The question left, the three ways right, in the page's two columns. */
+  .ways {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
+    align-items: start;
+  }
+
+  /* A shop's words left, in the page's two columns. In the right one: its front where the
+     column starts, and its map button at the row's far end, so the three buttons are one
+     column whether a shop has a photo or not. */
+  .shop {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-8);
+  }
+
+  .shop-words {
+    display: contents;
+  }
+
+  .shop-photo {
+    grid-area: 1 / 2;
+    justify-self: start;
+  }
+
+  .shop-go {
+    grid-area: 1 / 2;
+    justify-self: end;
+  }
+
+  .shops-when {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    align-items: center;
+  }
+
+  .order-top {
+    padding-block: var(--space-7) var(--space-6);
+  }
+
+  /* Drinks left, the rest right. The form closes the same way: the small print and
+     the message under the drinks, the total and the send button under the rest. */
+  .form,
+  .send {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* the page's two columns, like every band */
+    column-gap: var(--space-8);
+  }
+
+  .form {
+    margin-top: var(--space-8);
+  }
+
+  .send {
+    grid-column: 1 / -1;
+    display: grid;
+    align-items: start;
+    padding-top: var(--space-5);
+    border-top: var(--line-strong) solid var(--fg);
+  }
+
+  .send-go {
+    grid-area: 1 / 2;
+  }
+
+  .send-more {
+    grid-area: 1 / 1;
+  }
+
+  .send-more .hint {
+    margin-top: 0;
+  }
+
+  /* The story left, what reviewers say right. */
+  .story {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-8);
+    align-items: start;
+  }
+}
+
+/* Someone who asked for less motion gets none: nothing loops, nothing springs, nothing
+   waits to arrive. Every part is simply there, and every tap still works. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .wait {
+    opacity: 1;
+  }
+}
